@@ -132,5 +132,119 @@ In Italia l'Agenzia per la Cybersicurezza Nazionale ha fondato un cloud marketpl
 Inoltre c'è un programma per portare ed abilitare la pubblica amministrazione all'uso dei servizi cloud. 
 Questo è previsto dal PNRR, nel primo obiettivo, attraverso una migrazione ad un cloud nazionale PSN, oppure ad un provider certificato. Anche la stessa migrazione ad un altro cloud viene trattato come un servizio senza dover necessariamente conoscere il suo funzionamento tecnico. 
 
+\subsection{PSN: Polo Strategico Nazionale}
+
+%% TODO smt
+
+
+Questo progetto ha l'obiettivo di creare un grande data center nazionale che fornisca vari servizi cloud. 
+
+I principali servizi offerti dal PSN sono housing ed hosting, cloud IaaS Private e Shared, può offrire cloud pubblica gestita dalla PSN garantendone la sicurezza, utilizzando sistemi offerti da produttori certificati, si può realizzare un sistema ibrido con elementi interni alla rete. 
+
+I public cloud esistenti che parteciperebbero a questo progetto sono Azure, Google Cloud ed Oracle. 
+
+%% cringe
+
+Sulla rete privata del PSN, sul suo hardware, vengono offerti servizi IaaS dedicati e condivisi, CaaS e \textit{Disaster Recovery} (DR) e PaaS, fornendo elementi applicativi e middleware come servizio. 
+
+Servizi di Cloud ibridi vengono gestiti nel territorio nazionale dal PSN, utilizzando un'infrastruttura ibrida utilizzando cloud pubblici di partner commerciali e privati sulla rete del PSN, installati sull'infrastruttura locale. Questo come il Public Cloud PSN Managed ed il Secure Public Cloud garantiscono la presenza dei dati sul territorio nazionale. Per il resto dei servizi cloud, i dati sono localizzati presso il \textit{Cloud Service Provider} (CSP) e non garantisce la \textit{data sovereignty}
+
+L'infrastruttura del PSN è un data center a doppia regione, interconnessa via \textit{Virtual Data Center Network} (VDCN), simulando una stessa LAN, duplicando i dati tra le due regioni. 
+
+
+Servizi PaaS messi a disposizione da parte del PSN su una piattaforma per erogare elementi applicativi e middleware, astraendo l'infrastruttura sottostante. Questi servizi sono \textit{Database as a Service} (DaaS), verifica dell'identità e gestione degli accessi, big data e servizi AI. 
+
+Analogamente fornisce applicazioni basate su container con servizi CaaS. 
+
+
+L'accesso a questi servizi avviene solamente tramite la rete TIM, uno dei consorzianti che ha vinto il contratto, questa implementa dei sistemi di sicurezza per garantire che eventuali attacchi non riescano a penetrare la rete interna del PSN, utilizzando dei tunnel per inviare il flusso di dati all'infrastruttura del PSN. %% ??
+
+
+% Il public cloud PSN managed, sviluppato in partnership con Oracle e Google Clout, viene gestito internamente dal PSN, 
+
+%% ?? idk
+
+
+
+I quattro data centers sono collegati su due regioni, tra queste regioni il traffico viene gestito tramite il protocollo \textit{Multi Protocol Label Switching} MPLS, sul backbone IP di TIM. %% descrizione MPLS
+
+Tra DC della stessa regione le VLAN sono trasportate con VXLAN, \textit{Virtual eXtensive LAN}, queste utilizzano espedienti tecnologici per duplicare infrastrutture fisiche utilizzando dei tag per dividere i pacchetti destinati alle varie copie.  
+Il protocollo VXLAN permette di connettere reti diverse condividendo pacchetti di livello due tra le reti, trattandola come una singola LAN, trasparente dal punto di vista delle macchine nelle varie LAN. 
+
+\subsection{SPC: Sistema Pubblico di Connettività}
+
+Questo è un bando multi-fornitore, il vincitore del bando ha preso la parte più grande del mercato della pubblica amministrazione, mentre i restanti fornitori hanno ottenuto il rimanente. 
+
+
+%% cringe af
+
+Questa rappresenta una rete di grandi dimensioni dedicata a connettere le sedi di ogni singola Pubblica Amministrazione tra di loro ed all'internet. 
+Offre diversi servizi di trasporto wired e wireless, su rete elettrica, ottica o da parte di dati satellitari. 
+
+Per questi servizi viene definito un \textit{Service Level Agreement} (SLA). 
+Ad ogni servizio il fornitore assegna una misura di qualità, il jitter è la distanza tra i vari pacchetti, se è pari a zero questi arrivano tutti allineati. Se la misura della qualità dovesse scendere al di sotto di terminate soglie, sono previsti rimborsi, chiamati ``penali'' all'amministrazione. 
+Gli SLA contemplano anche guasti o anomalie. 
+Vari ISP realizzano questo SPC, a ciascuno è assegnato un gruppo di PA, l'accesso ad internet è gestito dai singoli fornitori, in base all'esito dell'asta multi-fornitore. 
+
+Gli ISp realizzano le reti delle PA usando MPLS, per comunicare tra di loro su una rete QXN, \textit{Qualified Exchange Network}, attualmente collocato presso gli IXP di Roma (Namex) e Milano (MIX).  
+
+\clearpage
+
+\section{Algoritmi di Instradamento}
+
+Si considerano algoritmi di instradamento solo per infrastrutture fisiche, connessi da reti fisse. 
+
+Esistono due tipi principali di algoritmi di instradamento, \textit{distance vector} e \textit{state packet}. In TCP si utilizza una variante del distance vector. Queste sono due filosofie opposte. 
+
+Si vogliono delle certe qualità da questi algoritmi, si vuole avere algoritmi efficienti, per evitare che il calcolo dei cammini abbia un peso eccessivo rispetto all'instradamento dei pacchetti. 
+La tabella di instradamento dentro ai router non viene realizzata con un tabella, ma con strutture ad albero specializzate per avere un accesso il più veloce possibile. 
+SI vuole mantenere la maggior quantità possibile ci computazione sull'hardware, inoltre la dimensione dei pacchetti è piccola, e dipende dalla dimensione dei pacchetti ethernet di 1500 byte, definita dal primo consorzio NIX. %% TODO o VIX? idk 
+Inoltre le risorse computazionali dei router non sono necessariamente sufficienti per poter gestire la complessità della rete. 
+%% riassunto dei pacchetti ethernet standard 1.0, 2.0, 802.3:
+Questi pacchetti sono piccoli, poiché essendo in competizione dovevano realizzare schede di rete più economiche dei loro competitori. Utilizzando meno memoria si hanno schede di rete più economiche, e questo rappresenta un errore da parte del consorzio NIX, anche se si è affermato come lo standard per le comunicazioni via filo, è necessario avere operazioni di inoltro estremamente veloci poiché i singoli pacchetti sono estremamente piccoli. 
+
+
+Un router è diviso nel \textit{data plane} e nel \textit{control plane}, gli algoritmi di routing sono presenti nel control plane, e la tabella di instradamento composta da questo control plane viene inoltrata al data plane. 
+Parlando con le altre macchine i protocolli di routing devono determinare la tabella di instradamento. 
+Si vuole che questi protocolli siano efficienti, poiché su un router sono presenti molti altri servizi aggiuntivi, quindi il tempo del processore è limitato. 
+
+Inoltre si vuole individuare un cammino ottimo, un cammino che impieghi il minor tempo possibile per raggiungere la sua destinazione. Per determinare l'ottimalità del cammino si utilizzano criteri come il numero di hop o il costo delle linee, talvolta assunto inversamente proporzionale alla velocità. 
+
+Questo cammino se minimizza il numero di hop, minimizza il numero di immissioni da parte dei router che attraversa. 
+Un'altra risorse è l'utilizzo delle linee, avendo una banda limitata, non può mandare i pacchetti su una stessa linea, avendo anche un buffer limitato per le singole linee. Il carico corrente della rete è tuttavia difficile da calcolare. 
+Se si considerasse solamente il carico della rete, si creerebbe un fenomeno di retroazione causando un oscillazione della rete incontrollabile. Altrimenti si potrebbero scegliere linee con un packet loss minimo. 
+
+In genere si scelgono algoritmi che si basano sul numero di hop. Questi algoritmi devono essere robusti e dinamici, poiché alcune linee riscontrare malfunzionamenti, errori di configurazione da parte di amministrazioni di rete, etc. 
+Nello stesso tempo, si vuole essere stabile, non si vuole cambiare il routing durante la trasmissione. Tutti i pacchetti devono essere inviati e ricevuti nello stesso ordine, anche se esiste il livello TPC per riordinarli, nessuna macchina deliberatamente invia pacchetti fuori sequenza. Per questo un'oscillazione del routing non è accettabile, poiché grava sul livello TPC, aumentando il tempo necessario per sistemare questi pacchetti. 
+
+Si è realizzato un protocollo inter-dominio che oscilla in continuazione, dato che il suo effetto non era completamente compreso. Per cui è possibile realizzare esperimenti dove la rete diventa instabile. 
+
+
+Il traffico può essere classificato, quando entra in una rete di un ISP, per determinare se si tratta di traffico utente generico o mission critical o privilegiato o VoIP. 
+Inoltre questi algoritmi devono essere equi, nessun nodo deve essere privilegiato o danneggiato. 
+
+L'ultimo criterio è l'economicità, si vuole ridurre ic osti di configurazione e manutenzione dei protocolli di routing. 
+
+
+Questi criteri sono talvolta contrastanti, e bisogna scegliere l'algoritmo migliore per un dato caso d'uso. 
+
+
+
+Si possono classificare questi algoritmi in statici e dinamici. GLi algoritmi dinamici applicano un instradamento in funzione della topologia e del carico della rete, mentre algoritmi statici hanno applicazione ristretta poiché prendono decisioni indipendenti dallo stato della topologia della rete. Questi algoritmi statici vengono utilizzati in casi semplici. 
+La configurazione manuale delle macchine è una configurazione statica, questa è sempre presente anche in piccole parti in ogni rete. Se in una rete sono presenti topologie ad albero, queste non hanno bisogno di una configurazione dinamica. 
+Invece per topologie magliate è opportuno utilizzare un algoritmo dinamico, poiché al taglio di un link o allo spegnimento di un nodo, bisogna ridistribuire il carico e riorganizzare la rete in modo veloce, senza compromettere l'operabilità delle altre macchine. 
+
+%% TODO immagine rapporto tra routing statico e dinamico
+
+Uno di questi algoritmi statici è il \textit{flooding} che consiste nell'inoltra ogni pacchetto a tutte le interfacce connesse al router. 
+
+Gli algoritmi dinamici possono essere successivamente divisi in routing isolato, dove ogni router decide senza comunicare con altri router; il routing centralizzato, dove un router centrale determina la scelta migliore, questa strategia è rimasta per molto tempo sottovalutata; il routing distribuito, questa è la strategia corrente della rete, dove ogni router informa i propri vicini le informazioni note. 
+Nel distance vector i router informano i propri vicini rispetto alla condizione globale, mentre nel link state packet i router inviano alcuni pacchetti verso tutta la rete che raccontano della topologia locale. 
+
+Algoritmi di routing isolato sono \textit{hot potato} e \textit{backward learning}, l'algoritmo utilizzato dai switch o bridge, che determinano in base alla provenienza dei pacchetti le destinazioni possibili rispetto alle varie interfacce. 
+
+
+
+
 
 \end{document}
