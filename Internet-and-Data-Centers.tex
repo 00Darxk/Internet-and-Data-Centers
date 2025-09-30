@@ -319,4 +319,104 @@ Se questa connessione viene tagliata, il vicino non può aggiornare la sua tabel
 
 Una buona notizia arriva a distanza $k$ in $k$ passi. Le cattive notizie invece si propagano in un tempo che è funzione del valore convenzionalmente attribuito ad infinito. Questo valore si attribuisce alla lunghezza del cammino più lungo più uno. 
 
+
+Se un componete ha inviato la rotta al vicino, e questo gliela rimanda, non dovrebbe considerarla, questo fenomeno si chiama \textit{split horizon}, ma non sempre è efficace, in reti circolari, l'eco propaga in un'unica direzione perpetuamente provocando il fenomeno del \textit{count to infinity}
+
+% Questo protocollo inerentemente ha questo problem brutto perché è scemo
+
+Il valore ottimale di infinito per ogni rete dipende dalla sua topologia, e dal modo in cui l'eco viene propagato. Bisogna determinare il costo del cammino più lungo possibile nella rete, ed al massimo prende tutti i router presenti. Non tutte le reti ammettono un cammino che prede tutte le reti. 
+
+%% TODO img add propagazione count fo infinity
+
+Quando il costo di un cammino supera il valore di infinito nella tabella di instradamento, viene rimossa e non più condivisa. Restituisce pacchetti ICMP \textit{destination unreachable} se si prova ad accedere alla rotta. 
+
+Se a rete è connessa è possibile dimostrare con il modello di Bellman e Ford che l'algoritmo converge sempre ad una soluzione ottima, anche se all'inizio le tabelle di instradamento provengono da una situazione diversa. 
+Il numero di passi è lineare se la metrica è il numero di hop. 
+Negli distanze condivise tra i router ci sono due elementi, le buone notizie e le cattive notizie. 
+Ci sono vari modi per valutare l'efficienza di un algoritmo di instradamento. 
+
+
+Si può utilizzare il numero di passi come metrica per determinare l'efficienza dell'algoritmo distance vector. In una rete dove ci sono $n$ nodi ed $m$ link, la metrica è relativa solo al numero di hop, una buona notizia si propaga tra i nodi più lontani al massimo $n-1$ link in $n-1$ passi, analogamente per una brutta notizia, attribuita al valore $n$. 
+
+Un altra metrica è il lavoro svolto dai router, questi inviano ad ogni passo $m$ distance vector, dove $m$ è il numero massimo di linee interno al router. Ogni tabella ha al più $O(n)$ righe, in ciascuno dei passi il router spende tempo $O(mn)$, dato che la convergenza richiede tempo per propagarsi, nel caso peggiore di $O(n)$ passim ogni router calcola per un tempo $O(n^2m)$. 
+
+\subsection{Algoritmi Link State Packet}
+
+Questi algoritmi utilizzano un pacchetto che viene chiamato \textit{link state packet} (lsp) che descrive lo stato dei link di ogni IS. Un router su questa mappa si calcola l'instradamento ottimale per ogni rotta. Usano un algoritmo di calcolo di costo minimo, in questo caso usa Dijkstra. Il router compone da queste informazioni una tabella di instradamento per il valore del next hop per ogni rotta. 
+La mappa della rete viene costituita usando questi pacchetti speciali, qui sorge un problema, poiché i link non sono componenti attivi, al massimo un router può descrivere le macchine presenti intorno all'IS. Questi pacchetti vengono mandati ai vicini e si suppone che i vicini li propaghino in selective flooding da ogni IS ad ogni altro IS della rete. 
+
+Se viene modificata la topologia, aggiorna la sua mappa e la propaga nella rete. Ogni IS conserva i un database il lsp più recente, per aggiornare la topologia della rete, questi link hanno dei costi e per questo si utilizza un algoritmo come Dijkstra invece di un BFS. 
+Questo database è importate sia identico tra tutti gli IS, le informazioni devono essere propagate, tenendo solo l'ultima copia del lsp. Se la topologia non cambia non è necessario inviare periodicamente l'intero database. 
+Si tratta di un protocollo molto più silente, è sufficiente un unico pacchetto lsp per aggiornare il database correttamente tra tutti gli IS della rete allo stesso stato. 
+
+
+Algoritmi distance vector inviano pacchetti molto grandi per calcolare direttamente la tabella di instradamento, mentre algoritmi link state packet inviano pacchetti piccoli con l'obiettivo di calcolare la mappa della rete, e da questa calcolare la tabella di instradamento. 
+A differenza deu distance vector, questo algoritmo può gestire reti con migliaia e migliaia di nodi, convergendo rapidamente. 
+
+
+%% !! ALGORITMI DI DIJKSTRA
+Si considera un insieme $V=\{1,\cdots,n\}$ di vertici numerati, con archi orientati. Si indica con $A(i)$ l'insieme dei vertici $j$ per cui è presente un arco orientato $(i,j)$. Per ogni arco è presente una metrica $a_{ij}\geq0$, questa è infinito se l'arco è assente. La somma di un cammino è la somma delle metriche degli archi attraversati. 
+
+La distanza corrente dal vertici 1 al vertice $i$ è $d[i]$, la distanza minima tra questi è $m(i)$, si definisce $S$ l'insieme dei vertici in cui il cammino corrente ha distanza minima $d[i]=m(i)$. 
+
+
+L'algoritmo di Dijkstra calcola il costo minimo tra il primo nodo ed ogni altro nodo della rete, questi vengono inseriti in $S$ per valori crescenti della distanza da 1. All'inizio contiene solo il primo elemento. Nel secondo passo, per ogni nodo $i$ dal successivo all'ultimo $n$ si pone $d[i]=a_{1i}$. In seguito si ripete finché $V\setminus S$ non è vuoto scegliendo un nodo in questo insieme tale che $d[i]$ sia minimo, aggiungendolo ad $S$, e per ogni nodo $j$ adiacente ad $i$, si pone $d[j]=\min(d[j],d[i]+a_{ij})$. 
+
+\begin{gather*}
+    S=\{1\}\\
+    \forall i\in\{2,\cdots,n\}\rightarrow d[i]=a_{1i}\\
+    \mbox{se}\,\, V\setminus S\neq\emptyset,\,\, i\in V\setminus S \mbox{ t.c. } d[i]=m(i)\implies S=S\cup\{i\},\,\,\forall j\in A(i):\,\, d[j]=\min(d[j],d[i]+a_{ij})
+\end{gather*}
+
+%% !! LEMMA DELL'INVARIANTE
+
+Se $d[v]=m(v)$ per ogni nodo $v\in S$, allora quando $i$ viene aggiunto ad $S$, anche $i$ ha per $d[i]=m(i)$. 
+Supponendo per assurdo che $d[i]>m(i)$. Sia il cammino minimo $p$ tra 1 a $i$ necessariamente $|p|=m(i)<d[i]$. Sia $j$ l'ultimo nodo di $p$ e $k$ il nodo seguente. Allora deve essere $k\neq i$ altrimenti l'algoritmo avrebbe computato $d[i]=|p|=m(i)$, poiché il sottoinsieme di un cammino minimo è anch'esso un cammino minimo. 
+
+%% !! DIMOSTRAZIONE DEL LEMMA
+$d[k]=m(k)$, ovvero il cammino è ottimo poiché è calcolato da $d[j]$, per ipotesi $d[j]=m(j)$ ed l'arco $(j,k)$ è utilizzato da $p$. %% TODO finire
+
+
+
+Supponendo che in una rete ci siano $n$ nodi e $m$ link. 
+Un'implementazione semplice richiede tempo $O(n^2+m)=O(n^2)$, in questa si scorrono tutti i nodi ad ogni passo, mentre un'implementazione più sofisticata scorre tutti i nodi ordinati per costo minore, senza doverli scorrere tutti ha una complessità $O(n\log n+m)$. 
+
+Calcolati i cammini minimi, questi formano un albero ricoprente dei cammini minimi, ogni IS crea la sua tabella di instradamento in base a questo albero. Può essere che i cammini minimi calcolati non coincidano perfettamente, poiché possono esistere più cammini ottimali tra due nodi. 
+
+ALcuni algoritmi gestiti da CISCO utilizzano cammini tra due nodi dello stesso costo, \textit{Equal Cost Multi-path}, in questo modo può distribuire il traffico su più rotte. Questi router hanno due entry per ogni rotta, dividono il traffico in queste linee, se non viene gestito bene i pacchetti vengono disordinati ed il livello TCP non è in grado di riordinarli. Per gestirlo correttamente prendono gli indirizzi IP del sorgente e destinazione e ne calcolano l'hash ad un bit, se è uno lo mandano su una rotta, altrimenti lo mandano all'altra. In questo modo instradano interi flussi su rotte diverse. 
+
+
+Poiché i link sono inerti, non è possibile comunicare direttamente con questi. Esiste un protocollo di \textit{neighbor greetings}. Questo si utilizza per mantenere aggiornate la adiacenze, inviato periodicamente su tutte le interfacce. Quando un IS rileva una modifica della topologia invia un lsp per propagare la modifica. 
+
+Ogni pacchetto lsp ha un numero di versione relativo al router, il pacchetto non cambia durante la sua propagazione con un processo di selective flooding. Si utilizza questo numero di versione per verificare se è già stato ricevuto un pacchetto con quel numero di versione, in caso non compie alcuna azione, altrimenti se il pacchetto ricevuto ha una versione più recente aggiorna il suo database e lo propaga, oppure se ha una versione precedente, trasmette quello posseduto al mittente, per allinearlo con i database. 
+
+Una LAN su cui si affacciano diversi router si presta male ad essere modellata come un grafo, uno dei router si prende l'onere di rappresentare la LAN come uno pseudo nodo, e gli altri vedranno la LAN come una stella. 
+% isana al gaib
+Per questo alcuni interlocutori sono dei link, sono pseudo nodi che impersonano la connessione. Ogni connessione ha un \textit{designated router} che rappresenta la LAN al resto del mondo, ogni altro router vede la LAN come se fosse attiva. 
+
+\subsection{Protocolli di Routing}
+
+Il termina gateway è un termine antico che indica il router utilizzato per accedere all'internet da una LAN. 
+Alcuni protocolli sono detti \textit{Interior Gateway Protocol} (IGP) all'interno di una stessa LAN, questi sono RIP, OSPF, IS-IS. Altri protocolli si chiamano \textit{Exterior Gateway Protocol} (EGP) che sono utilizzati all'esterno delle LAN, questi sono EGP e BGP. 
+Gli IGP vengono utilizzati per aggiornare le tabelle di instradamento all'interno del sistema. 
+I protocolli usati per trasferire informazioni di routing tra diversi domini amministrativi passano per BGP, il protocollo standard esterno. 
+
+\subsubsection{IGP}
+
+Il \textit{Routing Information Protocol} (RIP) è un IGP introdotto nel TCP/IP nel 1982, implementa l'algoritmo distance vector con invio del distance vector ogni 30 secondi. 
+%% questi due strati sono legati tra loro poiché TCP usa indirizzi IP per individuare processi diversi. eg indirizzo IP processo mittente e processo destinatario
+Usa una sola metrica, basata sugli hop, con un numero massimo di hop permetti pari a 15, sono reti piccole. Non vengono considerate altre metriche, tuttavia è compatible con ogni macchina, e converge sempre. 
+
+Nella prima versione venivano inviati in broadcast, da RIPv2 i pacchetti vengono inviati alla lista di subnet, ottenute dal proprio indirizzo IP e la netmask. 
+
+I pacchetti di richiesta chiedono ai vicini i rispettivi distance vector, i pacchetti di risposta trasferiscono i distance vector richiesti. 
+
+Vengono inviati ogni 30 secondi, aggiungendo un piccolo offset random, per evitare che la rete si sincronizzi globalmente. 
+
+
+L'\textit{Open Shortest Path First} (OSPF) è un protocollo. 
+
+
+
+
 \end{document}
