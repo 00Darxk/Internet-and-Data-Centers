@@ -416,6 +416,35 @@ Vengono inviati ogni 30 secondi, aggiungendo un piccolo offset random, per evita
 
 L'\textit{Open Shortest Path First} (OSPF) è un protocollo. 
 
+\clearpage
+
+\section{Kathar\`{a}}
+
+Una rete è composta da diversi apparati, computer, router, switch, etc., ognuno con differenti interfacce; diversi protocolli attivi sulla rete, le connessioni fisiche che generano una topologia complessa. 
+
+
+L'internet è una rete best effort, non è stabile, e si voglio garantire le sue prestazioni. 
+% I router sono automi a stati finiti, non si ha il tempo di computazione per computare i
+
+L'emulazione e simulazione di sistemi blah blah, leggi il pdf di reti di calcolatori\url{https://github.com/00Darxk/Reti-di-Calcolatori/Esercizi/Esercizi-Kathara}. 
+
+La simulazione riproduce le prestazioni, mentre l'emulazione riproduce le funzionalità. Non si può emulare tutto, un processore general purpose non ha le caratteristiche necessarie per emulare milioni di pacchetti. O si toglie il processamento di pacchetto e quindi la funzionalità, oppure si affronta la logica e si mantengono le prestazioni. 
+
+%% TODO da introduzione come scrivere un progetto+
+% .startup file bash
+
+
+% \subsection{FRRouting}
+
+% Un router ha tante interfacce
+%% TODO add ts
+
+% Zebra deve unire varie tabelle di routing ottenute dai demoni di bpg, rip e ospf. Generata questa tabella generale la inietta al kernel aggiungendola alla tabella statica. Gli indirizzi IP delle interfacce di rete impostate generano automaticamente queste entry statiche. Questa tabella viene chiamata tabella di instradamento o del data-plane. Le tabelle di instradamento in Zebra sono virtuali, si trovano nel control-plane, su un software. 
+% I protocolli di routing per funzionare devono poter comunicare con l'esterno. 
+% Per configurare frr bisogna creare una cartella /etc/frr, il primo file daemons configura i demoni da avviare. La configurazione integrata delle configurazioni si realizza modificando il file vtysh.conf, se viene settato a no service integrated-vtysh-config 
+
+
+% RIPv2
 
 
 
