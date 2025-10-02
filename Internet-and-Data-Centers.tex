@@ -413,8 +413,75 @@ I pacchetti di richiesta chiedono ai vicini i rispettivi distance vector, i pacc
 
 Vengono inviati ogni 30 secondi, aggiungendo un piccolo offset random, per evitare che la rete si sincronizzi globalmente. 
 
+\subsubsection{OPSF}
 
-L'\textit{Open Shortest Path First} (OSPF) è un protocollo. 
+L'\textit{Open Shortest Path First} (OSPF) è un protocollo non proprietario, standardizzato dall'IETF, probabilmente il più diffuso IGP per TCP/IP. Abbastanza stabile come protocollo, con le ultime variazioni per IPv6 avvenute nel 2008. 
+Sfrutta l'algoritmo link state packet, pensato per scalare molto. 
+È organizzato gerarchicamente, dividendo la rete in aree connesse dell'intera rete, dove il routing che avviene all'interno di una stessa area, non è necessariamente uguale a quello interno ad un'altra area. Per comunicare tra queste aree si usano router contenuti da più di un'area, per fare da ponte tra queste aree. I router che si trovano sulla backbone hanno una visione di tutto il resto del mondo, mentre quelli  nelle parti marginali hanno una visione molto ristretta.  
+
+Ci potrebbero essere configurazioni di nicchia, per tecnologie speciali che non corrispondono esattamente a questa suddivisione. 
+Generalmente ogni area ha una topologia invisibile alle altre aree, i router di frontiera sono gli unici a cui si può accedere per comunicare con l'interno dell'area. 
+
+
+Questo protocollo assegna ogni interfacce ad un'unica area. Un router può essere interno se ha interfacce su una stessa area, backbone se ha almeno un'interfaccia backbone, area border se ha almeno due interfacce diverse su due aree diverse, e AS boundary o frontiera se ha almeno un'interfaccia verso l'esterno, altri domini amministrativi. 
+
+
+%% TODO add img aree e suddivisione router
+
+Ai router di frontiera vengono iniettate rotte, come se fossero locali, dentro al protocollo OSPF, ed inietta sulla sua rete locale queste rotte prendendosi la responsabilità di inoltrarli eventuali messaggi alle altre aree. 
+%% TODO add protocollo IS-IS
+
+
+\subsubsection{Coesistenza di Protocolli Diversi}
+
+I protocollo di rete permettono la consegna di un pacchetto da una qualsiasi macchina che si trova in internet ad un'altra qualsiasi macchina che si trova in internet. Per effettuarlo è necessario uno schema di indirizzamento, questo viene gestito dal protocollo di livello tre. Molti protocolli hanno deciso di essere più capillari, individuando solamente un'interfaccia in una porzione specifica della rete. 
+Si determina il formato del pacchetto di rete, questo contiene il pacchetto di trasporto di livello quattro, che non può esser eletto e gestito da questi. 
+Offrono un servizio di consegna ai protocolli del livello di trasporto. 
+I servii di consegna per livello tre sono a commutazione di pacchetto. 
+
+Un protocollo di routing fa specifico ad uno specifico protocollo di rete. 
+
+In generale sono presenti più protocolli di rete e quindi più protocolli di routing diversi contemporaneamente presenti su una stessa macchina. Su una stessa macchina possono essere presenti più protocolli di routing, anche relativi allo stesso protocollo di rete. 
+
+Queste macchine devono permettere a più protocolli di condividere. Se sono presenti due protocolli di rete le macchine vengono dette dual-stack. Gli ES hanno due pile protocollari, in corrispondenza di due librerie API. Le applicazioni devono scegliere quale pila da usare. 
+
+Gli IS sono in grado di instradare pacchetti relativi ad entrambi i protocolli di rete. 
+
+La filosofia è ``navi nella nebbia'', i diversi protocolli convivono in modo totalmente isolato. 
+Per questi motivi non è possibile effettuare una transizione completa da IPv4 a IPv6, la rete ha un'inerzia elevata, dato che le macchine devono poter operare su tutti questi protocolli. 
+
+Tipicamente le tabelle di routing sono separate ed i database dei distance vector sono invisibili l'uno dall'altro. Tutte queste tabelle di instradamento vengono a determinare un mix di tutte le tabelle di instradamento. 
+Ma questi protocolli utilizzano metriche tra di loro non confrontabili, tipicamente l'amministratore di rete decide in che modo gestire questi vari protocolli. 
+
+L'amministratore può governare queste rotte per determinare in che modo i pacchetti tra i vari protocolli comunicano l'un l'altro. Le rotte trasferite vengono viste dal protocollo ricevute come rotte statiche. Iniettare dentro un altro è un'operazione delicata, se si inserisce un protocollo che contiene tutte l'internet, la sa solo dall'iniezione, ma pubblicizza di poter raggiungere tutto l'internet creando un buco nero, se viene diffusa fuori. 
+
+
+Due ISP che comunicano usando due protocolli di routing differenti, utilizzano dei router appartenenti ad entrambi i loro domini. Questi possono comunicare attraverso router contenenti rotte iniettate da entrambi i protocolli. Questo può pubblicizzare le rotte apprese da entrambi i protocolli. 
+Il fatto che non ci sia una chiara divisione delle competenze su questo router è un problema di natura gestionale. 
+%% TODO smm shtio r sm
+Se la rotta attraversa diversi domini, questo processo di iniettare rotte ignorando le metriche, è un processo non ottimale se attraversa molti domini. 
+
+\subsubsection{BGP}
+
+Per evitare di avere questi problemi di carattere amministrativo, invece di cogestire una macchina e separare le competenze, ci si inventa una struttura dove tra le due rete si condivide un filo e la cogestione di un filo è più semplice. 
+
+Il protocollo EGP è adottato tra domini amministrativi diversi. Su queste connessioni viene adottato un solo protocollo. Può prediligere le rotte che attraversano meno domini amministrativi. 
+Consente l'implementazione di politiche commerciali, non tutte le rotte possono essere attraversate da un dominio amministrativo, le rotte che attraversano uno specifico dominio possono essere preferite. Alcune di queste scelte sono dovute a motivi economici come accordi tra ISP. 
+Persegue la trasparenza rispetto agli IGP. 
+
+Le informazioni apprese tramite EGP sono ridistribuite in un IGP, quando sono raggiungibili.
+Una rotta che passa per EGP deve avere metriche di distanza, e non può essere calcolata dal protocollo IGP interno. Questa distanza deve passare attraverso router altri router di frontiera. 
+Queste informazioni sono condivise agli altri router di frontiera dello stesso dominio amministrativo tramite connessioni TCP. 
+
+
+Il primo protocollo EGP ha cominciato ad essere usato nel 1984. Utilizza un protocollo simile al distance vector, ma solo con indicazione di raggiungibilità. 
+Molto elementare, funzionava esclusivamente con reti ad albero. 
+
+%% TODO 
+Usa lo strato di trasporto connesso per scambiarsi informazioni tra strati BGP, sulla porta 179. Tipicamente prova a connettersi in maniera incrociata, e si prova a fare connessione sia come client che come server, la prima che instaura una connessione la crea. In connessioni TCP non c'è differenza tra client e server, le connessioni sono essenzialmente peer-to-peer. Una connessione può essere attiva in un senso e non in un altro. 
+
+
+Questo protocollo BGP è uno dei protocolli più intriganti e complessi, consente di effettuare tante operazioni ed è difficile da conoscere. Richiede una conoscenza molto profonda della rete, le configurazioni su questo protocollo è molto costoso.
 
 \clearpage
 
