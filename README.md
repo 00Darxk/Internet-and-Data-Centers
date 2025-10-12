@@ -7,6 +7,7 @@ Appunti tratti dal corso di Internet and Data Centers, Anno Accademico 2025/26, 
 ## Contenuti del Corso
 
 ## Materiale Aggiuntivo
+ - [Kathará](https://github.com/KatharaFramework/Kathara), emulatore di reti, utilizzato durante il corso e per l'esame;
  - [Sito del corso](http://impianti.inf.uniroma3.it), con i lucidi delle lezioni, esercizi, esoneri ed esami passati.
 
 

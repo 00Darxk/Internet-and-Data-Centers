@@ -186,7 +186,7 @@ Ad ogni servizio il fornitore assegna una misura di qualità, il jitter è la di
 Gli SLA contemplano anche guasti o anomalie. 
 Vari ISP realizzano questo SPC, a ciascuno è assegnato un gruppo di PA, l'accesso ad internet è gestito dai singoli fornitori, in base all'esito dell'asta multi-fornitore. 
 
-Gli ISp realizzano le reti delle PA usando MPLS, per comunicare tra di loro su una rete QXN, \textit{Qualified Exchange Network}, attualmente collocato presso gli IXP di Roma (Namex) e Milano (MIX).  
+Gli ISP realizzano le reti delle PA usando MPLS, per comunicare tra di loro su una rete QXN, \textit{Qualified Exchange Network}, attualmente collocato presso gli IXP di Roma (Namex) e Milano (MIX).  
 
 \clearpage
 
@@ -485,34 +485,152 @@ Questo protocollo BGP è uno dei protocolli più intriganti e complessi, consent
 
 \clearpage
 
-\section{Kathar\`{a}}
+\section{Kathar\'{a}}
 
-Una rete è composta da diversi apparati, computer, router, switch, etc., ognuno con differenti interfacce; diversi protocolli attivi sulla rete, le connessioni fisiche che generano una topologia complessa. 
+Una rete è composta da diversi apparati, computer, router, switch, ecc., ognuno con differenti interfacce, diversi protocolli attivi sulla rete, diverse connessioni fisiche che generano una topologia complessa. 
+L'internet è una rete best effort, non è stabile, ma si voglio garantire le sue prestazioni. 
+I router sono automi a stati finiti, non si ha il tempo di computazione per gestire tutti i pacchetti nel modo per garantire le migliori funzionalità e prestazioni. Quindi per garantire queste caratteristiche bisogna lavorare dal punto di vista della struttura della rete e le loro interazioni. 
+Ma effettuare sperimentazioni di questo tipo usando tecnologie dal vivo è molto costoso, per cui si vorrebbe realizzare ciò tramite dei modelli locali, o principalmente localizzati per diminuire la necessità di apparati costosi. 
+Per creare modelli di rete si può scegliere di emulare o di simulare la rete. Una simulazione riproduce le prestazioni, mentre l'emulazione riproduce le funzionalità. Non si può emulare tutto, un processore general purpose non ha le caratteristiche necessarie per emulare milioni di pacchetti come quelli di un router, che effettuano queste operazioni dal lato hardware. O si toglie il processamento di pacchetto e quindi la funzionalità, oppure si affronta la logica e si mantengono le prestazioni. 
+
+Kathar\'{a} è un sistema per emulare le reti. Quindi ne rappresenta le funzionalità, su di un qualsiasi calcolatore general purpose, senza rappresentare le effettive prestazioni della rete. 
+Viene utilizzato per valutare la loro struttura, e le qualità derivanti delle funzionalità descritte della rete. 
+Ogni apparato di rete è in un suo container docker separato, e può avere il ruolo di un qualsiasi apparato nella rete, un calcolatore, un router, un DNS, un web server, ecc. Queste funzionalità sono disponibili in base all'immagine del container. 
+
+Ogni dispositivo emulato ha una sua console, una memoria, un filesystem, e può avere, o anche non avere, un certo numero di interfacce di rete, per comunicare con altri gli altri dispositivi emulati. Queste connessioni avvengono tramite domini di collisione emulati, a cui possono essere connesse le interfacce, ognuna connessa ad al massimo un singolo dominio. 
+
+Per usare Kathar\'{a}: \href{https://github.com/00Darxk/Reti-di-Calcolatori/blob/main/Esercizi/Esercizi_Kathará.pdf}{appunti introduttivi} dal corso di Reti di Calcolatori. 
+
+Per visualizzare le informazioni sui pacchetti si può utilizzare \texttt{tcpdump}, specificando varie flag:
+\begin{minted}{bash}
+    tcpdump {flags}
+\end{minted}
+\begin{itemize}
+    \item \texttt{-e}: include gli headers del livello link, per osservare gli indirizzi MAC, se presenti
+    \item \texttt{-i} \verb|{interfaccia}|: analizza i pacchetti solo su una data interfaccia
+    \item \texttt{-n}: non converte indirizzi con DNS
+    \item \texttt{-t}: non stampa un timestamp per ogni pacchetto
+    \item \texttt{-v}: stampa un output prolisso, contenente opzioni e vari campi per i singoli pacchetti
+\end{itemize}
+Altri comandi utili sono \texttt{traceroute}, \texttt{ping}, ecc. 
+% tcpdump {flags}
+% -t : no timestamp
+% -e : link-level headers
+% -n : no protocol name
+% -n : no DNS lookup
+% -i : sniff su {interfaccia}
+
+\subsection{Configurare un Lab}
+
+Un modello di rete si chiama \textit{lab} in Kathará. Questo viene descritto da un file di configurazione \texttt{lab.conf}, situato alla radice del lab. 
+In questo file possono essere presenti una serie di assegnazioni del tipo:
+\begin{quotation}
+\begin{minted}{c}
+    machine[arg] = value
+\end{minted}
+\end{quotation}
+
+Per indicare parametri o opzioni da attivare per un certo dispositivo emulato nel progetto. Si possono condividere file tra il filesystem interno dei dispositivi e quello esterno del calcolatore con le cartelle \texttt{/shared}, abilitato di default, e \texttt{/hostname}, per ogni dispositivo, disattivato di default. Tutto ciò che è contenuto in sottocartelle in quest'ultimo viene copiato e non riflesso anche nel filesystem esterno. 
+Nella stessa directory può essere inserito un file bash \verb|{hostname}.startup| che indica i comandi da eseguire all'avvio del progetto. 
+Si usano per configurare la tabella di instradamento statica e gli indirizzi per le interfacce della macchina:
+\begin{minted}{bash}
+ip address add {indirizzo-ip}/{netmask} dev {interfaccia}
+ip route add {indirizzo-dest}/{netmask} via {indirizzo-src} dev {interfaccia}
+\end{minted}
+Per aggiungere delle rotte di default si usa l'opzione \texttt{default} per l'indirizzo di destinazione 
+
+Inoltre si può usare per avviare servizi, come web server, routing frr, ecc. Queste macchine sono basate su linux e \texttt{systemd} come gestore dei servizi. Per avviare un servizio bisogna inserire in questo file:
+\begin{minted}{bash}
+    systemctl start {servizio}
+\end{minted}
+
+Esistono strumenti per comporre file \texttt{lab.conf} in maniera grafica come, accessibili dal \href{https://github.com/KatharaFramework/Kathara?tab=readme-ov-file#external-tools}{GitHub di Kathará}
 
 
-L'internet è una rete best effort, non è stabile, e si voglio garantire le sue prestazioni. 
-% I router sono automi a stati finiti, non si ha il tempo di computazione per computare i
+Esistono tre livelli per configurare una macchina, si può interagire da utente, dove si possono effettuare comandi come \texttt{ping} e \texttt{traceroute} per verificare la struttura e la raggiungibilità della rete, e controllare gli altri utenti che la stanno utilizzando. 
+Elevando i privilegi ad amministratore si possono interrogare direttamente le tabelle di instradamento del router. Per modificare la configurazione stessa bisogna elevare ancora i privilegi per poter modificare la configurazione corrente. Le configurazioni che vengono applicate a questo stadio non sono immediate, solo dopo aver confermato, tutte le configurazioni aggiunte o modificate verranno attivate. 
+Questo è rilevante, poiché se si è connessi in SSH alla macchina, è possibile che il canale di comunicazione venga tagliato, e quindi è necessario fisicamente resettare il router per poter connettersi nuovamente. 
 
-L'emulazione e simulazione di sistemi blah blah, leggi il pdf di reti di calcolatori\url{https://github.com/00Darxk/Reti-di-Calcolatori/Esercizi/Esercizi-Kathara}. 
+\subsubsection{FRRouting}
 
-La simulazione riproduce le prestazioni, mentre l'emulazione riproduce le funzionalità. Non si può emulare tutto, un processore general purpose non ha le caratteristiche necessarie per emulare milioni di pacchetti. O si toglie il processamento di pacchetto e quindi la funzionalità, oppure si affronta la logica e si mantengono le prestazioni. 
+Un router ha tante interfacce e per gestire i pacchetti tra tutte queste e scegliere a quale inviarli. Questo viene effettuato grazie ad una tabella di routing. 
+Una rete però non è una struttura statica ed è necessario modificare ed aggiornare questa tabella di routing dinamicamente. I protocolli di routing hanno questo scopo. 
+Su Kathará ogni macchina che esegue un protocollo di routing identifica un router per la rete.  
 
-%% TODO da introduzione come scrivere un progetto+
-% .startup file bash
+La suite di protocolli \textit{FRRouting} (FRR) è open-source e disponibile per piattaforme Linux e Unix. 
+Questo implementa vari protocolli di routing, RIP, OSPF, IS-IS, BPG, ecc. 
+Ha le sue radici nel progetto quagga, non più supportato, ma dovendo rimanere compatibile con macchine esistenti sulla rete sistemi e protocolli obsoleti, come IPv4, devono continuare ad essere supportati per mantenere la rete funzionante. 
+Quagga a sua volta si basava su un progetto chiamato \textit{Zebra}, che l'ha superato, ed è ancora in uso. 
 
+Il protocollo FRR gestisce la condizione di informazioni di routing tra vari protocolli di rete diversi, utilizzando Zebra per unire i loro risultati. 
+Ogni suo protocollo ha un demone indipendente, che utilizza un suo file di configurazione sulla macchina. 
 
-% \subsection{FRRouting}
-
-% Un router ha tante interfacce
-%% TODO add ts
-
-% Zebra deve unire varie tabelle di routing ottenute dai demoni di bpg, rip e ospf. Generata questa tabella generale la inietta al kernel aggiungendola alla tabella statica. Gli indirizzi IP delle interfacce di rete impostate generano automaticamente queste entry statiche. Questa tabella viene chiamata tabella di instradamento o del data-plane. Le tabelle di instradamento in Zebra sono virtuali, si trovano nel control-plane, su un software. 
+Zebra deve unire varie tabelle di routing ottenute dai demoni di BGP, RIP, OSPF, ed ogni altro protocollo abilitato per quella macchina. Genera una tabella generale da iniettare al kernel aggiungendola alla tabella statica. Gli indirizzi IP delle interfacce di rete impostate generano automaticamente queste entry statiche. Questa tabella viene chiamata tabella di instradamento o del data-plane. Le tabelle di instradamento in Zebra sono virtuali, si trovano nel control-plane, su un software. 
 % I protocolli di routing per funzionare devono poter comunicare con l'esterno. 
-% Per configurare frr bisogna creare una cartella /etc/frr, il primo file daemons configura i demoni da avviare. La configurazione integrata delle configurazioni si realizza modificando il file vtysh.conf, se viene settato a no service integrated-vtysh-config 
 
+
+Per configurare FRR su Kathará bisogna creare una cartella \texttt{/etc/frr} nel filesystem degli host predisposti come router, contenente i vari file di configurazione. Il primo file, \texttt{daemons}, determina i demoni dei vari protocolli di routing da avviare, nel formato \verb|{daemon}={'no'/yes}|. 
+La configurazione per FRR è operativa e non dichiarativa, non si può definire il comportamento del router, ma solo usare dei comandi per avviare il router. 
+Inoltre non si possono rimuovere comandi, ma per ometterli bisogna inserire la stringa \texttt{no} prima del comando. 
+Invece di creare file di configurazioni separati per ogni protocollo, si può abilitare \texttt{vtysh} per gestire allo stesso modo questi protocolli. Per abilitarlo, o disabilitarlo, si inserisce nel file \texttt{vtysh.conf} la seguente: \verb|{ /no} service integrated-vtysh-config|. 
+In questo modo si può usare un unico file \texttt{frr.conf} per gestire tutte le configurazioni dei vari demoni. 
+Per osservare la configurazione attuale, e verificare quali comandi sono stati accettati o rifiutati si può usare \texttt{show running config}. 
+Si può effettuare un primo debugging osservando le differenze tra l'output di questo comando, e la configurazione inserita nei file di avvio. 
+Il linguaggio di questa shell non è \textit{context free}, dipende dal contesto i cui ci si trova, e quindi dai comandi precedenti. 
+
+
+Per avviare FRR, bisogna inserire nel file di avvio della macchina \texttt{systemctl start frr}, per gestire i vari protocolli si può usare la shell \texttt{vtysh}, se abilitata, che gestisce tutti i protocolli attivi di routing, compreso Zebra. 
+Per visualizzare le tabelle di instradamento composte dai singoli protocolli si può usare \verb|show ip {protocollo} {}|, dentro a questa shell. 
+Per configurare un protocollo si usa il comando \texttt{configure}, per scegliere che tipo di protocollo, in questo caso di routing, si usa \verb|routing {protocollo}|. Per aggiungere una rotta statica ad uno di questi protocollo si usa \verb|route {prefisso}/{netmask}|. 
+Accanto ad ogni rotta, viene inserita la sua origine, può essere del kernel segnata con K, oppure può essere ottenuta da uno devi vari protocolli di rete. 
+Su \texttt{vtysh}, si può usare il carattere \texttt{?} per mostrare le possibili alternative per completare un comando. 
+Modificando un file di configurazione modificato su una macchina virtuale, è necessario copiarlo su una cartella per condividerlo con il filesystem esterno, altrimenti alla terminazione di Kathará la configurazione sarà persa. 
+
+Generalmente, anche nella realtà, non si configura manualmente in questo modo interattivo su di una shell, è più efficiente modificare il file di configurazione e riavviare il router. 
+
+\subsubsection{RIP}
 
 % RIPv2
 
+RIP è un protocollo di routing distance vector, che può essere gestito da FRR. 
+Nel file di configurazione di FRR bisogna avviare RIP ed impostare la rete su cui può mandare pacchetti multicast:
+\begin{minted}{bash}
+    router rip
+    network {prefisso}/{netmask}
+\end{minted}
+All'avvio di FRR quindi la macchina si comporta autonomamente come un router, utilizzando il protocollo RIP ed inviando periodicamente i suo distance vector. 
+
+\subsubsection{OSPF}
+
+OSPF è un protocollo di routing link state packet, che può essere gestito da FRR. 
+Per funzionare invia in multicast pacchetti contenti il suo stato attuale, interfacce e reti raggiungibili. Ed ogni router si genera il suo database per calcolarsi un albero dai cammini minimi. 
+
+Alcuni comandi utili per OSPF, da eseguire direttamente sulla shell della macchina o su \texttt{vtysh} sono:
+\begin{minted}{bash}
+    show ip ospf {route/interface/neighbor/database}
+\end{minted}
+
+Per ogni rete un'interfaccia viene promossa un'interfaccia come router designato (DR), per gestire il database. Questo può essere scelto in diversi modi, solitamente per priorità si sceglie anche uno o più router di backup, tra quelli a priorità più alta. 
+Viene cambiato DR ogni volta che viene modificata la topologia della rete, identificato dall'invio di altri pacchetti di stato. Per questo cambiano raramente. 
+Questo DR viene scelto per ogni sotto-rete, e per ogni rete il suo indirizzo è quello del suo DR. Si può osservare dal comando \verb|... database|
+Per scegliere un DR ogni router invia un pacchetto di ``presentazione'' sulla LAN, l'interfaccia con l'indirizzo più alto che invia questi pacchetti diventa il DR. Per gli spareggi si utilizza l'ID del router a cui appartiene l'interfaccia considerata, e si sceglie in base all'ID più alto tra questi. 
+Inoltre si può configurare una priorità, per indicare quanto un router sia propenso a diventare il DR. 
+
+Aree, router e LAN si etichettano con ID, che coincidono con certi indirizzi IP, per i router questo è l'indirizzo IP di una loro interfaccia, per le LAN è l'indirizzo del DR associato. Questi ID possono coincidere. 
+Vengono scelti per un router come l'indirizzo dell'interfaccia più alta che ha, mentre la LAN lo sceglie come l'interfaccia con indirizzo più alto che vede. 
+
+Con il comando \texttt{... route} si possono vedere tutte le LAN raggiungibili e la loro area di appartenenza, tutte le reti presenti nell'area di backbone dovrebbero essere presenti, altrimenti la configurazione è errata. 
+
+Per configurare questo protocollo nel file di configurazione di FRR, si inserisce \texttt{router ospf} per indicare che si utilizza il protocollo, ed in seguito si possono definire le interfacce che appartengono ad una determinata area, tutte quelle che ricadono nel prefisso specificato:
+\begin{minted}{bash}
+    network {prefisso}/{netmask} area {area-id}    
+\end{minted}
+Inoltre per definire il tipo di un'area backbone, stub o transit si usa la notazione:
+\begin{minted}{bash}
+    area {area-id} {area-type}    
+\end{minted}
+Questo non è richiesto per la backbone. 
+Da questa configurazione, all'avvio del lab, i router invieranno gli opportuni pacchetti link state e realizzeranno la loro tabella di instradamento. 
 
 
 \end{document}
