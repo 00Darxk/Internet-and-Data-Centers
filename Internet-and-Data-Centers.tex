@@ -431,7 +431,6 @@ Questo protocollo assegna ogni interfacce ad un'unica area. Un router può esser
 Ai router di frontiera vengono iniettate rotte, come se fossero locali, dentro al protocollo OSPF, ed inietta sulla sua rete locale queste rotte prendendosi la responsabilità di inoltrarli eventuali messaggi alle altre aree. 
 %% TODO add protocollo IS-IS
 
-
 \subsubsection{Coesistenza di Protocolli Diversi}
 
 I protocollo di rete permettono la consegna di un pacchetto da una qualsiasi macchina che si trova in internet ad un'altra qualsiasi macchina che si trova in internet. Per effettuarlo è necessario uno schema di indirizzamento, questo viene gestito dal protocollo di livello tre. Molti protocolli hanno deciso di essere più capillari, individuando solamente un'interfaccia in una porzione specifica della rete. 
@@ -475,13 +474,82 @@ Queste informazioni sono condivise agli altri router di frontiera dello stesso d
 
 
 Il primo protocollo EGP ha cominciato ad essere usato nel 1984. Utilizza un protocollo simile al distance vector, ma solo con indicazione di raggiungibilità. 
-Molto elementare, funzionava esclusivamente con reti ad albero. 
+Molto elementare, funzionava esclusivamente con reti ad albero. spf
 
 %% TODO 
 Usa lo strato di trasporto connesso per scambiarsi informazioni tra strati BGP, sulla porta 179. Tipicamente prova a connettersi in maniera incrociata, e si prova a fare connessione sia come client che come server, la prima che instaura una connessione la crea. In connessioni TCP non c'è differenza tra client e server, le connessioni sono essenzialmente peer-to-peer. Una connessione può essere attiva in un senso e non in un altro. 
 
 
 Questo protocollo BGP è uno dei protocolli più intriganti e complessi, consente di effettuare tante operazioni ed è difficile da conoscere. Richiede una conoscenza molto profonda della rete, le configurazioni su questo protocollo è molto costoso.
+
+\subsection{Spanning Tree Algorithm: STP}
+
+Questo protocollo di instradamento è pensato per essere utilizzato in una rete locale, dove sono presenti switch, quindi opera sul livello due. 
+Gli switch compilano automaticamente le proprie tabelle di instradamento in modo backward learning, su questo fanno filtering. Questo funziona fino a quando non è presente un ciclo nella rete. 
+Gli hub invece operano su pacchetti di livello uno, si sincronizzano sul preambolo e lo accorciano e con un tempo di ritardo molto basso lo inoltrano completamente. 
+Se è presente un ciclo in hub, è impossibile individuare un ciclo. 
+Gli switch invece sono macchine di tipo store and forward, è conveniente avere cicli nella rete per evitare fallimenti dovuti a guasti, ma non devono essere attivi altrimenti non funzionerebbe il meccanismo di apprendimento degli switch. La LAN si deve organizzare per chiudere questi cicli. 
+
+Con dei cicli uno stesso pacchetto può percorrere il ciclo e quindi uno switch non può sapere su quale interfaccia effettivamente si trovi l'host mittente. 
+
+Molti switch venivano venduti con lo spanning tree disabilitato, per cui era molto semplice creare cicli accidentalmente ed inviare perpetuamente pacchetti. 
+Per evitare questi cicli bisogna bloccare temporaneamente delle porte, queste continuano ad ascoltare, ma non inoltrano i pacchetti. L'algoritmo di spanning tree è tra i più famosi poiché reti con switch sono molto comuni. 
+Questo algoritmo rende la rete un albero e mantiene ridondanze ed è in grado di rispondere ai cambiamenti della rete. 
+Questo albero ha una radice che viene chiamato \textit{root bridge}, alla fine della configurazione delle porte vengono messe in \textit{blocking}. L'amministratore della rete può configurare minimamente secondo alcune necessità. 
+Questo algoritmo è robusto, efficace, efficiente ed è realizzato per garantire un basso costo di banda. Viene descritto nello standard IEEE 802.1D. 
+
+Si usano dei pacchetti chiamati \textit{Bridge PDU} o BPDU, sono tra i rarissimi pacchetti che non usano lo standard ethernet 2.0, ma IEEE 802.3, dentro questi pacchetti non è neanche presente il codice per indirizzare il protocollo IP successivo. Sono pacchetti devo sono state rimosse tutti i superflui. 
+
+Questo protocollo essere veloce, flessibile ai cambiamenti della topologia e di facile uso. 
+
+Lo standard chiama LAN il dominio dove vengono collegati gli switch, un insieme di domini di collisione. 
+Si assume che ognuna LAN possa contenere un numero arbitrario di macchine. 
+
+L'algoritmo parte da uno scenario con queste LAN e quando ci sono dei cicli li aprono, senza chiudere nessuna LAN. Ogni bridge ha un identificatore, gli spareggi si fanno sull'id più basso. Anche le porte hanno un identificatore, analogamente più basso meglio è. 
+Hanno un valore di costo per ogni LAN, definito dalla velocità della LAN. Per cui lo standard viene aggiornato per aggiornare questa tabella dei costi quando vengono rilasciate nuove tecnologie da prestazioni più elevate. Se questi costi vengono messi a zero, l'algoritmo non necessariamente converge. 
+
+Le macchine devono essere raggiungibili da qualsiasi altra macchina senza che nessuna LAN viene isolata. 
+Si vuole creare un albero di cammino a costo minimo, ma questo non è vero per ogni cammino individuato. Possono esserci cammini a costo minore per due specifiche macchine, ma che sono stati bloccati. 
+
+L'id del bridge, \textit{bridge-id}, è rappresentato da due byte che indicano la priorità, di default si trova a metà dell'intervallo possibile \texttt{80:00}, i restanti sono corrispondenti all'indirizzo MAC della prima porta del bridge. Il valore di priorità si può modificare per rendere alcuni bridge più probabili ad essere scelti come radice. 
+
+L'id della porta, \textit{port-id}, è costituito dalla concatenazione di varie parti, un byte di priorità, spesso il valore di default è \texttt{80}, ed un byte corrispondente al numero della porta sul bridge, dato un contatore delle porte sul bridge. 
+
+Il costo di una LAN è gestito da una specie di distance vector. Non si contano gli hop, ma la somma dei costi, ogni tecnologia ha un costo inversamente proporzionale alla sua velocità. Su ogni porta viene specificato questo costo, in ingresso. 
+
+Questo algoritmo è diviso in fasi, che possono essere realizzate in un singolo pacchetto. Nella prima fase viene eletto un bridge da radice, si identifica per ogni bridge una porta radice, la più conveniente da lasciare accesa. Si determinano le porte designate per ogni LAN, una porta di un bridge viene scelta come quella che connetterà la LAN all'albero. 
+Vengono poi bloccate tutte le porte ridondanti nell'ultima fase, tutte quelle inutilizzate dall'albero, non designate e non radici. 
+
+Sono previsti due tipi di BPDU, di configurazione, che contiene le informazioni necessarie per l'algoritmo dell'albero ricoprente e pacchetti di notifica del cambiamento della topologia, che non contengono nessun dato. 
+I pacchetti LLC hanno un indirizzo di sorgente e destinazione pari a \texttt{0x42}, questi sono contenuti in pacchetti MAC con sorgente l'indirizzo della porta mittente, e con destinazione l'indirizzo multicast \texttt{01:80:c2:00:00:00}. 
+
+I campi importanti sono l'identificatore della radice dell'albero ricoprente, tutti riportano qual è la radice. La distanza dalla radice, l'identificatore del bridge mittente e l'identificatore della porta mittente. 
+
+%% TODO add img campi
+
+Nella prima fase si deve capire qual è il bridge da radice, all'inizio ogni bridge si crede la radice ed invia come primo parametro il suo stesso id, ed invia questi pacchetti. Nel tempo quando un bridge legge un pacchetto con un campo radice con un id minore, si accorge di non essere la radice e propaga questa informazione nei suoi pacchetti. In questo modo la rete converge ad uno stesso bridge radice. 
+
+Inoltre per configurare il costo dalla radice, all'inizio viene posta a zero, poiché si crede la radice, se arriva un pacchetto con campo radice minore, utilizza il costo di questo pacchetto incrementato con il costo attribuito alla porta ricevente. 
+
+Questi pacchetti vengono inoltrati modificando i campi di uno stesso pacchetto, modificando se necessario il campo radice, aggiornando il costo, e sostituendo l'id dello bridge e della porta mittente. 
+
+Questo algoritmo è perfettamente deterministico, sono presenti criteri di spareggio affinché sia convergente ad uno bridge radice specifico. 
+Quando arrivano due pacchetti da due bridge diversi a parità di radice, si sceglie quello a costo minore, altrimenti si sceglie il pacchetto inviato dallo bridge con id più basso. 
+In caso questi vengano mandati dallo stesso pacchetto, inoltra il pacchetto con id di porta più basso. 
+
+Alla fine di questi spareggi c'è sicuramente un bridge radice, e le porte dei bridge che ricevono questo pacchetto configurazione diventano le root port dello bridge. 
+
+
+Nella terza fase bisogna identificare le LAN, uno dei bridge su ogni LAN deve mantenere una porta aperta che viene chiamata designated port. 
+Questa è quella che invia i pacchetti di configurazione con costo più basso, a parità di questo, il bridge di id più basso, altrimenti la porta ad id più basso. 
+
+Nell'ultima fase tutte le porte root e designated vengono messe in stato di forwarding, mentre tutte le altre vengono messe in blocco. 
+Tuttavia si continuano a mandare BPDU anche dalle porte bloccate. Per questo la suddivisione in fasi non è propriamente corretta.  
+
+
+Nel momento in cui un bridge rileva un cambio di topologia genera dei pacchetti di topology change che raggiungono la radice e vengono propagati a tutti gli altri bridge nella rete. 
+Questi pacchetti vengono inviati fino a quando la radice non invia un pacchetto che conferma di aver ottenuto questa informazione. 
+A questo punto tutti i bridge abbassano i valori di timer del protocollo in risposta temporanea all'instabilità della rete. 
 
 \clearpage
 
@@ -574,19 +642,23 @@ La configurazione per FRR è operativa e non dichiarativa, non si può definire 
 Inoltre non si possono rimuovere comandi, ma per ometterli bisogna inserire la stringa \texttt{no} prima del comando. 
 Invece di creare file di configurazioni separati per ogni protocollo, si può abilitare \texttt{vtysh} per gestire allo stesso modo questi protocolli. Per abilitarlo, o disabilitarlo, si inserisce nel file \texttt{vtysh.conf} la seguente: \verb|{ /no} service integrated-vtysh-config|. 
 In questo modo si può usare un unico file \texttt{frr.conf} per gestire tutte le configurazioni dei vari demoni. 
-Per osservare la configurazione attuale, e verificare quali comandi sono stati accettati o rifiutati si può usare \texttt{show running config}. 
+Per osservare la configurazione attuale, e verificare quali comandi sono stati accettati o rifiutati si può usare \texttt{show running-config}. 
 Si può effettuare un primo debugging osservando le differenze tra l'output di questo comando, e la configurazione inserita nei file di avvio. 
 Il linguaggio di questa shell non è \textit{context free}, dipende dal contesto i cui ci si trova, e quindi dai comandi precedenti. 
+Generalmente non si configura manualmente in questo modo interattivo su di una shell, è più efficiente modificare il file di configurazione e riavviare il router. 
 
 
 Per avviare FRR, bisogna inserire nel file di avvio della macchina \texttt{systemctl start frr}, per gestire i vari protocolli si può usare la shell \texttt{vtysh}, se abilitata, che gestisce tutti i protocolli attivi di routing, compreso Zebra. 
-Per visualizzare le tabelle di instradamento composte dai singoli protocolli si può usare \verb|show ip {protocollo} {}|, dentro a questa shell. 
+Per visualizzare le tabelle di instradamento composte dai singoli protocolli si può usare \verb|show ip {protocollo} {opzioni}|, dentro a questa shell. Per visualizzare la tabella di instradamento complessiva si usa \texttt{show ip route}, quest è diversa dalla tabella iniettata sul kernel, poiché alcune rotte possono essere ripetuto, e Zebra seleziona quale tra queste rotte iniettare. 
 Per configurare un protocollo si usa il comando \texttt{configure}, per scegliere che tipo di protocollo, in questo caso di routing, si usa \verb|routing {protocollo}|. Per aggiungere una rotta statica ad uno di questi protocollo si usa \verb|route {prefisso}/{netmask}|. 
 Accanto ad ogni rotta, viene inserita la sua origine, può essere del kernel segnata con K, oppure può essere ottenuta da uno devi vari protocolli di rete. 
 Su \texttt{vtysh}, si può usare il carattere \texttt{?} per mostrare le possibili alternative per completare un comando. 
 Modificando un file di configurazione modificato su una macchina virtuale, è necessario copiarlo su una cartella per condividerlo con il filesystem esterno, altrimenti alla terminazione di Kathará la configurazione sarà persa. 
 
-Generalmente, anche nella realtà, non si configura manualmente in questo modo interattivo su di una shell, è più efficiente modificare il file di configurazione e riavviare il router. 
+Oltre a questa modalità di interazione, si può invocare la shell con la flag \texttt{-e} per eseguire un comando senza avviare la shell interattiva: \verb|vtysh -e "{comando}"|
+Si può reindirizzare con per scrivere l'output su di un file, che può essere utilizzato da altri programmi \verb|... > {file}|, oppure indirizzandolo ad altri comandi sulla shell con \texttt{... | ...}. Per cercare un dato utile sul database, è utile il comando \texttt{grep}, che seleziona solo le linee contenenti una certa stringa o espressione regolare passata come parametro. 
+
+ 
 
 \subsubsection{RIP}
 
@@ -612,7 +684,7 @@ Alcuni comandi utili per OSPF, da eseguire direttamente sulla shell della macchi
 
 Per ogni rete un'interfaccia viene promossa un'interfaccia come router designato (DR), per gestire il database. Questo può essere scelto in diversi modi, solitamente per priorità si sceglie anche uno o più router di backup, tra quelli a priorità più alta. 
 Viene cambiato DR ogni volta che viene modificata la topologia della rete, identificato dall'invio di altri pacchetti di stato. Per questo cambiano raramente. 
-Questo DR viene scelto per ogni sotto-rete, e per ogni rete il suo indirizzo è quello del suo DR. Si può osservare dal comando \verb|... database|
+Questo DR viene scelto per ogni sotto-rete, e per ogni rete il suo indirizzo è quello del suo DR. Si può osservare dal comando \verb|... database|, questo è uguale per ogni router. 
 Per scegliere un DR ogni router invia un pacchetto di ``presentazione'' sulla LAN, l'interfaccia con l'indirizzo più alto che invia questi pacchetti diventa il DR. Per gli spareggi si utilizza l'ID del router a cui appartiene l'interfaccia considerata, e si sceglie in base all'ID più alto tra questi. 
 Inoltre si può configurare una priorità, per indicare quanto un router sia propenso a diventare il DR. 
 
@@ -625,6 +697,7 @@ Per configurare questo protocollo nel file di configurazione di FRR, si inserisc
 \begin{minted}{bash}
     network {prefisso}/{netmask} area {area-id}    
 \end{minted}
+Per selezionare ogni interfaccia si usa \texttt{0.0.0.0/0}, per router con interfacce su più aree è necessario specificare singolarmente o a gruppi le interfacce. 
 Inoltre per definire il tipo di un'area backbone, stub o transit si usa la notazione:
 \begin{minted}{bash}
     area {area-id} {area-type}    
@@ -632,5 +705,13 @@ Inoltre per definire il tipo di un'area backbone, stub o transit si usa la notaz
 Questo non è richiesto per la backbone. 
 Da questa configurazione, all'avvio del lab, i router invieranno gli opportuni pacchetti link state e realizzeranno la loro tabella di instradamento. 
 
+Aree di tipo \texttt{stub} non vengono usate per il transito, questi sono connetti ad un solo router, e visibili specificando l'opzione \texttt{router} al comando per visualizzare il database OSPF. 
+% chi inietta la default
+Al livello di controllo non c'è una rotta di default, si assume che tutti i router negli stub abbiano una rotta di default che punta all'esterno della rete. Ai router nelle aree stub viene offerta una rotta di default, che manca ai router nella backbone. Queste rotte puntano alla backbone, che deve gestire i collegamenti tra le varie aree. 
+Quando vengono iniettate le rotte verso altre aree, con pacchetti link state, questi vengono non vengono inseriti nella tabella di instradamento per aree stub, sono presenti solamente i router direttamente connessi e la rotta di default. %% TODO forse, controllare
+
+Quando vengono iniettate rotte dall'esterno, il costo della rotta è in base al costo specificato dal protocollo esterno e configurabile manualmente, a questo viene aggiunto il costo di default per OSPF. 
+A parità di costo per spareggiare si usa il costo dell'OSPF. %% TODO ??
+%% TODO comandi BGP per comunicare/iniettare le rotte BGP su OSPF
 
 \end{document}
