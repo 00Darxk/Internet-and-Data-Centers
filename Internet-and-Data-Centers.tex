@@ -551,6 +551,104 @@ Nel momento in cui un bridge rileva un cambio di topologia genera dei pacchetti 
 Questi pacchetti vengono inviati fino a quando la radice non invia un pacchetto che conferma di aver ottenuto questa informazione. 
 A questo punto tutti i bridge abbassano i valori di timer del protocollo in risposta temporanea all'instabilità della rete. 
 
+%% TODO 
+
+\subsection{Software Defined Network}
+
+Questo approccio centralizzato è ritornato di moda recentemente. 
+Questa tipologia di algoritmi dinamici di instradamento prevede un routing controllato da un centro che elabora le informazioni disponibili, e decide l'instradamento nella rete. 
+Questi algoritmi sono utili in reti piccole, e non è affidabile in reti di grande dimensione, con traffico intenso intorno al nodo di controllo. 
+
+A causa di questi problemi è stato sempre scarsamente adottato. 
+Si è creata una fondazione ONF nel 2011 dedicata alla promozione e adozione di SDN. 
+
+La definizione di SDN è riportata nella RFC 7426, è un approccio programmabile di reti che supporta la separazione dei piani di controllo e di inoltro attraverso interfacce standardizzate. 
+QUestaQUesta computazione viene realizzata su di una macchina centralizzata. 
+
+Le prime idee risalgono al 2004. 
+
+Divide il routing ed il processamento del traffico, quindi il control ed il data plane. 
+
+Le funzioni del control plane vengono realizzate in un server che è in grado di determinare per ogni flusso di traffico specifico un cammino nella rete, questo percorso può essere configurabile dall'amministratore della rete. 
+Le funzioni del data plane rimangono distribuite. 
+
+
+Il controllo centralizzato vuol dire che una macchina deve poter comunicare con tutti. Si suppone sia presente una linea di conversazione diretta, estranea alla rete. Questo protocollo viola la separazione tra il livello due ed il livello tre. 
+
+Si assume che sia presente questo canale di comunicazione. La parte di control plane, distribuita tra le macchine ora viene spostata su questo controllore. L'instradamento viene definito da questo. Si applica a delle reti che sono locali, di una singola amministrazione. l'operatore di rete non interviene sulle macchine modificando la configurazione, questo operazioni sono troppo costose su reti complesse. 
+
+Il numero di switch, link e macchine virtuali in un datacenter è considerevole. 
+
+L'ONF è un'organizzazione che promuove standard aperti, chiamati \textit{OpenFlow}. L'ultima versione dello standard è la 1.5.1 uscita nel 2015, la versione 1.6 è disponibile solamente ai membri di ONF. 
+Molti produttori, ISP e OTT, grosse reti di telefonia che offrono anche servizi di altro tipo, fanno parte di ONF. 
+Cisco ha la sua implementazione di OpenFlow, chiamata Cisco ONE, \textit{Open Network Environment}. 
+
+
+Altre attività di standardizzazione sono IETF, ITU-T, IEEE. 
+%% ??
+
+Le applicazioni potenziali sono molteplici, si possono realizzare applicazioni in virtualizzazione  di middleware. Oppure routing ottimizzato per certe tipologie di traffico. 
+Si possono realizzare servizi specific per certe applicazioni. 
+
+Il controller parla fisicamente con un API che chiamano southbound diretto verso gli elementi della rete, un'altra comunicazione chiamata northbound è orientata verso applicazioni di rete per determinare i requisiti dei vari servizi proposti. 
+
+Questo protocollo si basa sul concetto di flusso, i pacchetti vengono classificati ed attribuiti ad un flusso, definito sulla base di diversi criteri, la porta, l'indirizzo MAC o IP o altre informazioni contenute all'interno del pacchetto. 
+
+Lo switch inoltra il traffico seguente entry in una tabella di flussi. SDN separa il control plane dal data plane. Il controller esegue il software, anche algoritmicamente complesso su un hardware general purpose. 
+
+Le macchine per l'instradamento si comportano sia come router che come switch, in bae al loro comportamento, quando utilizzano l'indirizzo MAC si comportano come switch, quando inoltrano pacchetti si comportano come router, vengono chiamati \textit{datapath} per identificarli. 
+
+La comunicazione tra il controller ed i datapath avviene tramite lo standard OpenFlow. 
+La tabella dei flussi aiuta a smistare il traffico di questo switch. 
+Nel momento in cui uno switch riceve il primo pacchetto di un flusso, può effettuare una richiesta ad il suo controller per determinare il flusso di questo pacchetto. Le entry vengono quindi inserite dinamicamente nella tabella. 
+
+Lo switch si occupa solo dell'inoltro dei pacchetti secondo queste istruzioni, si occupa del data plane, mentre il controller si occupa del control plane. 
+
+%% TODO flussi di traffico 
+Ogni switch ha uno o più tabella di flussi usate per inoltrare i pacchetti, una tabella è composta da una flow entry, una tripla di \texttt{match}, \texttt{action} e \texttt{stats}. Il primo controlla il pacchetto e determina se esiste un entry corrispondente in base a vari indirizzi o dati contenuti nel pacchetto. L'azione da svolgere per quel pacchetto può essere di inoltrare ad una data porta, oppure inviarlo al controller, oppure operare come uno switch o un router. Queste azioni sono molte e rendono questo protocollo molto versatile. 
+
+
+Queste entry possono essere distribute con due tempi di timeout, \textit{idle} e \textit{hard}. Se c'è un flusso che non si presenta per un certo periodo questo viene cancellato in tempo idle. Mentre l'hard timeout è indipendente, impone di scartare il flusso dopo che è passato. 
+
+Il controller è un'entità software che deve conoscere l'intera rete in modo dinamico, producendo flow entries ed inviandole alle macchine. 
+I tipi di messaggi principali sono \textit{PacketIn}, \textit{PacketOut} e \textit{FlowMod}. 
+
+Il pacchetto PacketIn viene inviato al controller quando uno switch non riesce ad effettuare match sulla sua tabella di flussi. 
+Questo può essere inoltrato per intero al controller, che può guardarlo completamente, oppure più semplicemente prende l'header, di default i primi 128 byte. 
+In questo caso il controller riceve anche l'id del buffer nel quale il pacchetto viene memorizzato in attesa della risposta. 
+
+Il messaggio PacketOut può contenere un pacchetto modificato, usato dal controller per istruire allo switch l'invio di un singolo pacchetto. Non necessariamente sono inviati in risposta ad un PacketIn. Quando sono in risposta indicano ad uno switch il flusso da usare, altrimenti l'azione è specificata dall'id del buffer nel quale lo switch ha dichiarato di conservare il pacchetto. 
+Se non è in risposta ad un PacketIn, allora contiene un pacchetto ad-hoc creato dal controller, può essere usato per ricostruire la topologia. 
+
+Il messaggio FlowMod invia una flow entry, può essere in risposta ad un datapath. PUò avere una priorità, quindi le tabelle di flussi potrebbero essere ordinate per priorità creando una gerarchia, per ordinare meglio il traffico. Per un certo periodo c'è stat una grande ricerca per inserire le flow entry e creare una tabella più piccola con meno flow entry per avere più prestazioni. %% non sono cosa ho scritto. 
+
+Se la regola è già presente, allora la nuova regola sovrascrive la vecchia. 
+Con questo pacchetto si possono modificare, rimuovere flow entries, oppure notificare al controller l'istante di eventuale rimozione, o può richiedere una verifica. 
+
+
+Il controller deve avere una mappa della rete, per farlo utilizza dei pacchetti appartenenti al \textit{Link Layer Discovery Protocol} (LLDP), questi appartengono al livello 2 link state, non hanno bisogno di pacchetti IP, questo protocollo già esistente, mantiene questi pacchetti all'interno della rete. Questi sono spediti periodicamente per esplorare la rete. 
+Il controller fa handshake con tutti gli switch, e questi dichiarano al controller l'elenco delle loro interfacce. 
+Usando un FlowMod manda a tutti gli switch una regola che li istruisce su come trattare i pacchetti LLDP, tutti questi pacchetti ricevuti da uno switch devono essere rimandati dentro ad un PacketInt
+Dopo aver ricevuto questi pacchetti, il controller invia a ciascun switch, e per ciascun sua porta, un pacchetto LLDP, in un messaggio di tipo PacketOut, specificando nell'action che il pacchetto LLDP deve essere inviato sulla specifica porta. Uno switch diverso che riceve il pacchetto LLDP, inviato da uno altro switch su una certa porta, lo spedisce al controller in un pacchetto PacketIn. 
+Questi pacchetti non possono passare attraverso eventuali switch o link, poiché essendo al livello 2 rimangono nel link. 
+In questo modo il controller determina che una certa porta di uno switch è connessa ad una certa porta di un altro switch. Ottiene per ogni link una risposta simmetrica per identificare la topologia. Nei pacchetti PacketIn viene specificata la porta di ricezione. 
+
+%% TODO add img sta cosa sus
+
+In base a quanto detto finora ogni rete ha un solo controller, ma ci sono soluzioni distribuiti con controller organizzati in maniera gerarchica, per gestire il traffico in maniera distribuita, dove ogni controller controlla un numero limitato di switch, a cui delega di distribuire regole ad altri switch. 
+
+Anche negli switch ci sono limitazioni, non hanno un buffer illimitato, né tabelle abbastanza grandi. È comunque presente una rete sottostante con i loro protocolli di instradamento, su queste è possibile costruire una rete SDN. 
+
+%% TODO discussioni finali, qualità, ecc. 
+
+Questo garantisce grande libertà per la gestione di una rete. 
+
+
+
+
+
+
+
 \clearpage
 
 \section{Kathar\'{a}}
