@@ -482,6 +482,82 @@ Usa lo strato di trasporto connesso per scambiarsi informazioni tra strati BGP, 
 
 Questo protocollo BGP è uno dei protocolli più intriganti e complessi, consente di effettuare tante operazioni ed è difficile da conoscere. Richiede una conoscenza molto profonda della rete, le configurazioni su questo protocollo è molto costoso.
 
+\subsubsection{Routing Inter-dominio}
+
+%% TODO join
+%% !! BGP
+Tutti gli ISP utilizzano un protocollo di comunicazione intra-domini, che sia IS-IS, OSPF o RIP, sotto c'è comunque un instradamento IP tradizionale, come per SDN. 
+
+Ogni organizzazione è formata da una collezione di router e LAN con una sola amministrazione. Un algoritmo di routing può essere utilizzato per aggiornare le tabelle di instradamento. 
+
+Quando più organizzazioni uniscono le proprie reti, si crea l'internet, aggiungendo zone di demarcazione, le LAN aggiuntive per connettere diverse organizzazioni. 
+Per avere una connettività globale è necessario che vengano passate informazioni di routing attraverso queste zone di demarcazione per far comunicare le diverse organizzazioni. 
+Si vorrebbe poter aggiornare le tabelle di instradamento di tutte le macchine. 
+
+Si potrebbe realizzare un singolo algoritmo di instradamento per gestire tutte le reti, ma non è realizzabile anche con un algoritmo scalabile come OSPF. 
+Si potrebbero aggiornare le tabelle manualmente, ma questo non è affidabile. 
+Altrimenti si possono usare algoritmi per aggiornare automaticamente le tabelle di instradamento. 
+
+
+Agli albori della rete si usava un unico protocollo e le configurazioni di ciascuna macchina influiva sulla configurazione complessiva della rete. 
+
+Questa soluzione è tecnicamente difficile, e lento a convergere, sarebbe difficile da implementare e rilasciare su più organizzazioni con risorse vastamente diverse. 
+
+Aggiungere rotte statiche è un'opzione alternativa, ma sono difficili da aggiornare e mantenere. 
+
+L'unica ipotesi praticabile è utilizzare un protocollo diverso per comunicare tra diverse organicazioni. Questo protocollo ignora l'interno e guarda solo alle zone di demarcazione. Sono le macchine di frontiera ad annunciare che al loro interno è presente una certa rete. 
+È una tecnica di routing statico, ma nel senso opposto, in modo da indirizzare il traffico verso la propria zona. 
+Se non viene trovato il destinatario all'interno, non è un problema poiché il traffico non avrebbe trovato altre rotte possibili. 
+
+Le connessioni tra i vari router di frontier è gestito attraverso connessioni TCP, chiamate \textit{peering}. 
+In questo modo si semplifica l'instradamento considerando intere organizzazioni come singole destinazioni. Poiché è necessario comunicare tra i router di frontiera, se questi si trovano in una stesa organizzazione, servono connessioni TCP interne. 
+Si determina in questo grafo virtuale la soluzione al problema di routing. Dopo che la rotta per obiettivi remoti è stata decisa dai router di frontiera, questi iniettano le rotte esterne all'interno della loro organizzazione. 
+
+Il protocollo \textit{Border Gateway Protocol} ha l'obiettivo di rendere disponili ed aggiornate le tabelle di instradamento.. con informazioni di routing inter-dominio. 
+Questo è un protocollo tra i più complessi ed importanti. Può prendere in considerazione anche vincoli commerciali, preferenze locali, priorità, problemi legali, ecc. BGP è stato introdotto nell'89 ed adottato per la prima volta nel 94. Con IPv4 è stato aggiornato nel '94 e migliorato nel '98. 
+La versione del 2006 di BGP include la compatibilità con il protocollo IPv6. 
+
+% È un protocollo complesso, non sono definite le scorciatoie e l prassi. 
+
+BGP è usato da chi è connesso ad uno o più ISP, dai provider del transito, da ISP che scambiano traffico su IXP o NAP, o clienti con reti di grandi dimensioni. Generalmente organizzazioni comprano un pezzo dello spazio di indirizzamento sulla rete. 
+
+BGP si fonda sul concetto si sistemi autonomi, \textit{Autonomous System} (AS), questi rappresentano una rete sotto una singola amministrazione. Controllati ad un unico gestore, amministratore. Sono società dichiarate per il protocollo e vengono identificati da un numero da 32 bit, aumentato dall'iniziale 2 byte. 
+Questo identificativo viene chiamato \textit{Autonomous System Number} (ASN). Alcuni di questi sono dedicati all'uso privato, poiché se si ha una rete molto grande su più continenti è utile fare routing in base a policy, come fossero policy commerciali, e quindi bisogna utilizzare BGP, organizzando la rete come se fosse composta da AS diversi. 
+Gli identificatori da 0 a $2^{16}$ sono dedicati ad uso pubblico o privato. 
+
+Il numero 23456, indica una comunicazione con una macchina che ancora non conosce l'esterno, viene usato per convertire un numero da 16 bit a 32 bit, contenendo nel pacchetto regole per convertirlo. 
+
+
+
+L'organizzazione centrale IANA che gestisce l'assegnazione di indirizzi IP li concede ad organizzazioni regionali. Queste risorse vengono assegnate quando necessario. 
+Questi registri regionali assegnano anche l'ASN globale ad un AS. Per comunicare con un certo provider con numero privati bisogna chiederlo direttamente all'ISP. 
+
+Non c'è nessun controllo di alcun tipo, eccetto controlli di indirizzi IP uguali. 
+
+% Nel grado degli AS più si diminuisce il valore più sono comuni, nasce da esigenze commerciali non filtrate da alcuna regola 
+
+BGP permette lo scambio di informazioni solo se è attiva una sessione di peering. 
+Questa è una connessione TCP sulla porta 179, tra due router di frontiera. 
+Poiché questi possono appartenere ad uno stesso AS, si distinguono in connessioni e-BGP e i-BGP, \textit{external} e \textit{internal}, questi devono essere direttamente connessi in connessioni e-BGP, mentre può non essere diretta in i-BGP. La connessione TCP rimane viva nonostante i cambiamenti di routing e la perdita di connettività. 
+
+%% TODO I accorgimento
+
+In e-BGP i pacchetti vengono inviati con un TTL pari ad uno. Invece in i-BGP è possibile propagare le informazioni di instradamento da un bordo al bordo opposto di un AS. 
+
+
+BGP apprende l'esistenza di destinazioni remote attraverso e-BGP, con annunci che possono essere affermativi. Per ogni meta remota viene selezionato un percorso migliore tra tutte le alternativa, applicando le varie politiche di interesse. 
+Questa viene indicata nella tabella BGP e solo questa viene propagata all'interno e può essere propagata ad altri vicini BGP esterni. 
+
+
+La notifica delle LAN interne non è automatica, viene richiesta manualmente, e rappresenta sia una forza che un limite per BGP. Permette di annunciare solo LAN specifiche, mentre se si commettono degli errori è possibile impedire ad altri utenti di connettersi a certe LAN. 
+
+Le connessioni di peering tra due AS potrebbero essere attive per anni. 
+
+I pacchetti di annuncio contengono nel path una sorta di distance vector, dove sono presenti tutti gli AS attraversati, in questo modo gli echi vengono affrontati a priori. Se un AS riceve un pacchetto contenente il suo ASN, lo scarta per non creare rotte cicliche. 
+
+Gli annunci vanno in un verso, ed il traffico uscente va nel verso opposto, poiché gli annunci sono rotte statiche che vengono inoltrate. 
+
+
 \subsection{Spanning Tree Algorithm: STP}
 
 Questo protocollo di instradamento è pensato per essere utilizzato in una rete locale, dove sono presenti switch, quindi opera sul livello due. 
@@ -643,12 +719,6 @@ Anche negli switch ci sono limitazioni, non hanno un buffer illimitato, né tabe
 
 Questo garantisce grande libertà per la gestione di una rete. 
 
-
-
-
-
-
-
 \clearpage
 
 \section{Kathar\'{a}}
@@ -736,6 +806,7 @@ Zebra deve unire varie tabelle di routing ottenute dai demoni di BGP, RIP, OSPF,
 
 
 Per configurare FRR su Kathará bisogna creare una cartella \texttt{/etc/frr} nel filesystem degli host predisposti come router, contenente i vari file di configurazione. Il primo file, \texttt{daemons}, determina i demoni dei vari protocolli di routing da avviare, nel formato \verb|{daemon}={'no'/yes}|. 
+Quando vengono etichettati, vengono avviati da Zebra, questi demoni si trovano su di una specifica interfaccia, a cui viene connessa la macchina tramite loopback. I vari servizi si trovano in \texttt{/etc/service}. 
 La configurazione per FRR è operativa e non dichiarativa, non si può definire il comportamento del router, ma solo usare dei comandi per avviare il router. 
 Inoltre non si possono rimuovere comandi, ma per ometterli bisogna inserire la stringa \texttt{no} prima del comando. 
 Invece di creare file di configurazioni separati per ogni protocollo, si può abilitare \texttt{vtysh} per gestire allo stesso modo questi protocolli. Per abilitarlo, o disabilitarlo, si inserisce nel file \texttt{vtysh.conf} la seguente: \verb|{ /no} service integrated-vtysh-config|. 
@@ -755,8 +826,6 @@ Modificando un file di configurazione modificato su una macchina virtuale, è ne
 
 Oltre a questa modalità di interazione, si può invocare la shell con la flag \texttt{-e} per eseguire un comando senza avviare la shell interattiva: \verb|vtysh -e "{comando}"|
 Si può reindirizzare con per scrivere l'output su di un file, che può essere utilizzato da altri programmi \verb|... > {file}|, oppure indirizzandolo ad altri comandi sulla shell con \texttt{... | ...}. Per cercare un dato utile sul database, è utile il comando \texttt{grep}, che seleziona solo le linee contenenti una certa stringa o espressione regolare passata come parametro. 
-
- 
 
 \subsubsection{RIP}
 
@@ -811,5 +880,57 @@ Quando vengono iniettate le rotte verso altre aree, con pacchetti link state, qu
 Quando vengono iniettate rotte dall'esterno, il costo della rotta è in base al costo specificato dal protocollo esterno e configurabile manualmente, a questo viene aggiunto il costo di default per OSPF. 
 A parità di costo per spareggiare si usa il costo dell'OSPF. %% TODO ??
 %% TODO comandi BGP per comunicare/iniettare le rotte BGP su OSPF
+
+\subsubsection{BGP}
+
+Per configurare BGP, si utilizza sempre \texttt{frr.conf}, per cominciare la configurazione si utilizza \verb|router bgp {ASN}|. Inserendo un comando non di BGP si esce automaticamente all'ambiente BGP. 
+Si dichiara subito l'ASN, a differenza degli OSPF. Per impostare i vicini si utilizza la sintassi:
+\begin{minted}{bash}
+    neighbor {ip-vicino} remote-as {asn-vicino}    
+\end{minted}
+Si può includere anche una descrizione, per aiutare a riconoscere i vari ASN
+\begin{minted}{bash}
+    neighbor {ip-vicino} description {descrizione}    
+\end{minted}
+La connessione tra due router BGP è simmetrica, se i numeri IP non combinano non si alza la connessione. 
+
+Nella configurazione \texttt{daemons} devono essere abilitati sia Zebra che BGP. 
+
+Le rotte statiche si inseriscono con un comando di tipo \texttt{network}:
+\begin{minted}{bash}
+    network {indirizzo-ip} mask {netmask}
+    network {indirizzo-ip}/{netmask}    
+\end{minted}
+BGP effettua un controllo su questa rotta, controllando se l'indirizzo è nella tabella di instradamento, per evitare di condividere una rotta che non può soddisfare. Se non è presente la raggiungibilità nel data plane, non si possono eseguire queste operazioni nel control plane. 
+Questo è abilitato per sicurezza, per disabilitarlo e testare altre configurazioni si può usare:
+\begin{minted}{bash}
+    no bpg network import-check
+\end{minted}
+Disabilitando questa configurazione si possono trasmettere rotte non locali o non esistenti. 
+
+Un altro comando, di default abilitato è:
+\begin{minted}{bash}
+    no bpg egbp-requires-policy
+\end{minted}
+Questa configurazione quando attiva, impedisce di passare informazioni ad un vicino, se non sono presenti policy.
+
+Il comando \texttt{network} non modifica le rotte nel kernel. 
+
+Nei log di Zebra non vengono inseriti i pacchetti scartati, mentre si possono vedere con FRR. 
+
+% si parte dal router fa un route
+% ~/# route 
+% ...
+% se non si vede la rotta annunciata c'è un problema da indagare
+
+Per debuggare problemi di BGP si comincia dal comando \texttt{route}, per controllare le tabelle di instradamento, se non sono presenti, si prova a connettersi con un \texttt{ping} o \texttt{traceroute}. 
+Per indagare questi errori bisogna interrogare con il demone per controllare se sono presenti le rotte BGP che ci si aspetta di aver appreso con \texttt{show ip route}. 
+Per controllare perché non ci sono si controllano le configurazioni BGP con \texttt{show ip bgp}. Se ci sono le rotte le alternative corrette allora il problema risiede in un altro punto. Se mancano alcune rotte, si può vedere nel \texttt{summary} che mancano delle rotte. 
+
+% TODO passo successivo
+
+
+
+
 
 \end{document}
