@@ -719,6 +719,101 @@ Anche negli switch ci sono limitazioni, non hanno un buffer illimitato, né tabe
 
 Questo garantisce grande libertà per la gestione di una rete. 
 
+\subsection{Network Address Translation}
+
+Lo spazio di indirizzamento IPv4 è limitato, con 32 bit di indirizzi si hanno $2^{32}$ indirizzi diversi, circa quattro miliardi. 
+Questo spazio non è allocato nel modo più efficiente, poiché gli indirizzi sono raggruppati in LAN, i cui indirizzi possono essere solamente potenze di due. 
+Inoltre per molto tempo si erano esclusivamente con classi, A B e C, con 8, 16 e 24 bit di prefisso. 
+
+Per risolvere questo esaurimento si sono sviluppate varie soluzioni. Il primo è l'indirizzamento per barre e non per classi, in modo da frazionare delle reti in subnet, chiamato CIDR, \textit{Classless Inter-Domain Routing}. Un'altra soluzione semplice è la diminuzione dell'assegnazione di indirizzi. 
+Ci sono state delle campagne di renumbering su grosse organizzazioni che avevano \texttt{/8}, alcuni organizzazioni con barre anche abbastanza grandi non si sono mai esposte verso la rete. 
+Si può utilizzare diffusamente l'indirizzamento privato, con blocchi di indirizzi privati non validi in internet e non instradati, ma validi per la LAN. 
+Un'altra soluzione è il DHCP, \textit{Dynamic Host Configuration Protocol}, che assegna dinamicamente indirizzi privati o pubblici per uso temporaneo. 
+Il NAT, \textit{Network Address Translation} è un meccanismo per la condivisione di indirizzi pubblici da parte di diverse macchine che hanno indirizzi privati. Non si possono instradare direttamente i pacchetti per una destinazione remota, quindi devono essere tradotti gli indirizzi mittenti per poter ritornare al router di inoltro, che sostituisce nuovamente l'indirizzo privato. 
+Si può moltiplicare ancora con il PAT, \textit{Port Address Translation}, che opera a livello di porte. 
+La soluzione definitiva è il passaggio a IPv6, con uno spazio di indirizzamento di 64 bit. 
+
+Un altro problema che si è dovuto affrontare è l'esaurimento delle memorie dei router, queste sono molto più costose di memorie dedicate ad applicazioni general purpose. 
+Soprattutto grazie a CIDR si sono moltiplicate le entry abbordo delle macchine, e quindi questo problema è peggiorato ulteriormente. 
+
+%% TODO add cronologia morte di ipv4
+
+\subsubsection{CIDR}
+
+CIDR consiste nell'adozione della notazione barra per la suddivisione di reti in sottoreti. 
+Rende possibili il subnetting, ed ulteriori frazionamenti ricorsivi su una stessa LAN. Inoltre è stato utilizzato per delle campagne di supernetting per riunire insieme diverse LAN IPv4 che condividono lo stesso instradamento, riducendo la dimensione delle tabelle di instradamento dei router. 
+Queste operazioni hanno effetti opposti sulle dimensioni delle tabelle di instradamento sulla rete. 
+
+
+\subsubsection{Private Address Allocation}
+
+Definiti nell'RFC 1918, alcuni indirizzi sono dedicati ad utilizzo privato, non indirizzabili nell'internet. Nessun pacchetto può avere questi pacchetti come indirizzo di destinazione, ma può essere presente come indirizzo sorgente. Perché se dentro una LAN si ha uno schema di indirizzamento privato, quando arriva ad una macchina intermedia se avviene un qualche errore deve mandare un pacchetto ICMP a quell'interfaccia ed avranno un indirizzo privato come sorgente. Se questo intermediario è nella LAN, avrà un indirizzo privato come campo destinazione. 
+
+Questi sono sottratti agli indirizzi globalmente unici di internet. Questi possono essere utilizzati anche senza essere connessi alla rete, riutilizzando la pila protocollare TCP/IP in un ambiente chiuso, sfruttando le sue capacità. 
+Gli indirizzi IP configurati in queste reti sono indirizzi privati, univoci solo all'interno della rete. 
+
+Gli indirizzi privati sono 10.0.0.0/8, da 10.0.0.0 a 10.255.255.255, equivalente ad una classe A. 
+RFC 1918 consiglia di utilizzare due numeri casuali per l'indirizzo 10.0.0.0/8 al posto dei due zeri centrale per evitare conflitti in caso due reti vengano unite in futuro. 
+172.16.0.0/12, da 172.12.0.0 a 172.31.255.255, equivalente a 16 reti di classe B. 
+Infine 192.168.0.0/16, da 192.168.0.0 a 192.168.255.255, equivalenti a 256 reti di classe C. 
+
+\subsubsection{NAT}
+
+Utilizzando questi indirizzi privati per comunicare sulla rete è necessario convertirli in indirizzi validi in internet. 
+
+Il NAT ha uno scopo più ampio, di collegare due interfacce su due \textit{realm} diversi. Un realm è una rete dove gli indirizzi IP hanno un significato univoco. In queste reti non ci sono ambiguità sui numeri IP. Internet è un realm. 
+
+Diversi realm possono avere indirizzi sovrapposti, ogni rete che utilizza indirizzi privati è un realm a sé stante. 
+Il pacchetto in transito deve essere convertito per essere compatibile tra i due realm. I router realizzano una comunicazione trasparente dal punto di vista degli ES. 
+I realm attraversati potrebbero essere molteplici. 
+La macchina che fa NAT possiede un blocco di indirizzi IP, anche annunciati se parla BGP. 
+I pacchetti diretti ad un indirizzo pubblico in questo blocco viene mandato a questo router. 
+
+Data un ES nella LAN gestite da un router NAT, con un indirizzo privato $x$. In condizioni normali il pacchetto attraverserebbe il router senza modifiche, ma per poter accedere alla rete bisogna sostituire l'indirizzo privato dal pacchetto. Allora il NAT sceglie tra uno dei suoi indirizzi pubblici $y$ e lo sostituisce a $x$, salvando su una tabella di traduzione, \textit{NAT table}, quest'associazione $x:y$. Dopo aver modificato il pacchetto lo inoltra sulla rete. Al ritorno del pacchetto questo viene tradotto nuovamente, sostituendo nel campo del destinatario $y$ con $x$, l'indirizzo privato. 
+Quest'associazione dopo aver terminato la conversazione può essere gestita secondo varie discipline. In alcuni NAT si usano gli stessi indirizzi pubblici per una macchina privata, oppure per ogni connessione di macchine private, oppure lo assegna per un certo periodo di tempo. Ci sono molte politiche di gestione, ma rimane comunque alla base quest'associazione tra un indirizzo pubblico ed uno privato. 
+
+Questo può consentire di migrare da un provider ad un altro, invece di effettuare renumbering si può inserire un NAT. 
+
+Il router gestisce la corrispondenza o \textit{binding} tra gli indirizzi dei due realm tramite una tabella di traduzione. QUesto binding può essere statico, dove la tabella viene  configurata manualmente, oppure dinamicamente, in cui la tabella cambia nel tempo a seconda del traffico, e gli indirizzi pubblici vengono assegnati alle macchine che ne hanno bisogno. 
+
+In una rte locale gli apparecchi sono classificati in base a diverse esigenze di connettività, in base questi criteri si individuano macchine che non richiederanno mai NAT, alcune macchine che lo richiederanno solamente come client, ed altre macchine che lo richiedono completamente, queste possono offrire servizi raggiungibili dall'esterno. 
+
+Bisogna modificare sia il pacchetto IP che TCP. 
+Bisogna modificare l'indirizzo destinazione e mittente, ed anche l'header checksum. Anche se la maggior parte dei router non controlla questo campo, poiché vuole aumentare la velocità a cui può inoltrare i pacchetti, e quindi sospendono il controllo del checksum. Anche se non è controllato, deve essere ricalcolato.    
+Mentre nel pacchetto TCP bisogna ricalcolare il checksum, poiché viene calcolato anche sui campo campi del pacchetto IP. 
+
+\subsubsection{PAT}
+
+Poiché bisogna avere un numero elevato di indirizzi pubblici per effettuare il NAT, spesso si preferisce il PAT, chiamato anche \textit{IP Masquerading} o \textit{Network Address and Prot Translation} (NAPT). 
+Questo consente a molte macchine con indirizzamento privato di utilizzare lo stesso indirizzo pubblico, si può diminuire il numero di indirizzi pubblici assegnati ad un unico router, fino ad un singolo indirizzo pubblico. 
+È il sistema operativo ad assegnare una porta, quando realizza una socket, si può influire su questa scelta, ma dal lato client non si ha alcun interesse per questo. 
+In questo modo però si cancella la porta effettiva utilizzata del router. Quando si usa più di un indirizzo IP pubblico si parla anche di multi-PAT. Effettuando la traduzione l'indirizzo pubblico è necessariamente l'unico indirizzo pubblico disponibile. Sulla tabella NAT quindi vengono specificate le porte. A questo punto non si hanno più problemi di scalabilità. 
+Nel pacchetto TCP bisogna modificare le porte di ingresso ed uscita e ricalcolare la checksum. 
+
+Queste due tecniche NAT e PAT sono ampiamente utilizzate, ma violano il principio end-to-end, definito nell'RFC 1958, che afferma che lo stato di una connessione deve essere gestito solamente dagli ES, e non può essere condiviso con le macchine intermedie. Il livello di trasporto si assume faccia comunicare due macchine, in modo trasparente rispetto ai livelli sottostanti. 
+Questo ha effetti sulla connettività end-to-end. 
+
+I protocolli che menzionano gli indirizzi IP non funzionano correttamente come FTP, per ricostruire la connessione bisognerebbe ricalcolare tutti i campi ed i sequence number che dipendono dal cambio delle porte ed indirizzi IP. Inoltre la sostituzione degli indirizzi devono essere coerenti in ogni frammento. 
+I DNS devono rispondere in due modi diversi per le macchine interne ed esterne, per le prime i nomi privati devono corrispondere agli indirizzi privati mentre quelli pubblici ad indirizzi pubblici. 
+La necessità di ricalcolare vari campi riduce notevolmente le prestazioni di router con NAT e PAT abilitato. 
+
+\subsubsection{DHCP}
+
+Il protocollo DHCP assegna dinamicamente ed autonomamente gli ES di una rete. È un'alternativa alla configurazione manuale, distribuendo indirizzi pubblici o privati di un insieme di macchine. 
+Può essere utilizzato per configurare utenti temporaneamente attivi sulla rete. 
+Le configurazioni distribuite dal DHCP contengono almeno l'indirizzo IP e l netmask, e gli indirizzi del default gateway e del server DNS. Queste sono le informazioni che consentono ad un host di afferire ad internet. 
+
+Un server DHCP ha una serie di indirizzi pubblici o privati, molto spesso sono fissi, il server risponde solo ad alcune macchine in base al loro indirizzo MAC, abilitato dall'amministratore. 
+L'assegnazione di una configurazione è temporanea, per un prefissato intervallo di tempo breve. 
+
+Questo protocollo è diviso in quattro fasi. Il protocollo prevede un DHCP DISCOVER, un client manda in broadcast in cui annuncia che non ha una configurazione, il server, o i server, DHCP sulla LAN offrono una possibile configurazione con un DHCP OFFER. Il client in base a queste configurazioni accetta esplicitamente una di queste configurazioni con un pacchetto DHCP REQUEST. Il server conferma l'assegnazione temporanea con un DHCP ACK. 
+
+Viene effettuata una discovery all'avvio di una macchina, quando scade un'assegnazione o quando richiesto dall'amministratore. In mancanza di una risposta viene iterata ogni cinque minuti. Il pacchetto DHCP viaggia su UDP. 
+
+Più server possono rispondere contemporaneamente allo stesso client, che sceglie una delle possibili configurazioni. Le richieste essendo broadcast non attraversano i router, ma un router potrebbe essere configurato come proxy DHCP ed inoltra la richiesta ad uno specifico DHCP remoto. 
+
+
+
 \clearpage
 
 \section{Kathar\'{a}}
