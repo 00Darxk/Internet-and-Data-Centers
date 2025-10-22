@@ -816,6 +816,185 @@ Più server possono rispondere contemporaneamente allo stesso client, che scegli
 
 \clearpage
 
+
+\section{IPv6}
+
+Lo scopo di IPv6 implementa strategie per sostituire il protocollo ARP. 
+
+L'indirizzo è composto da 128 bit, ed ha meccanismi per accorciare la scrittura, utilizzando indirizzi molto corti principalmente per macchine importanti. 
+
+L'header IPv4 contiene campi rimossi da IPv6, alcuni non sono mai stati utilizzati, come i campi relativi alla frammentazione. Potrebbero esistere tecnologie che prevedono una dimensione massima dei pacchetti più piccola. In questi casi il router deve spezzare un pacchetto in frammenti, questi campi rimossi si usano appunto per determinare se un frammento appartiene allo stesso pacchetto. 
+Questi frammenti vengono ricomposti a destinazione, aumentando il carico per la macchina destinazione. 
+Se viene specificato che un pacchetto non può essere frammentato ed un router sul tragitto individua una strettoia, questo viene scartato e viene inviato un pacchetto ICMP. 
+
+
+La scheda di rete di una macchina condivide le MTU dei singoli livello protocollari a quelli superiori. È stato rimosso il campo checksum, che andava ricalcolato ed in teoria controllato ad ogni hop. Questo non viene quasi mai controllato dai router per aumentare l'efficienza. 
+
+In IPv6 mancano le opzioni, campi dinamici, per rendere la struttura del pacchetto stabile. 
+Ogni pacchetto ha un'etichetta, diversa per ogni pacchetto, in modo da effettuare un'instradamento veloce dalla cache. 
+
+%% TODO descrizione campi ipv6
+
+
+Il campo next header permette di specificare degli \textit{extension header} che contengono anch'essi il campo next header, quindi è possibile realizzare una catena di header, simile alle opzioni in IPv4. 
+
+L'extension header rappresenta un nuovo metodo per implementare le opzioni, questi extension header possono essere di routing, o di codifica, o header di livelli superiori. 
+% catena di margherite
+Ci sono alcuni header che se sono presenti devono essere letti necessariamente. Un IS guarda gli header fino a quando lo riguardano, sono ordinati in modo da avere opzioni diverse, dedicate. 
+
+%% TODO vari extension header
+
+Gli indirizzi IPv6 vengono rappresentati in notazione esadecimale, in un URL gli indirizzi IPv6 sono inclusi tra parentesi quadre. 
+Scompare l'indirizzo di broadcast, che causava per IPv4 un interrupt a tutte le macchine che lo ricevono, indipendentemente dal fatto che sia effettivamente indirizzato loro o meno. 
+
+In una configurazione DHCP, la macchina registra sulla sua scheda di rete gli indirizzi MAC del server DHCP in un insieme per realizzare un insieme di indirizzi multicast. 
+Via software si può dire ad un scheda di rete di raccogliere altre tipi di pacchetti. 
+Utilizzando uno sniffer, questo raccoglie tutti i pacchetti come se fossero direttamente inviati alla macchina. 
+Dal numero IPv6 si può estrarre l'indirizzo MAC, per aggiungerlo alla lista di indirizzi anycast.  
+
+
+C'è una forte presenza di macchine con uno stesso numero, queste macchine anycast sono macchine che offrono servizi, e la richiesta viene soddisfatta dalla macchina più vicina. 
+
+Gli indirizzi IPv6 possono essere privati per vari livelli di privatezza. È molto più frazionato rispetto ad IPv4. 
+
+%% TODO indirizzi
+
+
+Ci sono indirizzi che contengono dentro indirizzi IPv4 nascosti, usati in alcuni tipi di transizioni IPv4-Ipv6, ora deprecati. Mentre nelle reti IPv4 c'è un'alta frammentazione e subnetting applicando il CIDR, in IPv6 la lunghezza del prefisso è fissa e diversa dal'identificativo dell'host. C'è comunque la notazione barra per aggregarle a criteri di routing, ma negli indirizzi è sempre presente un prefisso di 64 bit, e quindi hanno una netmask stabile. 
+
+
+La parte di prefisso è utile ad identificare la subnet, mentre l'identificativo dell'host può essere specificato manualmente oppure automaticamente. Aggiungendo q questo indirizzo prefissi diversi si ottengono indirizzi differenti per la stessa macchina. 
+Quando la macchina trasmette sceglie uno di questi indirizzi da utilizzare per la trasmissione. 
+
+
+
+%% TODO smt
+
+Per link si intende una rete fisica come esempio una LAN, un collegamento punto-unto o anche una rete geografica comune. 
+Nodi sullo stesso link sono detti neighbor, o vicini. Per site invece si intende un insieme di link gestiti da un unica organizzazione. Questi hanno un loro prefisso \textit{link local unicast} ed analogamente \textit{site local unicast}, utilizzabili dentro la LAN. 
+Mentre i prefissi \textit{global unicast} vengono assegnati dalla IANA alle organizzazioni continentali e regionali, ed in seguito vengono assegnati pi facilmente ai singoli IPS, e successivamente utenti. 
+
+La distribuzione degli indirizzi verso il basso è automatica, e potrebbe essere possibile sostituire gli indirizzi in modo trasparente. 
+Si potrebbero assegnare tutti gli indirizzi che iniziano per una certa sequenza in una zona geografica limitata Tutti questi pacchetti vengono instradati osservando una barra molto corta. 
+Quindi questi prefissi sono suddivisi, i primi 32 bit di prefisso sono assegnati per un ISP, mentre blocchi più grandi a RIR. Successive suddivisioni in barra 48 vengono affidate alle singole organizzazioni, da 48 a 64 è possibile fare subnetting sul site dell'organizzazione per realizzare link. 
+
+
+Invece di avere indirizzi broadcast si utilizzano indirizzi multicast. 
+Indirizzi multicast cominciano sempre con \texttt{FF}, questo è seguito da una flag, per indicare se si tratta di un indirizzo permanente o temporaneo. I seguenti quattro bit individuano uno scope specifico che può andare da nodo, a link, site, fino a globale. I seguenti 112 bit identificano il group ID; un gruppo multicast valido su uno scope. 
+
+Indirizzi multicast importanti sono dati da \texttt{FF02::1:FFxx:xxxx}, questi indirizzi sono chiamati \textit{solicited-node}. Si crea un gruppo multicast per ogni indirizzo che non è multicast. 
+
+Questo indirizzo solicited node viene usato per sostituire il protocollo ARP e ICMPv4. 
+
+\subsection{ICMPv6}
+
+Pacchetti ICMPv6 riprendono le funzionalità di ICMPv4, ed assumono nuove funzionalità e responsabilità gestite da protocolli ARP e IGMP su IPv4. 
+Il pacchetto ICMPv6 presenta una specie di header dove viene specifico il tipo ed i sottotipo, degli header precedenti, seguito dai dati di ICMP. 
+
+Il primo bit del campo type distingue tra due classi di messaggio, di segnalazione di errore o di messaggi informativi. 
+
+
+I pacchetti IPv6 non vengono frammentati, quindi bisogna garantire che non vengano scartati durante il percorso, si vuole determinare l'MTU pià piccola da considerare collo di bottiglia per ridurre la dimensione del pacchetto IP. 
+La procedura di \textit{Path MTU Discovery} è basata su messaggi ICMPv6 per segnalare pacchetti troppo grandi. 
+
+Prima di interpretare il livello quattro deve l'indirizzo del livello tre, convertendo con un DNS il dominio ad indirizzo IP. 
+In IPv4 il processo si ferma e lancia un processo di discovery di livello due per individuare l'indirizzo MAC del destinatario, con un'ARP. Questo può esistere sulla rete, e quindi raggiungile direttamente, altrimenti si deve inviare al router di default. 
+
+Questo processo di neighbor discovery in IPv6 viene effettuato tramite ICMPv6. Questi pacchetti si occupano della risoluzione degli indirizzi. Sostituendo ARP request e reply con neighbor solicitation e advertisement, utilizzando gli indirizzi multicast all'interno di un link. I messaggi non possono uscire dal link. 
+
+
+Il messaggio ICMPv6 redirect è simile alla controparte IPv4. QUesta informa il router che è presente un router migliore sul link per raggiungere lla destinazione, oppure che la destinazione si trova sullo stesso link. 
+
+
+Indirizzi solicited node multicast vengono calcolati a partire dal prefisso \texttt{FF02}, seguito da 72 bit di zero, seguito da \texttt{01FF}, seguito dagli ultimi 24 bit dell'indirizzo. La probabilità che due macchine abbiano questo stesso indirizzo multicast è molto bassa, poiché gli ultimi tre byte corrispondenti sono quelli dell'indirizzo MAC assegnati dal costruttore, quindi è improbabile siano uguali. Ogni interfaccia viene iscritta ai gruppi multicast corrispondenti a tutti gli indirizzi assegnati da essa. 
+L'uso degli ultimi 24 bit dell'indirizzo IPv6 diminuisce una riduzione delle collisioni, poiché dipendono dall'indirizzo MAC. L'indirizzo destinatario a livello due si può ottenere dall'ID del gruppo a cui è iscritta la macchina. 
+
+Chi deve risolvere l'indirizzo IPv6 in un indirizzo di livello MAC, invece di mandare un pacchetto broadcast, si calcola l'indirizzo multicast IPv6, da cui si ottiene l'indirizzo MAC di livello due per inviare il pacchetto sull'indirizzo multicast. 
+Rispondendo a questo messaggio inviando all'indirizzo specifico, un pacchetto di neighbor advertisement con il suo indirizzo IPv6 specifico nella porzione dati del pacchetto. 
+
+
+In IPv6 c'è una cache che sostituisce l'ARP cache, una sorta di mappa che tiene conto della mutua raggiungibilità dei nodi vicini. Per i nodi vicini controlla che siano raggiungibili da neighbor solicitation, per i nodi remoti controlla che siano raggiungibili attraverso il router next-hop. 
+Questo algoritmo permette di individuare rapidamente cambiamenti di indirizzi fisici o guasti nella rete; chiamato \textit{Neighbor Unreachability Detection} (NUD). 
+
+Un'altra funzionalità interessante di IPv6 è l'autoconfigurazione degli indirizzi. 
+Permette ai singoli di nodi di generare un indirizzo IPv6 stabile in modo stateless, senza utilizzare server DHCP. 
+La macchina può prendere l'indirizzo dell'interfaccia, mentre come prefisso di rete utilizza indirizzi link-local. In questo modo può comunicare con il router per ottenere un prefisso da utilizzare sulla rete. 
+Il server DNS deve essere necessariamente specificato a mano, oppure tramite protocolli diversi. 
+
+
+Il meccanismo di router advertisement è un algoritmo dove i router inviano periodicamente su ogni link dei pacchetti di questo tipo, dove si identificano e specificano se siano disponibili agli host per diversi servizi. 
+Specificano il loro indirizzo di livello due e indirizzo IPv6 link-local, indicano se sono disponili come default router. Specificano altri parametri come TTL, MTU, ed inoltrano una lista di prefissi utilizzabili sulla rete, assegnati al link, oppure globalmente unici. 
+
+Quando un router comunica un prefisso, gli altri 64 bit si possono ottenere dall'indirizzo MAC, per comunicare con il resto del mondo. 
+
+Questi router advertisement vengono inviati ad intervalli regolari, c'è anche la possibilità di richiedere queste informazioni, tramite una router solicitation, inviato all'indirizzo multicast del link, quindi a tutti i router del link. 
+Questa è una richiesta per un router advertisement, inviato in unicast a questo indirizzo. 
+
+Ci sono meccanismi di riconoscimento di indirizzi duplicati, a bordo della macchina si controlla se un'altra nodo ha già lo stesso indirizzo, specificando come indirizzo sorgente l'\textit{unspecified address}, \texttt{::}. 
+Se non riceve alcuna risposta, adotta quell'indirizzo. 
+
+
+Si può generare un indirizzo link local di ciascuna interfaccia, in modo da poter comunicare sulla rete locale. 
+
+%% TODO smt
+
+I prefissi contenuti in un router advertisement sono associati ad un tempo di vita, un timer oltre il quale quel prefisso è da non considerarsi più valido, e non può essere riassegnato all'interfaccia. 
+Questi tempi associati agli indirizzi sono \textit{valid lifetime} e \textit{preferred lifetime}, il primo è il tempo per cui un indirizzo può essere associato all'interfaccia, ed il secondo è il tempo per cui l'indirizzo può essere utilizzato per nuove connessioni. 
+
+Questo permette il renumbering automatico degli host, tramite nuove router solicitation, e configurazioni automatiche. 
+
+Gli indirizzi e gli altri parametri di configurazione come i server DNS possono essere configurati manualmente. 
+È possibile effettuare una configurazione interamente manuale, con DHCPv6, su specifica dell'autoconfigurazione stateless. 
+
+Le specifiche stateful nella stateless riguardano due flag dedicate nel router advertisement. Queste sono \textit{managed address configuration}, che indica se l'host deve ottenere indirizzi da parte di DHCPv6, mentre un secondo campo indica se deve utilizzare quest'ultimo per ottenere altre informazioni di configurazione. Se è il primo è settato, lo anche questo. 
+
+%% TODO smt
+
+
+Il router assegna tanti indirizzi, poiché ne riceve tanti dall'esterno e poiché una stessa macchina potrebbe avere più provider, ed ogni provider inietta su routing diverso. 
+Quando si decide di parlare con un interlocutore remote, è possibile entrambi abbiano un indirizzo globalmente unico, ma questo potrebbe avere diversi indirizzi IPv6 diversi. Questa scelta impatta le prestazioni, influisce sulla rotta attraverso cui avviene la comunicazione. 
+La scelta migliore può cambiare nel tempo, inoltre un provider potrebbe avere dei problemi e quindi bisognerebbe cambiare provide e quindi rotta, attraverso un altro insieme di indirizzi IPv6. La scelta degli indirizzi di comunicazione è una parte critica. 
+
+Ci sono diverse scelte, tipicamente si preferisce IPv6, anche se è possibile andare ad IPv4, in base alla condizione del destinatario. 
+
+Su IPv4, si provano gli indirizzi di destinazione uno per volta per valutare quale sia più appropriato. 
+
+
+
+Il multihoming si basa su BGP, se si vuole comunicare tra due provide diversi, attraverso BGP. Se le due zone sono separate e sono stati assegnati più indirizzi, BGP è costretto ad inoltrare tutti questi indirizzi. Se questo router connesso all'altro provide è dello stesso provide che assegna gli indirizzi, deve inoltrare solamente questa subnet dove si trova la macchina. 
+
+Gli effetti di questo fenomeno sono l'aumento esponenziale delle tabelle di instradamento a causa della frammentazione delle reti, e quindi dell'inoltro di queste nuove rotte. 
+
+In IPv6 avendo due indirizzi diversi, si ha un insieme di indirizzi, e si sceglie quale di questi utilizzare, così mitigando questo problema. 
+
+Se non si parla BGP non si ha possibilità alternativa, tutte le connessioni che usano questo link potrebbero andare in fault. Inoltre, non si ha bilanciamento. 
+
+Un approccio proposto per risolvere questo è avere una scelta dinamica dell'indirizzo IP, sia per identificare la macchina sia per identificare il provider attraverso cui la si raggiunge. Separando queste due funzioni si separa il locator, la posizione del nodo nella topologia della rete, dall'identifier, per indirizzare il nodo agli strati superiori. 
+
+
+Si utilizza un ID per i livello superiori, per identificare il nodo e comunicare con nodi esterni. 
+Questi indirizzi usati sono solamente identificativi, appartengono effettivamente ad un'interfaccia del destinatario, ma rappresenta solamente un ID della macchina, che può essere per ogni nodo o per ogni processo all'interno del nodo. 
+
+Il locator è l'indirizzo IP usato per instradare il pacchetto, identifica la posizione del nodo nella rete. 
+L'idea è quella di usare il locator solamente al livello tre nella fase di instradamento, seguito da uno strato \texttt{shim6}, sempre al livello tre, per separare l'indirizzo utilizzato e l'indirizzo rappresentativo delle due macchine nella comunicazione. Gli strati superiori sono convinti di utilizzare questi indirizzi. Questo decide la coppia di indirizzi sorgente e destinazione da utilizzare anche rispetto alla disponibilità e le tempistiche dei pacchetti. 
+Si riesce a cambiare i pacchetti senza far cadere la connessione. 
+
+Lo stesso si può usare con meccanismi sofisticati di SDN. 
+
+%% TODO smt shim6
+
+
+Questa separazione non è stata introdotta nel protocollo quando è stato realizzato, poiché ha un effetto a cascata anche su livelli inferiori. Questo è facile risolvere utilizzando degli identificatori end-to-end, scambiando dei \textit{context tags} shim6 che possono essere utilizzati per identificare un contesto e quindi una comunicazione specifica, potendo cambiare dinamicamente i vari indirizzi. 
+
+
+
+
+
+
+
+
+\clearpage
+
 \section{Kathar\'{a}}
 
 Una rete è composta da diversi apparati, computer, router, switch, ecc., ognuno con differenti interfacce, diversi protocolli attivi sulla rete, diverse connessioni fisiche che generano una topologia complessa. 
