@@ -816,7 +816,6 @@ Più server possono rispondere contemporaneamente allo stesso client, che scegli
 
 \clearpage
 
-
 \section{IPv6}
 
 Lo scopo di IPv6 implementa strategie per sostituire il protocollo ARP. 
@@ -1204,6 +1203,78 @@ Per controllare perché non ci sono si controllano le configurazioni BGP con \te
 % TODO passo successivo
 
 
+
+
+%% TODO BGP
+
+Il router BGP per capire quando deve cambiare nexthop, prende un annuncio da un'interfaccia e lo deve rimandare indietro dalla stessa interfaccia. 
+\texttt{s-path} ed il percorso del traffico non sono sempre la stessa cosa. 
+
+Nel momento in cui si lavora in iBGP, l'attributo \texttt{next-hop} non cambia in uno stesso autonomous system. 
+In iBGP i peering devono essere in full mesh, poiché sono tunnel TCP, non si considera la topologia interna dell'AS. 
+Il nexthop coincide con l'interfaccia da cui si sta facendo uscire l'annuncio, poiché il peering è eBGP.  
+Quando questo annuncio viene ricevuto da un router BGP in un AS, questo viene propagato ed il campo nexthop rimane invariato. 
+In AS quando un router iBPG riceve un annuncio, per inserirlo nel data plane, deve conoscere il prefisso, il nexthop e l'interfaccia. 
+Il nexthop di questa entry, ricerca nella sua tabella di instradamento come raggiungere il prefisso, tramite un processo di \textit{recursive lookup}. Se non lo può raggiungere non può usare quella rotta, mentre se lo può raggiungere dalla rotta ottenuta inserisce il nexthop risultante. 
+Non sempre è lo stesso che viene installato nella rotta del kernel, uno ottenuto dall'annuncio nel control plane, ed un altro nel data plane dalla tabella di instradamento. 
+
+Il campo \texttt{origin} descrive l'origine dell'annuncio, può essere \texttt{igp}, dichiarato interno dall'AS di origin; \texttt{bgp}, se è iniettato su BGP da parte di EGP, per retrocompatibilità, ormai inutilizzato; \texttt{incomplete} se è generato da una ridistribuzione di un protocollo IGP. 
+
+
+L'attributo \texttt{aggregator} si manifesta in situazioni particolari, quando vengono aggregati due prefissi insieme, inserisce la sua firma, ed indica che è stato lui ad effettuare questa aggregazione. Questa firma corrisponde al BGP router ID. 
+
+
+Per scegliere la best route, un router BGP riceve un numero arbitrario di rotte per raggiungere quel prefisso. 
+Non può applicare un criterio casuale, ma usare un protocollo deterministico. La migliore rotta è l'unica che verrà propagata ai vicini. Questi annunci devono essere relativi allo stesso prefisso. 
+
+Il processo decisionale di un router per determinare la rotta segua una preferenza specifica, ed il processo passa a passi sotto-stanti in caso di parimerito: 
+\begin{enumerate}
+    \item \textit{Largest Local Preference}: dato che vive solamente dentro un AS, questo dipende dal costo delle reti connesse, assegnando una preferenza maggiore a costi minori
+    \item \textit{Locally Originated}: per determinare la rotta per un prefisso, si usa il prefisso annunciato dallo stesso router, invece di usare rotte annunciate da altri router
+    \item \textit{Shortest} \texttt{as-path} \textit{Length}: vince l'annuncio con il \texttt{as-path} più corto. Se si vuole abbassare la preferenza di un annuncio che si passa fuori è possibile appendere il numero AS del router più volte, allungando virtualmente l'\texttt{as-path}
+    \item \textit{Lowest Origin}: secondo l'ordine \texttt{igp}$<$\texttt{egp}$<$\texttt{incomplete}, questo è un attributo che non può essere determinato nel momento in cui viene inoltrato l'annuncio
+    \item \textit{Lowest Multi-Exit-Discriminator} (MED): solamente per gli stessi AS vicini, vince chi è meno penalizzato. Questo attributo non è transitivo. Si appende ad un annuncio quando si viene inviato fuori da un AS. La MED è un attributo facoltativo, quindi non necessariamente è possibile confrontarli. Lo scopo principale è il link principale ed i link di backup, si scelgono anche in base alla banda, e definiscono quale link in uscita si preferisce usare
+    \item \textit{Prefer eBGP over iBGP}: si preferisce un routing esterno, poiché mantenere un AS è un costoso, e si preferisce di avere un traffico basso. Si vuole fare bella figura con l'esterno, e mantenere la rete interna efficiente
+    \item \textit{Lowest IGP Metric}: ad un certo punto bisogna avere dei fattori deterministici, per cui si decide il nexthop in base alla metrica del protocollo usato, che sia RIP o OSPF, e si sceglie l'annuncio con la metrica più bassa
+    \item \textit{Lowest Router ID}: questo ha l'unico scopo di dividere la perfetta parità, il router più basso è puramente arbitrario, si è scelto come normativa, non è possibile avviare BGP su una rete con due router dallo stesso ID
+\end{enumerate}
+
+Per i router Cisco, esiste un altro parametro \textit{weight}, proprietario, che viene inserito per primo per decidere quale rotta usare. 
+
+
+Le policy di input permettono di filtrare gli annunci in input, prima che entrino nel processo decisionale BGP. Per ogni coppia di annunci si che sono passati si esegue il processo decisionale, e si iniettano le rotte nel kernel. A questo punto si applicano i filtri in uscita e si inoltrano le rotte agli altri AS. 
+
+
+%% !! AS-PATH FILTERING
+
+Si possono filtrare gli annunci per vari motivi, si può filtrare l'\texttt{as-path} per motivi politici. I pacchetti passanti per la rete non sono filtrati, a meno che non siano cifrati end-to-end. 
+Per cui è possibile sniffare del traffico, e anche cifrato per estrarre informazioni cruciali. 
+Delle potenze ostili tra di loro quindi vogliono evitare che informazioni critiche passino attraverso le altre. 
+Gli USA quando è nato internet l'hanno accomunato al servizio postale; se la posta ha come indirizzo destinazione e sorgente un indirizzo statunitense, non può passare per suolo straniero. Quindi non si può passare legalmente per AS stranieri quando gli indirizzi sorgenti e destinazione sono entrambi sul suolo americano. 
+Per queste ed altre decisioni politiche si utilizzano dei filtri per evitare che il traffico passi per certi AS. 
+Per realizzare questi filtri si usano elementi delle normali espressioni regolari, \texttt{regexp}. 
+
+Tutte queste politiche hanno alla fine un \texttt{deny all} implicito. 
+\begin{minted}{bash}
+    neighbor {indirizzo} filter-list {nome-lista} in
+    bgp as-path access-list {nome-lista} permit {regexp}    
+\end{minted}
+
+
+Si possono configurare le \texttt{route-map} come:
+\begin{minted}{bash}
+    neighbor {indirizzo} route-map {nome-map} {in/out}
+    route-map {nome-map} {permit/deny} {seq-number}
+        match {proprietà annuncio}
+        set   {opzione attributo}
+\end{minted}
+Si può effettuare un match su qualsiasi proprietà dell'annuncio, ed eventualmente con \texttt{set} si può modificare arbitrariamente l'annuncio, anche realizzando annunci non validi secondo BGP. Si può alterare completamente l'annuncio. 
+Anche il \texttt{match} è opzionale, in questo caso si comporta come un filtro, applicando le operazioni della \texttt{set} a tutti i pacchetti. 
+
+
+
+È conveniente utilizzare delle \texttt{access-list} o \texttt{prefix-list} per realizzare operazioni su più indirizzi contemporaneamente
+Le access list matchano il contenuto di tutti i prefissi possibili contenuti, con le prefix list si fanno match esatti per prefisso, mentre con access si matchano anche tutti i suoi sotto-prefissi. 
 
 
 
