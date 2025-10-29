@@ -1276,6 +1276,147 @@ Anche il \texttt{match} è opzionale, in questo caso si comporta come un filtro,
 È conveniente utilizzare delle \texttt{access-list} o \texttt{prefix-list} per realizzare operazioni su più indirizzi contemporaneamente
 Le access list matchano il contenuto di tutti i prefissi possibili contenuti, con le prefix list si fanno match esatti per prefisso, mentre con access si matchano anche tutti i suoi sotto-prefissi. 
 
+%% !! BGP AS STUB
 
+In un mercato di acquisto vendita, gli ISP salgono e scendono da provider a customer, in base alle loro richieste ed offerte. 
+Questi accordi commerciali definiscono le connessioni peer-to-peer tra i vari provider. Queste vengono mantenute segrete dai provider, e per motivi politici ed economici possono cambiare. 
+Si possono stimare studiando lo storico degli annunci BGP, cercando di capire i provider ai vari livelli di gerarchia, divisi in cinque livelli. 
+
+C'è una sorta di grafo completo di AS che ricopre la rete con connessioni peer-to-peer. 
+
+Nella gerarchia da partire da un certo livello non si ha la default, gli AS di più alto livello non hanno un upstream a cui consegnare tutto, sono loro l'upstream. Per determinare la default si considera un prefisso che non è annunciato in rete. Se non è annunciato allora facendo un traceroute su questo prefisso, che non ha macchine, si passa solo per la default, il primo router che invia una risposta che l'indirizzo non è raggiungibile si capisce che si è raggiunto un router senza la default, quindi appartiene ad un livello alto. 
+
+Uno stub AS è una zona con un unico link con altri AS, ed a priori potrebbero non usare BGP, poiché comunicano con un solo provider. In queste condizioni generalmente si usa il routing statico in single peering. 
+
+In questo gioco di ISP chi è in più tempo in esercizio ha un vantaggio, ed ha un numero di AS maggiore, ed è salito di più sulla gerarchia. 
+Un AS con un numero basso è più vecchio di uno con numero elevato. 
+
+Uno stub AS si configura anche senza una policy eBGP, queste rotte vengono considerate con il comando \texttt{network}. Si assume che tutti i prefissi vengano considerati da questi comandi, ma non verificano che la LAN indicata sia posseduta da questo AS, non è certificato. Questo può quindi essere annunciato ad un router di frontiera, bisogna verificarlo alla fonte con un certificato di proprietà, ma solo nel momento in cui si utilizza. Ma questi certificati possono essere duplicati e modificati, per modificare anche la distanza. 
+Questo porta a problemi di sicurezza per BGP. 
+\begin{minted}{bash}
+    router bgp {id-stub}
+    no bgp ebgp-requires-policy
+    network {prefisso-stub}/{netmask-stub}
+    neighbor {indirizzo-isp} remote-as {id-isp}
+\end{minted}
+
+I router di frontiera connessi con questi stub AS devono avere dei filtri e configurazioni di sicurezza, per garantire che riceve messaggi da indirizzi contenuti nel prefisso annunciato dallo stub AS, questo non può essere controllato automaticamente e si utilizzano dei filtri per realizzarlo. Disattivando l'opzione \texttt{bgp network import-check}, si possono annunciare anche rotte non presenti nel kernel, poiché definendo la rotta di default con \texttt{network}, questa non viene iniettata nel kernel. 
+Si mostrano questi filtri, realizzando due prefix list \texttt{customerIn} per ali annunci in entrata proveniente dallo stub, e \texttt{defaultOut} per gli annunci in uscita dal provider, contenente la rotta di default. 
+Si assegna la default per mostrare il funzionamento, ma ben pochi router possono avere questa configurazione con la default. 
+\begin{minted}{bash}
+    router bgp {id-isp}
+    no bgp network import-check
+    
+    network {prefisso-isp}/{netmask-isp}
+    network 0.0.0.0/0
+
+    neighbor {indirizzo-stub} remote-as {id-stub}
+    neighbor {indirizzo-stub} default-originate
+    neighbor {indirizzo-stub} prefix-list customerIn in
+    neighbor {indirizzo-stub} prefix-list defaultOut out
+
+    ip prefix-list customerIn permit {prefisso-stub}/{netmask-stub}
+    ip prefix-list defaultOut permit 0.0.0.0/0
+\end{minted}
+
+Una prefix list è composta da una serie di comandi permit e deny, con sottinteso \texttt{deny any} alla fine. Gli ultimi due comandi di configurazione filtrano il traffico per la LAN che è effettivamente presente. La default non viene annunciata direttamente verso il basso, poiché mostrerebbe nell'\texttt{as-path} i vari AS contenuti, e dato che si vogliono mantenere segreti, si propaga, identificandosi come origine del default. Nel momento in cui si propaga la default quindi si taglia l'\texttt{as-path}. 
+Per rapporti di tipo commerciale questo è usato per non far conoscere da dove proviene. 
+
+La rotta di default dovrebbe essere dichiarata alla radice della gerarchia, e propagata verso i livelli sottostanti, mentre i livelli intermedi non dovrebbero utilizzare il comando \texttt{network}, altrimenti i router preferirebbero la rotta generata localmente, e si rimuoverebbe la rotta annunciata da fuori. 
+Il comando \texttt{default-originate} è un comando accessorio che non inserisce la default nella tabella locale del BGP, né nel kernel. Tuttavia se si ha la rotta di default, si comporta come se si abbia utilizzato il comando \texttt{network}, nascondendo l'\texttt{as-path}. 
+Questo comando ha lo stesso effetto di \texttt{network} e può generare la default anche quando non viene usato il comando \texttt{network}, e quando è presente sovrascrive l'effetto di una default dichiarata localmente, sempre senza inserirla nel kernel, dato che le annuncia. Mentre nel cliente che le ha ricevute, vengono inserite nel kernel. 
+
+Se un router intermedio perde il link all'upstream contenente la rotta di default, continua ad annunciare la rotta di default con \texttt{default-originate}, ma non può effettivamente instradare il traffico alla rotta adi default, poiché ha perso il collegamento. 
+
+
+Il secondo comando per influenzare le policy è \texttt{route-map}, oltre ad essere è un filtro si comporta come modificatore, per esprimere una preferenza. 
+La rotta di default viene trattata come ogni altra rotta se è generata da \texttt{network}, mentre con \texttt{default-originate} è trattata da un'altra \texttt{route-map}:
+\begin{minted}{bash}
+    neighbor {indirizzo} default-originate route-map {nome} in
+\end{minted}
+
+Non si possono attaccare due \texttt{route-map} ad uno stesso prefisso, come per le \texttt{prefix-list}. 
+
+
+Con il comando \texttt{network} le policy sono applicate sulle route \texttt{in} e \texttt{out}, mentre applicando policy speciali su \texttt{default-originate}, si hanno anche le rotte specifiche per questa. 
+
+%% !! BGP AS STUB STATIC
+
+In queste situazioni semplici potrebbe essere più conveniente configurare rotte statiche verso e dallo stub. È sufficiente una default statica che punta al provider come next hop, per cui non è necessario utilizzare BGP:
+\begin{minted}{bash}
+    route add default gw {indirizzo-isp}
+\end{minted}
+In questo modo non si lancia un protocollo di instradamento nel customer, almeno se non serve per comunicare con i suoi vicini interni. 
+
+
+
+Un altro tipo di AS si chiama \textit{multi-homed}, presente più link con uno o più provider. 
+Per cui non si può filtrare direttamente il traffico, poiché uno dei due link potrebbe cadere. In generale questo avviene in grosse organizzazioni, che chiedono al provider che questi link viaggino per due strade fisiche diverse, in modo da non concentrare i guasti in una stessa zona geografica. 
+
+Ma il fatto che possano guastarsi singolarmente implica che deve essere possibile utilizzare uno solo dei due per mantenere tutto il traffico. Quindi non si può usare una \texttt{prefix-list}, poiché vincolano il traffico ad un solo link, bisogna usare delle policy per effettuare load balancing o altre operazioni simili, quando i link sono verso lo stesso provider. 
+Quando questi due link sono verso due provider diversi, è improbabile che uno sia il backup dell'altro, quindi si usano in parallelo, si vuole bilanciare il traffico verso i due, sia in entrata che in uscita. Nell'eventualità che un link cada, si vuole che il link verso l'altro provider regga tutto il resto del traffico. 
+Inoltre, non si vuole che il provider lo stub come tramite per comunicare con l'altro provider connesso. Quindi non si vuole che gli annuncino vengono propagati dallo stub verso l'esterno, tramite speciali filtri per annunci che non devono realizzare dei percorsi. 
+Questa è quindi una situazione più difficile. 
+
+
+
+Lo stub è responsabile delle macchine offerta dall'ISP, questi due link possono essere realizzati da un singolo router, o due router, per mitigare i guasti del router. 
+Tutto ciò che entra nello stub ha due modi per entrare nello stub, e quindi bisogna scegliere quale link usare. 
+Se si usasse IGP, si sceglie quale link usare in base alla distanza e non si possono implementare policy, quindi è possibile che il traffico tra i due router dell'ISP passi attraverso questo router dello stub. 
+Invece con rotte statiche non sarebbe possibile configurare tutto manualmente ed aggiornarlo in caso di eventuali guasti. 
+
+
+Per gestirlo come primario e secondario si utilizza BGP, annunciando un prefisso aggregato su ogni link, il primario effettua l'annuncio normale, mentre il secondario aumenta la metrica negli annunci esterni, per ridurre la preferenza locale, secondo la gerarchia per la scelta delle best da parte di BGP. 
+Se uno dei due link fallisce, l'annuncio del prefisso aggregato permette di mantenere la connessione tra provider e stub. 
+Si può valutare rispetto alla metrica solo se l'annuncio arriva dallo stesso AS. 
+In base a questi valori di MED, lo stub probabilmente sceglierà il primario con la metrica più bassa. 
+Il customer assegna una preferenza minore al link di backup, questo influisce sugli annunci in entrata ed il traffico in uscita, preferendo link con valori maggiori. 
+
+\begin{minted}{bash}
+    router bgp {id-stub}
+    
+    neighbor {indirizzo-isp-primario} remote-as {id-isp}
+    neighbor {indirizzo-isp-backup} remote-as {id-isp}    
+
+    network {prefisso-stub}/{netmask-stub}
+\end{minted}
+
+
+
+Non si possono inserire due route map sullo stesso peering, o due prefix list. Il nome delle route map e delle prefix list è case sensitive, ed in caso sia sbagliato, nel loro utilizzo, non le applica. Per cui bisogna fare particolarmente attenzione al nome di queste etichette. 
+\begin{minted}{bash}
+    neighbor {indirizzo-isp-primario} prefix-list mineOutOnly out
+    neighbor {indirizzo-isp-primario} prefix-list default in
+    neighbor {indirizzo-isp-backup} prefix-list mineOutOnly out
+    neighbor {indirizzo-isp-backup} route-map metriOut out
+    neighbor {indirizzo-isp-backup} prefix-list defaultIn in
+    neighbor {indirizzo-isp-backup} route-map localPrefIn in    
+\end{minted}
+
+
+Si usa una route map che fa uso di un aggregato che viene definito da un access list:
+\begin{minted}{bash}
+    access-list myAggregate permit {prefisso-stub}/{netmask-stub}
+
+    ip prefix-list mineOutOnly permit {prefisso-stub}/{netmask-stub}
+    ip prefix-list defaultIn permit{prefisso-stub}/{netmask-stub}
+    
+    route-map metricOut permit 10
+    match ip address myAggregate
+    set metric 10
+
+    route-map localPrefIn permit 10
+    set local-preference 90
+\end{minted}
+
+
+Verso il provider invia solo la propria LAN, mentre dal provider prende solo la default, quindi non può rimbalzarla, quindi non può essere utilizzato per farsi attraversare. 
+
+Usando la route map \texttt{metricOut}, si inviano annunci uscenti verso il link di backup aumentano la metrica. 
+Mentre usando la mappa \texttt{localPrefIn}, si diminuisce la preferenza locale in ingresso per il link di backup. 
+Queste si attaccano sullo stesso peering sullo stesso link di backup. 
+
+
+Tutti questi scenari sono configurati in modo sia determinabile con quale interfaccia si sita facendo peering. 
 
 \end{document}
