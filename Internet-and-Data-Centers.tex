@@ -1419,4 +1419,151 @@ Queste si attaccano sullo stesso peering sullo stesso link di backup.
 
 Tutti questi scenari sono configurati in modo sia determinabile con quale interfaccia si sita facendo peering. 
 
+%% !! BPG: MULTI-HOMED-STUB-LARGE
+
+Si rappresenta ora un laboratorio più grande sommando le varie tecnologie trattate in precedenza. 
+Questo lab è composto da tre AS: AS20, AS100, e AS200, quest'ultimi sono due stub, ovvero non hanno a loro volta customer. 
+%% TODO add img bgp-multi-homed-stub-large
+
+Viene usato RIP sia in AS20 che in AS100, bisognerebbe configurare RIP in questi due AS, in AS20 è semplice avendo due router, mentre in AS100 con tre router, RIP ha uno scopo molto più forte. 
+Questi router vengono configurati con RIP e per distribuire le rotte annunciate da BGP, con RIP:
+\begin{minted}{bash}
+    router rip
+    network {prefisso}/{netmask}
+    redistribute bgp    
+\end{minted}
+Questo per i router di frontiera, per i router interni che non devono parlare BGP si ha invece:
+\begin{minted}{bash}
+    router rip
+    network {prefisso}/{netmask}
+    redistribute connected    
+\end{minted}
+
+Bisogna ignorare il \texttt{network import-check}, poiché si usano dei prefissi aggregati per gli indirizzi delle connessioni, e quindi non sono presenti nella tabella di instradamento. 
+Uno dei due peering viene definito primario, e l'altro secondario, tra i router di AS20. Si ha una politica semplice per il neighbor primario ed una più complessa per il neighbor secondario. 
+\begin{minted}{bash}
+    debug bgp keepalives
+    debug bgp updates in
+    debug bgp updates out
+
+    router bgp 100
+    no bgp network import-check 
+
+    neighbor {indirizzo-isp-primario} remote-as 20
+    neighbor {indirizzo-isp-backup} remote-as 20
+\end{minted}
+
+Si vuole evitare che il traffico per un link diretto a AS100 rimbalzi e ritorni ad AS20:
+\begin{minted}{bash}
+    neighbor {indirizzo-isp-primario} prefix-list mineOutOnly out
+    neighbor {indirizzo-isp-backup} prefix-list mineOutOnly out
+
+    ip prefix-list mineOutOnly permit {prefisso-stub}/{netmask-stub}
+\end{minted}
+
+Poiché le tabelle di instradamento possono essere di elevate dimensioni, per AS piccoli è conveniente avere un unica rotta di default in entrata ai router di frontiera, per delegare l'instradamento esclusivamente ai router superiori. Questo si effettua creando un'altra prefix list in entrata:
+\begin{minted}{bash}
+    neighbor {indirizzo-isp-primario} prefix-list defaultIn in
+    neighbor {indirizzo-isp-backup} prefix-list defaultIn in
+
+    ip prefix-list defaultIn permit 0.0.0.0/0
+\end{minted}
+
+Per impostare i link primari e secondari bisogna impostare la MED e la preferenza locale del link scelto come secondario. 
+La default che arriva dal link primario si vuole preferire, quindi la local preference in arrivo sul link primario deve essere più alta. Si potrebbe alzare, oppure, come in questo caso, si diminuisce nel link di backup. Il default è 100. 
+\begin{minted}{bash}
+    neighbor {indirizzo-isp-backup} route-map localPrefIn in
+
+    route-map localPrefIn permit 10
+    set local-preference 90
+\end{minted}
+
+Gli annunci in uscita invece devono passare esclusivamente sul link primario, quindi bisogna modificare la scelta che faranno i router dell'AS superiore, per preferire il link primario. Questo si effettua modificando la MED, diminuendo la MED del link primario o aumentando la MED del link secondario. Il default è 0. Questa si inserisce solo sugli annunci sugli indirizzi della propria LAN. 
+\begin{minted}{bash}
+    neighbor {indirizzo-isp-backup} route-map metricOut out
+    access-list myAggregate permit {prefisso-stub}/{netmask-stub}
+    
+    route-map metricOut permit 10
+    match ip address myAggregate
+    set metric 10
+\end{minted}
+BGP spesso su configurazioni realistiche ha una serie di controlli ulteriori per evitare errori di tipo fat finger. 
+
+
+L'unico router di AS200 deve avere la flag disattivata di \texttt{ebpg-requires-policy}, per permettere alle rotte annunciate da BGP di essere inserite come fossero definite da \texttt{network}. 
+I peering iBGP sono obbligatori, altrimenti BGP non funziona, mentre i peering eBGP sono opzionali, in full mesh, ovvero se sono presenti tre router, bisogna realizzare tre link, tutti connessi con tutti, con un albero ricoprente completo. 
+
+I router di AS20 hanno quindi peering tra di loro ed anche con i router di frontiera dei router stub. Si considera il router connesso sia ad AS100 che AS200:
+\begin{minted}{bash}
+    router bgp 20
+    no bgp network import-check 
+
+    neighbor {indirizzo-stub-as100} remote-as 100
+    neighbor {indirizzo-stub-as200} remote-as 200
+    neighbor {indirizzo-as20} remote-as 20
+\end{minted}
+Questi router devono dichiarare le LAN interne, e le LAN di peering. Queste nella vita reale non vengono mai annunciate, poiché potrebbe essere possibile tagliare la connessione tra due router BGP, poiché viaggia su TCP, sarebbe possibile tagliarlo con tcp-reset. Per motivi di sicurezza le LAN di peering non sono annunciate, sono solo disponibili direttamente connesse. 
+\begin{minted}{bash}
+    network {LAN-as20}
+    network {LAN-peering-as100}
+    network {LAN-peering-as200}
+    network 0.0.0.0/0
+\end{minted}
+
+Si definiscono le liste di prefissi per poter annunciare permettere alle LAN stub di poter annunciare solo i loro prefissi:
+\begin{minted}{bash}
+    neighbor {indirizzo-as200} default-originate
+    neighbor {indirizzo-as200} prefix-list as200In in
+    neighbor {indirizzo-as200} prefix-list defaultOut out
+    neighbor {indirizzo-as100} default-originate
+    neighbor {indirizzo-as100} prefix-list as100In in
+    neighbor {indirizzo-as100} prefix-list defaultOut out
+    
+    ip prefix-list as200In permit {LAN-as200}
+    ip prefix-list as100In permit {LAN-as100}
+    ip prefix-list defaultOut permit 0.0.0.0/0
+\end{minted}
+Poiché annuncia la rotta di default deve disabilitare il controllo sulle rotte del kernel. 
+
+Con \texttt{sh ip bgp} in \texttt{vtysh} si possono vedere le rotte inserite, quelle denotate con \texttt{i} sono interne, quindi annunciate da router interni alla LAN. Questi prefissi sono arrivati da iBGP, mentre se il campo path ha una \texttt{i} l'attributo origin del pacchetto è igp. 
+Le rotte indicate da \texttt{>} sono quelle installate nel kernel, come preferite. Il campo local preference se è vuoto ha il valore di default, ma non era contenuto nel pacchetto di annuncio. 
+
+% BGP internamente lavora come un ASF, e può scambiare prefissi quando si trova in un certo stato, nel summary di bgp mostra quanti prefissi ottiene da uno stato
+
+%% !! BGP: MULTI-HOMED
+
+Per resistere ai guasti un AS stub potrebbe usare due provider contemporaneamente, potendoli usare come primario e backup, oppure in modo più complesso con load balancing. 
+
+Per impostare i due link in entrata si usa la local preference, mentre per gli annunci in uscita dallo stub, non si può usare la MED, poiché si utilizza solamente quando due link partono dallo stesso AS. 
+Generalmente questi due link si realizzano su due router diversi, altrimenti si introduce nuovamente un single point of failure. 
+
+Si vuole evitare la situazione dove un pacchetto rimbalza e attraversa il customer per passare tra i due provider, analogamente si vuole evitare che un pacchetto per passare tra due host dell'AS stub passi attraverso i due provider. 
+
+Per gestire questi due link si considera l'idea del load sharing, una policy del tipo active-active, tenendo accesi entrambi i link, poiché essendo provenienti da provider diversi vengono pagati entrambi sempre. 
+In questo modo si inoltra il traffico sui due link. 
+Si potrebbe realizzare dividendo la LAN in due, ed attribuendo queste metà ai due link, senza avere un hardware apposito non è possibile realizzare una divisione accurata. Questa divisione si effettua solo su BGP. 
+Data una /$n$, si ottengono due /$n+1$ annunciate sui due link. La prima metà passa per il primo link, e la seconda metà passa per il secondo link. Inoltre si manda la /$n$ su entrambi, meno specifica quindi non viene usata per instradare, nel momento in cui una delle /$n+1$ non viene tagliata la /$n$ che aggrega tutto si prende il traffico e quindi si ottiene piena connettività. 
+
+
+Si considera un laboratorio con un AS radice AS1, con due AS di transito AS30 e AS40, entrambi servono l'AS stub AS300. 
+
+I router di AS300 devono avere in uscita solamente le proprie LAN, ed in entrata solo l'AS30 o l'AS40. 
+Entrambi questi router di frontiera annunciano la propria metà /$n+1$ ed il prefisso aggregato /$n$:
+\begin{minted}{bash}
+    neighbor {indirizzo-as30/as40} prefix-list mineOutOnly out
+    neighbor {indirizzo-as30/as40} prefix-list defaultIn in
+
+    ip prefix-list mineOutOnly permit {prefisso-n}/{n}
+    ip prefix-list mineOutOnly permit {prefisso-n+1}/{n+1}
+    ip prefix-list defaultIn permit 0.0.0.0/0
+\end{minted}
+Applicando queste politiche su entrambi i router di frontiera, nel momento in cui cade uno di questi due link, l'altro link ed il rispettivo provider si prende il carico del traffico totale. 
+
+I router interni ad AS300 non usano BGP, usano solamente RIP, e dato che parlando direttamente sul prefisso /$n$, non sono necessari ridistribuzioni del kernel, con \texttt{redistribute connected}. 
+
+Avendo due router BGP è necessario un peering iBGP, ma in questo caso non è presente, poiché è necessario un pezzo di BGP ancora da trattare, che gestisce race condition, in questi casi potrebbe creare problemi, in situazioni come questa vengono specificato in maniera chiara. 
+
+
+Per i router di transito verso l'alto, in uscita, non vengono inserite politiche, solo un filtro in ingresso, per comunicare direttamente tutto quello che gli passa il customer. Manda verso l'alto tutti i prefissi propri, ed i prefissi ottenuti dai propri customer. 
+
 \end{document}
