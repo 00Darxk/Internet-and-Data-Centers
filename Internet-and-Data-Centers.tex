@@ -1566,4 +1566,55 @@ Avendo due router BGP è necessario un peering iBGP, ma in questo caso non è pr
 
 Per i router di transito verso l'alto, in uscita, non vengono inserite politiche, solo un filtro in ingresso, per comunicare direttamente tutto quello che gli passa il customer. Manda verso l'alto tutti i prefissi propri, ed i prefissi ottenuti dai propri customer. 
 
+
+%% !! PITFALLS
+
+Per ogni neighbor, per applicare comportamenti complessi bisogna utilizzare una sola route map o prefix list, poiché dichiarazioni successive sullo stesso neighbor sovrascrivono le precedenti. 
+Alcuni software di router BGP permettono di scrivere codice, con la stessa flessibilità di un linguaggio di programmazione, FRR è flessibile, ma non è Turing completo, senza l'utilizzo di cicli. 
+
+FRR non genera errori, silenziosamente sovrascrive la prima configurazione con la seconda. 
+Per vedere quale configurazione si sta utilizzando, si utilizza il comando \texttt{show running-config}, nella shell \texttt{vtysh}. 
+
+
+Le liste di prefissi si attaccano ad un neighbor, si possono agganciare in ingresso o in uscita. Vanno attaccate, e poi vanno definite. Non si possono definire in mezzo alle righe di neighbor, altrimenti si perdono, poiché si esce dalla parte di router BGP. 
+Guardando la configurazione da \texttt{vtysh} vengono espresse in modo esplicito le \texttt{exit}, quindi si notano questi fallimenti totalmente nascosti, scartando le righe successive. 
+
+L'indentazione è pura estetica, viene usata solo per migliorare la leggibilità. Cià che conta è l'ordine dei comandi. 
+Prima bisogna dichiarare un neighbor, e poi vengono modificati i vari campi. 
+
+I comandi \texttt{network} devono essere inseriti dentro BGP, quindi prima di comandi per le access list e prefix list. 
+La prefix list può essere composta da più statement, che hanno ciascuno un sequence number:
+\begin{minted}{bash}
+    ip prefix-list {nome} seq {numero} permit {prefisso}/{netmask}
+\end{minted}
+Questi statement vengono eseguiti in base al sequenze number. 
+
+
+
+Prefix list si usa per matchare prefissi esatti, per identificare indirizzi più specifici si usano le access list. Una prefix list negativa si realizza con un deny seguito dai prefissi da rifiutare, seguita da un \texttt{permit any}, altrimenti rifiuterebbe tutti gli indirizzi della lista, avendo un \texttt{deny any} implicito finale. 
+Il primo prefisso matchato fa uscire dalla prefix list. 
+Se si attacca ad un neighbor una prefix list che non esiste, automaticamente si ha un \texttt{deny any}, come implicito finale. 
+
+
+Una route map può avere zero o più azioni di match, e zero o più azioni di set. Analogamente alle prefix list hanno un numero di sequenza, il primo matchato esce dalla sequenza. 
+
+Una route map con un solo match è implicitamente un filtro, senza un secondo blocco di route map che non match niente, ha un \texttt{deny any} implicito. 
+
+Se già si è inserita con un sequence number più basso una che fa un match con tutti gli indirizzi, effettivamente non filtra niente. 
+
+
+Condizioni tipiche di set sono \texttt{prepend}, per aggiungere in modo virtuale lo stesso numero di AS nell'as path, tuttavia è possibile inserire AS fittizi nell'AS path, e gli annunci potrebbero avere le loro conseguenze. 
+
+
+Tutte le match sono in and logico tra di loro, tuttavia più condizioni sullo stesso oggetto risultano in un or logico, per esempio matchando una tra più prefix list. 
+
+
+Si usano le access list anche per matchare le rotte più specifiche, si può scrivere sulle access list \texttt{exact-math} per avere un match esatto dei prefissi. 
+
+
+
+
+
+
+
 \end{document}
