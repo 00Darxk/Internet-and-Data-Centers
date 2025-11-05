@@ -557,7 +557,6 @@ I pacchetti di annuncio contengono nel path una sorta di distance vector, dove s
 
 Gli annunci vanno in un verso, ed il traffico uscente va nel verso opposto, poiché gli annunci sono rotte statiche che vengono inoltrate. 
 
-
 \subsection{Spanning Tree Algorithm: STP}
 
 Questo protocollo di instradamento è pensato per essere utilizzato in una rete locale, dove sono presenti switch, quindi opera sul livello due. 
@@ -812,7 +811,105 @@ Viene effettuata una discovery all'avvio di una macchina, quando scade un'assegn
 
 Più server possono rispondere contemporaneamente allo stesso client, che sceglie una delle possibili configurazioni. Le richieste essendo broadcast non attraversano i router, ma un router potrebbe essere configurato come proxy DHCP ed inoltra la richiesta ad uno specifico DHCP remoto. 
 
+\subsection{Scalabilità di BGP}
+%% TODO move to kathar?
+Su BGP il problema della rumorosità è risolto dal \textit{route refactors}, inoltre ci sono problemi di scalabilità con per realizzare le policy, tramite route map. Si vorrebbe esprimere preferenze su ogni prefisso, ma questo non è possibile con le route map. Si possono risolvere con le \textit{communities}. 
 
+
+%% !! ROUTE REFRESH
+
+Il route refresh è un meccanismo che risolve il problema di modifica delle policy. 
+Quando viene modificata una policy, il router deve ricompilare tutte le rotte di instradamento. Il router potrebbe richiedere dai suoi vicini tutte le rotte, in un \textit{hard BGP peer reset}, ma questa possibilità comporta un lavoro notevole e non garantisce la continuità del servizio. 
+Altrimenti quando si ricevono gli annunci dai vicini, si mantengono in memoria, ed avendo una copia di tutto in memoria, si può ricalcolarsi tutto, \textit{soft reconfiguration}. 
+
+Entrambi hanno dei vantaggi e svantaggi. L'hard reset consiste nel ricreare buttare giù tutti i peering e riattivarli, e dopo aver ricalcolato le rotte, vengono ri-annunciate con effetti che riverberano sulla rete. 
+Invece di consumare risorse di calcolo, si consumano risorse di memoria per la soft reconfiguration. 
+
+
+La route refresh, descritta in RFC 2918, mantiene attivi i peering BGP, e chiede ai suoi vicini di ri-annunciare i prefissi, sfruttando la memoria dei vicini invece di usare memoria aggiuntiva propria. 
+Impatta solo i prefissi affetti dai cambi di policy, e facilita il cambiamento di policy non distruttive. 
+Inoltre, non è richiesta configurazione aggiuntiva, tutto ciò che viene negoziato dai router è automatico. 
+
+
+%% !! NEXT HOP
+
+In generale il next hop coincide con l'interfaccia di peering del router BGP. QUando la rotta viene annunciata con iBGP, il BGP canonico prevede che la rotta rimane la stessa interfaccia remota. Quando viene annunciata fuori, il next hop diventa di nuovo l'interfaccia di uscita. È un attributo che canonicamente ha sempre l'interfaccia di uscita dell'ultimo AS da cui è uscita. 
+
+Quando un router deve inserire una rotta BGP nel data plane una rotta verso un IP remoto, non appartenente allo stesso AS. Il next hop è l'indirizzo su cui viene eseguito ARP, ma possiede un next hop remoto, deve quindi determinare a quale interfaccia vicina inviare il pacchetto. 
+Il router esegue un lookup sulla rete dov'è presente l'indirizzo del next hop. Per inserire la rotta sulla tabella di instradamento quindi inserisce il valore di next hop della rotta appena trovata. 
+
+L'iBGP che compila la tabella di instradamento prima che BGP inietti le rotte di instradamento, deve iniettare tutte le rotte esterne, altrimenti non sarebbe possibile effettuare il recursive lookup. In generale queste non servono, poiché protocolli IGP non si interessano di queste, ma sono necessarie per iniettare rotte BGP. 
+Per risolvere questo problema, si può inserire una clausola che impone di cambiare il next hop ad ogni passo, anche se ci si trova in uno stesso AS. In questo modo non bisogna portare in IGP tutte le rotte interne:
+\begin{minted}{bash}
+    neighbor x.x.x.x next-hop-self    
+\end{minted}
+
+Altrimenti si possono configurare peering iBGP su indirizzi di loopback. Questi possono essere aggiunti arbitrariamente, anche con indirizzi globalmente unici. Il pacchetto indirizzato all'interfaccia di loopback, risale al livello IP della macchina che lo riconosce come proprio e lo elabora. 
+
+Si può usare uno schema di enumeratone semplice nelle loopback per tutti i router. Questi diffondono sul protocollo IGP dei prefissi unici /32. Fino a che il router ha un'interfaccia attiva, è raggiungibile. Invece di usare un'interfaccia vera è possibile mantenere la connessione indipendentemente dallo stato delle sue interfacce. Questo è estremamente comodo anche in configurazione, le loopback vengono usate come identificatori di router. Tutti gli altri IP sono accidentali e non è necessario memorizzarli. 
+
+Quando si realizzano dei peering, non si realizzano tra due interfacce vera, ma tra interfacce di loopback, che non cadano a meno che non viene disattivato l'intero router. Le sessioni iBGP non dipendono neanche dallo stato della rete interna. Fino a che l'AS è connesso, possono comunicare tutte le macchine. 
+Tuttavia, bisogna forzare l'indirizzo di peering, con quello di loopback, e non l'indirizzo dell'interfaccia da cui esce il pacchetto:
+\begin{minted}{bash}
+    neighbor x.x.x.x update-source y.y.y.y    
+    neighbor x.x.x.x update-source lo:z    
+\end{minted}
+Questo comando accetta un indirizzo IP o il nome di un'interfaccia. 
+
+%% !! ROUTE REFLECTORS
+
+Questo non toglie che il numero di peering BGP non scali, rimane quadratico. Poiché devono essere in full mesh, in modo che non rimbalzino annunci BGP costantemente. 
+\textit{Route reflectors} è una soluzione semplice, descritta in RFC 4456. Un route reflector è un router come gli altri, questo computa delle rotte, esattamente come un router BGP, e seleziona le sue best e le inoltra ai suoi vicini con una particolare policy. 
+
+Ogni macchina è connessa ad un unico stesso router, chiamato route reflector, questo quando riceve degli annunci, decide qual è il migliore e lo invia a tutti. Il comportamento da parte dei router di frontiera è buona, tutti ottengono la scelta migliore. Il route reflector si comporta come uno specchio che riflette rotte specifiche. 
+
+Esiste un route reflector che si comporta come server, una macchina BGP standard, con una serie di client che sono i router di frontiera. 
+Alcuni peering iBGP diretti possono sopravvivere e possono diminuire la latenza in caso il route reflector sia troppo lontano. 
+
+Per sostenere la scalabilità si può creare una full mesh di route reflector, dove ogni annuncio compie un singolo rimbalzo. Tra loro sanno che stanno comunicando tra route reflector. 
+Quando un route reflector riceve un annuncio tra un client o un non client, seleziona la rotta migliore, se la riceve da un client, la rimanda a tutti i client ed ai suoi non client. Se invece viene da un non client, si suppone che tutti gli altri route reflector la sappiano già, e la manda verso i suoi soli client. 
+
+Si può scalare ulteriormente aggiungendo un altro livello di route reflector. Ciò che è importante è avere una full mesh solo al livello superiore. È possibile avere connessioni aggiuntive, per tollerare una ridondanza, un client potrebbe avere più server, ma non è necessario creare un albero. 
+
+Ad ogni livello gerarchico un roue reflector serve un cluster della backbone, questo può avere due o più router. 
+
+Si crea un problema, poiché connessioni ridondanti potrebbero introdurre dei cicli. Per evitare il campo infinity in BGP si è introdotta la full mesh, e per evitare i problemi della full mesh si sono introdotti nuovamente dei cicli. 
+
+
+La soluzione è una specie di as-path, l'idea è quella di avere un attributo BGP che si memorizza l'ID di ogni router attraversato. 
+Si vuole un attributo che porti tutti gli ID dei router attraversati, in modo che chi riceve un annuncio con il suo ID dentro lo scarta come un ciclo. 
+Questa attività la devono realizzare i route reflector, non le macchine normali, poiché vedono questo come peering BGP, devono partecipare a questo meccanismo senza saperlo. 
+Ognuno si deve comportare in una certa maniera, ma ci sono degli attori inconsapevoli. 
+Si realizza allo stesso modo di OSPF, impersonando quei router. 
+
+Il campo originator ID contiene l'ID del route reflector che lo ha generato, la cluster list contiene la lista dei cluster attraversati nella gerarchia dei route reflector. L'identificativo di un cluster viene aggiunto quando viene inviato un annuncio da ruote reflector. 
+Se un router riceve una rotta iBGP con il suo ID contenuto nel campo originator ID lo scarta, se invece nell'attributo cluster list è contenuto l'ID del cluster lo scarta. 
+
+
+Queste connessioni TPC potrebbero non coincidere con le connessioni fisiche, ma si consiglia di seguire la topologia fisica della rete, in modo da non influenzare l'instradamento dei pacchetti. 
+Tipicamente la PoP, \textit{Point of Presence} ha due router principali, route reflector, con due cluster definiti sull'intera rete. 
+
+
+La metrica igp viene considerata nel processo di selezione della best. 
+Il passaggio a cluster e route reflector è semplice, con una migrazione facile che non impatta i servizi, riducendo le ridondanze, inserendo un route reflector per cluster. 
+
+
+%% !! COMMUNITIES
+
+Le communities sono dei meccanismi di scalabilità per permettere ad un insieme di macchine di comportarsi in maniera omogenea. Questo viene realizzato raggruppando insiemi di prefissi in classi o community, sono delle etichette inserite in annunci. Ogni etichetta ha significati diversi. Si possono appiccicare ad annunci in iBGP o eBGP. 
+
+Venne introdotto l'attributo community in RFC 1998, dopo essere descritto in RFC 1997. Se queste etichette non vengono rimosse, rimangono nell'annunciano e vengono propagate in rete. 
+È un intero a 32 bit, rappresentato da due numeri da 16 bit. I primi due byte sono il numero dell'AS, si annuncia l'AS che ha deciso il significato dell'etichetta, non necessariamente l'AS che l'ha generato. 
+Ogni destinazione potrebbe essere membro di più comunità, si può trattare ogni comunità con un'unica policy, per aggregare più prefissi. 
+Si possono realizzare route map sull'etichetta. 
+
+Ci sono delle community abbastanza standard, con il prefisso \texttt{65553}:
+\begin{itemize}
+    \item \textit{No-export}, rotte da non annunciare ad alcun peer eBGP \texttt{:65281}
+    \item \textit{No-advertise}, rotte da non annunciare ad alcun peer BGP, \texttt{:65282}
+    \item \textit{No-export-subconfed}, rotte da non esportare fuori dall'AS locale, \texttt{:65283}
+    \item \textit{No-peer}, rotte da non annunciare a peer bilaterali, \texttt{:65284} 
+\end{itemize}
 
 \clearpage
 
