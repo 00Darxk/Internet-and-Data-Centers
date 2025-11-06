@@ -1083,10 +1083,84 @@ Lo stesso si può usare con meccanismi sofisticati di SDN.
 Questa separazione non è stata introdotta nel protocollo quando è stato realizzato, poiché ha un effetto a cascata anche su livelli inferiori. Questo è facile risolvere utilizzando degli identificatori end-to-end, scambiando dei \textit{context tags} shim6 che possono essere utilizzati per identificare un contesto e quindi una comunicazione specifica, potendo cambiare dinamicamente i vari indirizzi. 
 
 
+\clearpage
+
+\section{MPLS VPN}
+
+Il \textit{Multo-Protocol Label Switching} è una tecnologia usata dai data centers, che risponde ad esigenze di diversi attori. 
+
+Il cliente vorrebbe avere un filo, mentre il provider vorrebbe  utilizzare la rete che già possiede. 
+I provider hanno una grande disponibilità di banda, ed è molto difficile saturarla, vorrebbero vendere connettività punto-punto ai loro utenti, vendendo fili virtuali ai suoi utenti. 
+
+Le sedi periferiche di un'organizzazione si connettono alla sede centrale tramite il provider, per voler collegare punto-punto queste diversi sedi, con possibilmente gli stessi prefissi tre le varie sedi. Per cui il provider deve realizzare un filo virtuale mantenendo invariati gli indirizzi dell'organizzazione del customer. 
+Vuole che questo traffico sia segregato rispetto al traffico di altri utenti, poiché potrebbe contenere informazioni sensibili, o ha esigenze di riservatezza. Almeno lo vuole isolare logicamente. 
+
+Il provider vuole realizzare una configurazione economica e scalabile, e non vorrebbe avere delle prestazioni minori. 
+
+%% TODO add smt
+Per soddisfare i vincoli del provider e dei customer, si usano i VPN, \textit{Virtual Private Network}, si comportano come una rete privata, ma è implementata solo virtualmente, e MPLS, \textit{Multi-Protocol Label Switching}, un protocollo altamente scalabile per il trasporto di dati. 
+
+Il label switching è un meccanismo di instradamento dei pacchetti, si inserisce sopra ad ethernet, e sotto IP. Però mentre nella rete attraversano pacchetti MPLS, passano anche pacchetti IP. 
+
+Un nodo per inviare un pacchetto, si calcola il suo cammino, al pacchetto non lo si guarda più all'indirizzo, si inserisce in un altro pacchetto contenente un'etichetta. Le macchine successive instraderanno in base all'etichetta. Ci sono tante etichette quanti sono i flussi che stanno attraversando la rete al momento, un numero molto minore rispetto allo spazio di indirizzamento di internet. 
+Quando si definisce questo flusso si possono fare considerazioni di banda, per il flusso dei dati. 
+
+Per ogni tratto si usa un'etichetta diversa, il calcolo deve essere effettuato dalla macchina che assegna l'etichetta. 
+Prima bisogna avere delle tabelle di etichette. All'inizio un qualche protocollo decide il cammino e determina per ogni tipo di flusso un tipo di etichetta. La macchina che determina se un pacchetto appartiene ad un dato flusso determina la sua etichetta. 
+Lo inserisce in un circuito virtuale indirizzato su una strada già determinata, in base ai protocolli di instradamento del livello sottostante. 
 
 
+Il pacchetto MPLS incapsula i pacchetti con un header contenente uno o più etichette, in uno stack. Ogni stack ha quattro campi, il valore, la classe del traffico, una flag che indica l'ultimo pacchetto ed il TTL. 
+Molte volte il TTL non viene aggiornato, quindi non sono visibili i nodi intermedi con un traceroute. 
+
+Si potrebbe sovrapporre un certo numero di etichette in maniera arbitraria. Inoltre, si potrebbe creare un tunnel dentro ad un tunnel. 
+
+In generale i router dei provider o di backbone si indicano con P, i router di frontiera sui customer si indicano con PE, i router dei customer si indicano con CE. 
+
+Per implementarlo la prima azione da eseguire è assegnare un indirizzo IP di loopback ai PE, garantendo che siano connessi. 
+
+QUesti indirizzi di loopback vengono propagati attraverso un protocollo IGP. Sulla macchina router si definisce un'interfaccia dove si vedono le destinazioni di questo traffico, si passano per questa interfaccia, ed essendo un interfaccia virtuale, di loopback, viene incartato in un altro pacchetto che possiede l'indirizzo destinazione dell'altro estremo del tunnel, ed esce alla fine del tunnel, lo scarta e lo ripassa attraverso la tabella di instradamento e lo passa all'interfaccia. 
+
+In questo modo non si hanno problemi di sovrapposizione delle reti. Questo sarebbe difficile da configurare, e bisognerebbe configurare un numero quadratico di tunnel. 
 
 
+La seconda fase consiste nell'usare BGP per annunciare un'opportunità di instradamento. QUesto utilizza una variante di BGP, MP-BGP. 
+Ogni iBGP instaura un peering iBGP con tutti gli altri PE nella rete del provider. Queste sono informazioni di instradamento sulle reti del customer. 
+
+
+La terza fase consiste nell'usare MPLS come tunnel, il pacchetto IP di un CE attraversa tutta la rete dopo essere incartato in un pacchetto MPLS dal PE, assegnando due etichette, indicando qual è il customer e qual è il PE di destinazione. Quando il PE giusto rimuove la prima etichetta, e rimane solo l'etichetta che indica il customer mittente. 
+
+In realtà l'etichetta finale la toglie il penultimo così toglie il pacchetto effettivo al destinatario. 
+
+L'etichetta più profonda che non viene usata per instradare viene usata per identificare quel tipo di traffico. Quella che emerge viene utilizzata per attraversare la rete. 
+L'ultima etichetta identifica la VPN, è usata in maniera simile della VLAN, definita in IEEE 802.1Q. 
+
+Il protocollo che assegna queste tabelle di etichette è il LDP, \textit{Label Distribution Protocol}. 
+
+%% TODO add smt
+
+Per inoltrare un pacchetto in questo modo si usa il costrutto \textit{Virtual Routing and Forwarding} (VRF), questo virtualizza il router, creando delle istanze di routing. 
+Questo permette ad un router di avere diverse tabelle di instradamento, ogni tabella è un'istanza di VRF, sia il control plane che il data plane. 
+
+
+Ogni PE mantiene più istanze di VRF ed ogni contiene le rotte ricevute da CE direttamente connessi, associati ad una specifica istanza di VRF, inoltre ogni VRF contiene le rotte propagate da BGP dagli altri PE. 
+
+Per distinguere gli indirizzi IP si usa un \textit{Route Distinguisher}, (RD), e nessuna VPN ha lo stesso RD. Questo converte indirizzi IP non univoci in indirizzi VPN unici. Questo permette di evitare conflitti se due customer hanno spazi di indirizzamento sovrapposti. 
+%% TODO add def RD
+
+In MPLS i router si distinguono in LER, \textit{Label Edge Router}, il primo router che incapsula il pacchetto dentro un MPLS LSP. Mentre LES, \textit{Label Switching Router}, si occupa di instradare pacchetti MPLS all'interno della rete. 
+
+Un LSR può ricevere la stessa etichetta da più interfacce, in questi casi sono presenti dei meccanismi per evitare problematiche. Questo si basa sul label space usato, e dipende dall'implementazione ed a volte dall'interfaccia, non dalla configurazione.   
+
+A volte avere solamente un RD non è sufficiente, si vorrebbe avere una VPN che non è punto punto, ma una mesh. In questi casi il RD indica solo una rete virtuale e non riesce a stabilire una topologia. 
+
+Quindi si è introdotto un altro attributo \textit{Route Target} (RT), che specific specifica quali rotte devono essere importate o esportate all'interno di un VRF. 
+RT è una comunità estesa, che supporta topologie complesse. Si assegna un RT ad ogni VPN, e si usa un singolo VPN. 
+
+Oltre a specificare il RD, si indica anche il RT, che è una comunità di VPN. 
+
+Questo sistema di amministrazione interno di un AS permette di creare dei tunnel all'interno, cno la massima flessibilità senza che il customer sia a conoscenza di quello che sta avvenendo dentro l'AS, vedendo la connessione come un'effettiva connessione via filo. 
+La configurazione del provider inoltre è relativamente semplice. 
 
 
 \clearpage
@@ -1539,7 +1613,7 @@ Questo per i router di frontiera, per i router interni che non devono parlare BG
 Bisogna ignorare il \texttt{network import-check}, poiché si usano dei prefissi aggregati per gli indirizzi delle connessioni, e quindi non sono presenti nella tabella di instradamento. 
 Uno dei due peering viene definito primario, e l'altro secondario, tra i router di AS20. Si ha una politica semplice per il neighbor primario ed una più complessa per il neighbor secondario. 
 \begin{minted}{bash}
-    debug bgp keepalives
+    debug bgp keepalive
     debug bgp updates in
     debug bgp updates out
 
