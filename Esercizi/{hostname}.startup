@@ -1,0 +1,3 @@
+ip address add {prefisso}/{netmask} dev {interfaccia}
+ip route add {prefisso}/{netmask} via {indirizzo} dev {interfaccia}
+systemctl start frr
