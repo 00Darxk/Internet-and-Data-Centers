@@ -7,6 +7,9 @@ Appunti tratti dal corso di Internet and Data Centers, Anno Accademico 2025/26, 
 ## Contenuti del Corso
 
 ## Materiale Aggiuntivo
+ - [asrank](https://asrank.caida.org/asns) sito per rankare autonomous system;
+ - [RIPEstat](https://stat.ripe.net/) tool per le statistiche BGP di RIPE;
+ - [BGP Looking Glass](https://www.bgplookingglass.com/) database di looking glass per vari AS;
  - [Kathará](https://github.com/KatharaFramework/Kathara), emulatore di reti, utilizzato durante il corso e per l'esame;
  - [Sito del corso](http://impianti.inf.uniroma3.it), con i lucidi delle lezioni, esercizi, esoneri ed esami passati.
 

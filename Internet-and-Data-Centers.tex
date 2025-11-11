@@ -1162,6 +1162,97 @@ Oltre a specificare il RD, si indica anche il RT, che è una comunità di VPN.
 Questo sistema di amministrazione interno di un AS permette di creare dei tunnel all'interno, cno la massima flessibilità senza che il customer sia a conoscenza di quello che sta avvenendo dentro l'AS, vedendo la connessione come un'effettiva connessione via filo. 
 La configurazione del provider inoltre è relativamente semplice. 
 
+\clearpage
+
+\section{Gerarchia Internet}
+
+Nel mondo reale sono presenti più livelli di astrazione per BGP. 
+Esista una gerarchia di AS, in modo che l'operatore che fornisce la connettività possa fornire il proprio servizio, attraverso provider di più alto livello. 
+
+Il customer è un AS e va a pagare il provider, l'AS che fornisce connettività di più alto livello. Queste relazione sono di tipo economico. 
+
+Il secondo tipo di relazione è chiamata peer-to-peer, in questo tipo di relazione due provider circa dello stesso livello si mettono in accordo per scambiarsi traffico gratuitamente. 
+
+Normalmente i costi sono proporzionali alla quantità di traffico passato sul link. Se si riesce a mandare il traffico su un peer-to-peer l'unico costo è quello di manutenzione del link, diviso tra i due peer, e tutto ciò che passa sopra è gratis. 
+È il customer a pagare il traffico sul link offerto dal provider, indipendentemente dalla direzione del traffico. 
+
+Da questa base logica si può arrivare al concetto della gerarchia di internet. 
+Quando si raggiunge la parte più alta, sono tutti in peer-to-peer in full mesh. 
+
+
+Ad un provider conviene inviare traffico ai suoi customer, per cui un provider propaga traffico prominente dal suo AS, da un suo customer o un peer, dove ci guadagna, oppure proveniente da un suo provider, supponendo i costi uguali a somma zero, poiché paga il link verso il suo provider. 
+In discesa passa tutto ed è conveniente per il provider. 
+In salita il customer invia il proprio traffico, ed il traffico proveniente da un suo customer, poiché è il motivo per cui si ha un contratto tra due AS, a somma zero, supponendo i link equamente costosi. 
+
+Ricevendo traffico da un peer, gratis, se lo si inoltra verso l'alto, si ha una perdita quindi non viene inoltrato. 
+Analogamente non si manda traffico proveniente ad un provider verso l'alto. 
+Il traffico peer-to-peer non permette due hop, poiché si considera anche il costo dell'infrastruttura interna, se questa viene saturata, bisogna aumentarne le prestazioni. Quindi se si facesse passare il traffico peer-to-peer si avrebbe una spesa, quindi non lo si inoltra. 
+
+Il modello customer-provider di BGP viene chiamato \textit{valley free}, poiché nel momento in cui si crea una valle, si realizza traffico vietato poiché comporta una perdita. Questa politica viene implementata dda chi ci perde. 
+
+Fino a che si sale soltanto e si scende soltanto il traffico è accettato. In qualche caso queste catene potrebbero essere mancanti. Non sono permessi peer-to-peer solo se dopo si scende, quindi non esistono percorsi, con un peer-to-peer non alla massima altezza, poiché uno dei due peer ci perderebbe economicamente. 
+
+Le relazioni customer provider sono esclusivamente dei filtri. Il modello economico spesso si associa al modello \textit{prefer-customer}. Se si deve scegliere dove mandare il traffico, si preferisce verso il basso, o in orizzontale, dove non si perde. Mentre come ultima scelta si inoltra verso l'alto. 
+
+
+La configurazione vera di un router BGP è costituita da una serie di filtri, ed un insieme di route map per settare le preferenze tra i vari AS. 
+L'internet non è shortest path, nonostante BGP lo sia in assenza di policy, non sempre lo è nel mondo reale, poiché implementa policy legate anche a rapporti commerciali. 
+
+
+Una stima realistica degli AS sono 75 mila, ma è difficile da stabilire, poiché viene effettuata su quelli annunciati, non quelli assegnati, che non vengono riassegnati. 
+
+
+Gli AS in questa gerarchia si dividono in tre tipi, i provider di livello uno sono tutti in una full mesh tra tutti loro, sono tra i 7 ed i 12 ??, non vengono pubblicati gli accordi commerciali, quindi vengono dedotti dagli annunci BGP sulla rete. %% TODO 7k?12k?
+
+Il customer cone di un AS è la parte dell'internet che può raggiungere attraversando solamente connessioni di tipo customer-provider, l'insieme dei suoi customer diretti ed indiretti. Poiché possono essere disgiunti, dovendo offrire la piena raggiungibilità di internet, devono realizzare una full mesh tra i coni dei vari provider. 
+
+Più in alto sono difficili da capire i rapporti, la rete è estremamente densa, con un numero di link molto alto rispetto al numero di nodi. 
+
+La rete di BGP è molto densa ed anche molto piatta, poiché una volta raggiunto tutto l'internet, non è necessario aumentare i peer. 
+
+Il sito asrank è gestito da un'agenzia di ricerca CAIDA, per classificare AS. Questo fa girare un algoritmo una volta al mese per determinare com'è fatto l'internet, realizzando un ranking degli AS per dimensione del cone size. 
+RIPE offre molti strumenti, tra questi RIPEstat fornisce statistiche aggregando informazioni provenienti da BGP. 
+Lo strumento chiamato \textit{looking glass}, portali web pubblicati da certi AS, per vedere lo stato BGP del router, realizzando delle query. Si possono fare dei ping, ed eseguire comandi limitati. 
+Questi sono convenienti per AS grandi, poiché BGP è una comunità. 
+
+\clearpage
+
+\section{Anomali di Internet}
+
+BPG è stato progettato intorno al 1994, all'epoca il concetto di cybersecurity non è vivo quanto oggi. È noto che BGP è vulnerabile ad attacchi, e questi sono in molti casi totalmente invisibili agli utenti. 
+È estremamente facile modificare l'AS path di un annuncio, per indirizzare il traffico verso il proprio router ed analizzare il traffico, a seguito di operazioni malevole. 
+
+Non ci sono firme digitali o validazione degli annunci, mancano i principi basi delle politiche di sicurezza. Alcuni attacchi BGP sono talmente banali per cui CAIDA, per il dipartimento dell'Homeland Security, monitora BGP per settori critici di interesse. 
+
+Alcune anomali sono BGP leaks, una leak è un prefisso che non dovrebbe uscire da un AS, ma viene annunciato verso l'esterno. Generalmente è un errore, e può trasformare un AS non di transito in un AS di transito. 
+
+Questo avviene in vari modi, alcuni prefissi viaggiano disaggregati per annunciare i prefissi in modo più specifico. 
+Il numero di BGP leaks è stimato intorno a qualche centinaio al mese. 
+
+Nell'agosto del 2017 Google annunciò a Verizon rotte apprese tramite link peer-to-peer, diventando transito per 135 mila rotte causando un outage in Giappone. 
+
+Il BGP hijacking consiste nel rubare un prefisso, annunciando un prefisso che non si possiede realmente. Si possono realizzare hijack parziali rubando un sotto-prefisso più specifico, diffondendosi in modo più veloce. Oppure si può realizzare un hijack completo, per far vincere il proprio prefisso aggiungendo determinati attributi. 
+
+L'effetto immediato può essere di deviare il traffico, rimandarlo all'origine, analizzarlo, ecc. 
+Ci sono centinaia di attacchi di questo tipo al mese. 
+
+Nel 26 Aprile 2017, rotte appartenenti a più di una dozzina di altri servizi finanziari sono state annunciate da un AS russo. 
+
+Il 12 Dicembre 2017 molti prefissi americani sono stati annunciati da un AS russo generalmente silente. 
+
+Nel Gennaio 2017 l'azienda Telecom iraniana ha annunciato dei prefissi commerciali allo scopo di censurare dei siti web, generando dei leak. 
+
+
+Ci sono stati vari interception, i dati non sono molto chiari, poiché l'utente non se ne accorge, solo l'AS difficilmente, per cui l'incidenza è ignota. 
+
+
+BGP outage è quando si perde visibilità di un certo prefisso, non necessariamente è un attacco, spesso è solo sparito. 
+BGP è dimostrato che non è stabile, esistono configurazioni per cui la best oscilla in continuazione.  
+% bgp=calabrone: non sa di poter volare quindi lui vola
+
+% BGP new upstream un nuovo 
+%% TODO add smt 
+
 
 \clearpage
 
