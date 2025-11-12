@@ -1082,6 +1082,60 @@ Lo stesso si può usare con meccanismi sofisticati di SDN.
 
 Questa separazione non è stata introdotta nel protocollo quando è stato realizzato, poiché ha un effetto a cascata anche su livelli inferiori. Questo è facile risolvere utilizzando degli identificatori end-to-end, scambiando dei \textit{context tags} shim6 che possono essere utilizzati per identificare un contesto e quindi una comunicazione specifica, potendo cambiare dinamicamente i vari indirizzi. 
 
+\subsection{Transizione}
+
+Il livello di rete ha la caratteristica di essere uniformante, tutte le macchine intermedie devono avere lo stesso protocollo per poter parlare IPv4 o IPv6. 
+Per cui sono necessari meccanici di transizione per realizzare questa transizione da IPv4 a IPv6, poiché è estremamente difficile cambiare protocollo a questo livello. 
+
+IPv6 deve essere compatibile a IPv4 e deve permette il passaggio da IPv4 per la sua adozione. 
+
+Adesso IPv6 è adottato in parallelo rispetto a IPv4, il processo di transizione potrebbe durare decenni. 
+
+Il processo di transizione è diviso in tre fasi
+In un momento IPv6 componeva delle isole separate nell'internet dove si può comunicare con IPv6, dove utilizza prevalentemente i servizi esistenti di IPv4. 
+Nella seconda fase i due protocolli coesistono nella diffusione globale, le varie isole di IPv6 si consolidano ed è possibile comunicare nella maggior parte di internet solamente con IPv6. 
+Nella terza fase l'adozione di IPv6 supera la diffusione di IPv4, che rimane utilizzato su delle isole, e le reti IPv4 si appoggiano sull'infrastruttura IPv6. 
+
+
+Si ha la possibilità di realizzare apparecchiatura dual stack, con due pile protocollari, IPv4 e IPv6. Altri meccanismi utilizzati sono i tunnel, in disuso, configurati manualmente per superare oceani in modo da comunicare solamente su uno stesso protocollo. Altri meccanismi possibili i traduttori di protocollo, come SIIT, NAT64. 
+
+
+Il dual stack è l'approccio più semplice, ma non riduce il fabbisogno degli indirizzi IPv4, rimane il problema di IPv4. Le applicazioni che supportano IPv6 possono utilizzare entrambi i protocolli. 
+Anche se è molto semplice, richiede una doppia gestione dell'infrastruttura. Non integra la rete IPv6 con quella IPv4. 
+
+I client su di un host dual stack tentano di stabilire una connessione IPv6, e sol se non ci riesce stabilisce una connessione IPv4. 
+Il comportamento è descritto da RFC 6555, se il server risponde con un ack ad entrambi i protocolli, resetta una delle due connessioni. 
+
+
+Supponendo di essere in una fase avanzata, con una rete di backbone di IPv6, e parti periferiche con IPv4. Queste due reti non hanno apparecchiature dual stack, per cui bisogna usare dei protocolli di traduzione, che si comportano come un NAT, facendo passare tutto il traffico attraverso il nodo traduttore. 
+
+Lavorando a livello tre ci sono due soluzioni, SIIT e NAT64. Queste mappano indirizzi IPv4 nello spazio IPv6, essendo molto più grande. 
+Ci sono vari modi ufficiali e non ufficiali. In un NAT normale c'è uno stato, e questo ne limita l'utilizzo. 
+
+% dettaglio traduzione ICMP per esempio time exceeded sul nodo di traduzione 
+
+Il primo meccanismo si chiama \textit{Stateless IP/ICMP Translation} (SIIT), generale, che offre la possibilità di comunicare attraverso un traduttore. 
+
+Tutto lo spazio indirizzamento IPv4 è mappato dentro una porzione di IPv6. Gli ultimi 6 byte sono composti da \texttt{::ffff:a.b.c.d}. 
+La macchina traduttrice si occupa di inoltrare questo indirizzo mappato. 
+I nodi ottengono indirizzi IPv4 temporanei che vengono mappati in indirizzi IPv6 IPv4-\textit{translated} del tipo \texttt{::ffff:0:a.b.c.d} e usati come indirizzo sorgente. 
+Il traduttore traduce i pacchetti in transito, con una traduzione stateless, non è necessario salvare informazioni aggiuntive. Inoltre, non è importante la macchina da cui entra o esce, poiché il processo è stateless. 
+Questo richiede modifiche alle implementazioni IPv6, e richiede la presenza di assegnazione dinamica di indirizzi temporanei, questi devono essere inoltrati fuori come se fossero appartenenti alla rete. 
+Richiede di gestire il routing per gli indirizzi IPv4-translated all'interno del site. 
+
+
+Il NAT64 è più elegante, ma richiede uno stato parziale. Si chiama così poiché ricorda il NAT, e fonde le soluzioni del SIIT con il NAT. 
+
+Il nodo traduttore dispone di un pool di indirizzi IPv4 che vengono assegnati ai nodi che lo utilizzano, ed il NAT64 mantiene lo stato delle associazioni. 
+Gli indirizzi IPv4 vengono rappresentando i 32 bit dell'indirizzo ad un prefisso di 96 bit di instradamento verso il traduttore. 
+
+La traduzione dei pacchetti avviene come in SIIT. 
+
+Ci vuole uno speciale DNS chiamato DNS64, che aggiunge delle funzionalità, pensato ad un client IPv6 per connettersi ad un servizio IPv4. 
+
+Il DNS64 server consulta il DNS normale, cercando di capire gli indirizzi della macchina del servizio, poiché potrebbe avere indirizzi IPv6. Se ha solo indirizzi IPv4 nota il problema. Allora restituisce invece l'indirizzo IPv6 corrispondente che codifica la destinazione. 
+
+%% TODO NAT64, rewording
 
 \clearpage
 
@@ -1217,7 +1271,7 @@ Questi sono convenienti per AS grandi, poiché BGP è una comunità.
 
 \clearpage
 
-\section{Anomali di Internet}
+\section{Anomalie di Internet}
 
 BPG è stato progettato intorno al 1994, all'epoca il concetto di cybersecurity non è vivo quanto oggi. È noto che BGP è vulnerabile ad attacchi, e questi sono in molti casi totalmente invisibili agli utenti. 
 È estremamente facile modificare l'AS path di un annuncio, per indirizzare il traffico verso il proprio router ed analizzare il traffico, a seguito di operazioni malevole. 
@@ -1253,6 +1307,39 @@ BGP è dimostrato che non è stabile, esistono configurazioni per cui la best os
 % BGP new upstream un nuovo 
 %% TODO add smt 
 
+\clearpage
+
+\section{Trasmissioni Efficienti TCP}
+
+La socket è vista dall'applicazione come un file descriptor, una sequenza di 16 bit, associato ad un'istanza di conversazione. 
+Quando si vuole mandare un messaggio ad una macchina remota, l'applicazione scrive il messaggio su una di queste socket, con gli stessi comandi per la scrittura su di un file. 
+Quando si scrive un blocco di dati, questi dati vengono messi in un buffer di uscita da quella socket, e sarà il livello quattro ad occuparsi di inoltrarli al livello quattro. 
+
+I pacchetti TPC si chiamano segment, e possono essere scomposti in diversi pacchetti, in base alla massima dimensione di un pacchetto MSS, stabilita durante il three-way handshake. 
+
+Il pacchetto TPC contiene la porta sorgente e mittente, queste sono due etichette che identificano il processo sulla macchina corrispondente relativa alla connessione. 
+Un'etichetta serve solo a denotare un'istanza di comunicazione. La conversazione in sé viene definita sia dalla porta che dagli indirizzi. 
+
+La connessione dipende dallo stato di questi due host, su due flussi di comunicazione completamente indipendenti. Si potrebbe chiudere la conversazione in un verso solo, ma quando si chiude da un verso normalmente si chiude anche nell'altro, poiché non avrebbe senso continuare la conversazione. 
+
+
+TCP è uno strato complesso, nella scelta delle tempistiche e delle strategie, mentre è semplice rispetto ai pacchetti. 
+Per un periodo sembrava un sistema igà studiato, ma ci sono scoperte nuove strategie per velocizzare la comunicazione. 
+
+Per rendere più efficiente il protocollo si vorrebbero mandare pacchetti con tanto payload, essendo un protocollo per trasferire dati. Gli strati inferiori non vedono questa problematica. Quindi solo TCP può realizzare questa strategia. 
+
+Si vuole ridurre il numero di pacchetti inviati, quindi si vogliono inviare pacchetti quasi sempre di dimensione massima. 
+Si può realizzare riducendo il numero di notifiche, ed evitando il numero di pacchetti perduti con varie strategie. 
+In generale il livello IP è best effort, quando un router è congestionato, butta i pacchetti in maniera casuale, senza neanche mandare ICMP. IP non garantisce il servizio di consegna, invece è garantito da TCP. Questo è un sistema critico ed è necessario garantire che la sequenza dei byte sia uguale tra mittente e destinazione. 
+È il primo livello a rilevare le congestioni e poter agire a riguardo. 
+
+Si possono implementare strategie di attesa, temporizzando i pacchetti. Le prestazioni dei servizi TCP cambiano in maniera significativa quando si cambiano queste policy. 
+
+
+Il TCP mittente può aspettare che i dati si accumulino prima di inviarli, ad eccezione di dati urgenti, analogamente per il destinatario in lettura. 
+
+Si può utilizzare il campo window per comunicare il buffer disponibile in lettura o scrittura. In questo modo avendo un mittente veloce ed un destinatario lento, questo metodo blocca il traffico. 
+Può essere utilizzato in maniera strategica, quando un server instaura una connessione, mostra prima una finestra piccola, per evitare possibili attacchi. 
 
 \clearpage
 
@@ -1873,10 +1960,34 @@ Tutte le match sono in and logico tra di loro, tuttavia più condizioni sullo st
 
 Si usano le access list anche per matchare le rotte più specifiche, si può scrivere sulle access list \texttt{exact-math} per avere un match esatto dei prefissi. 
 
+%% !! transit AS
+
+Un AS di transito si occupa di propagare tutti gli annunci ed il traffico ad altri AS. 
+Si può distribuire la tabella di instradamento BGP sul protocollo IGP, ma questo causa un aumento delle dimensioni delle tabelle IGP, e gli aggiornamenti di BGP hanno ripercussioni anche su IGP. 
+Si può realizzare incapsulando il traffico in altri pacchetti, creando un tunnel, che comunica solamente tra i router di frontiera, oppure senza usare link intermedi, quindi avendo un link diretto tra i router di frontiera. 
 
 
+Avendo un AS di transito, ci sono degli AS periferici con cui comunica, attraverso i router di frontiera. 
+Se viene distribuito BGP dentro IGP, i router di frontiera si comportano come magneti poiché si comportano come destinazione delle rotte che distribuiscono ed attraggono tutto il traffico verso quelle rotte. È possibile che un router di frontiera quando propaga le rotte su IGP il router next hop punti al router di frontiera che ha inviato il pacchetto, provocando un ciclo. 
+
+Può essere che le macchine non distribuiscano quello che hanno appresso con eBGP e non iBGP, tuttavia non esiste il comando per propagare eBGP, ma per iBGP. 
+Di default per una macchina CISCO la propagazione di iBGP è disattivata. 
 
 
+Per distribuire solo eBGP, evitando il problema dei rimbalzi, si crea una route map che permette solo rotte avendo come next hop le altre LAN di peering:
+\begin{minted}{bash}
+    ip prefix-list myNeighbors permit {peering-LAN} le 32
+    route-map eBGP permit 10
+        match ip next-hop prefix-list myNeighbors
+    router rip 
+        network {LAN}
+        redistribute connected
+        redistribute bgp route-map eBGP
+\end{minted}
+
+
+% Usando MPLS si riesce ad attraversare
+% soluzione per realizzare questi tunnel, crea un link diretto virtuale tra i router di frontiera. -> non c'è più il problema del rimbalzo. 
 
 
 \end{document}
