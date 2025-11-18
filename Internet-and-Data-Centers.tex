@@ -1701,7 +1701,7 @@ Si possono configurare le \texttt{route-map} come:
         set   {opzione attributo}
 \end{minted}
 Si può effettuare un match su qualsiasi proprietà dell'annuncio, ed eventualmente con \texttt{set} si può modificare arbitrariamente l'annuncio, anche realizzando annunci non validi secondo BGP. Si può alterare completamente l'annuncio. 
-Anche il \texttt{match} è opzionale, in questo caso si comporta come un filtro, applicando le operazioni della \texttt{set} a tutti i pacchetti. 
+Anche il \texttt{match} è opzionale, in questo caso si comporta come un filtro, applicando le operazioni della \texttt{set} a tutti i pacchetti. Pià \texttt{match} di fila si comportano come un or logico. 
 
 
 
@@ -2071,6 +2071,39 @@ Per distribuire solo eBGP, evitando il problema dei rimbalzi, si crea una route 
 
 % Usando MPLS si riesce ad attraversare
 % soluzione per realizzare questi tunnel, crea un link diretto virtuale tra i router di frontiera. -> non c'è più il problema del rimbalzo. 
+
+Quando si usano interfacce di loopback per gli indirizzi di peering BGP su un AS, bisogna settare il next hop come self, in modo da poter realizzare recursive lookup sull'indirizzo della macchina. In questo modo la connessione TCP rimane attiva nonostante la topologia della rete AS sottostante possa cambiare. 
+
+\subsubsection{WebServer}
+
+Utilizzare un oggetto di livello applicativo è molto utile, poiché è molto più semplice testare regole BGP su oggetti di livello applicativo. 
+In questo corso si vedranno dal punto di vista applicativo i WebServer, e verranno utilizzati per simulare dei servizi all'interno del datacenter. 
+
+Il server di default è \texttt{apache2}, il client usa \texttt{links}, un browser da linea di comando. Per avviare il webserver, si avvia il servizio di Apache con:
+\begin{minted}{bash}
+    systemctl start apache2
+\end{minted}
+
+Una macchina webserver non è un router, solitamente, quindi non ha bisogno di un demon di routing in esecuzione, quindi ha bisogno di avere una tabella di instradamento popolata. Ha bisogno del default gateway. 
+Si inserisce la pagina HTML su \texttt{/var/www/html/index.html}, sovrascrivendo la pagina di default di Apache. È sufficiente inserire testo per distinguere un webserver da un altro:
+\begin{minted}{html}
+    <html>
+        <body>
+            <h1>Hello!</h1>
+        </body>
+    </html>
+\end{minted}
+Questo è necessario per valutare i load balancer per differenziare su quale server si è stati indirizzati. 
+
+Si possono monitorare gli accessi al webserver con:
+\begin{minted}{bash}
+    tail -f /var/log/apache2/access.log
+\end{minted}
+Inoltre, si può controllare il file \texttt{error.log} sulla stessa directory. 
+Si può osservare la configurazione con \texttt{apache2 -l}. 
+
+Apache è estremamente configurabile con file \texttt{.htaccess}, ma proprio per questo è molto più lento di Ngnix. Poiché Apache controlla su ogni directory se è presente questo file, fino alla radice del filesystem, mentre su Ngnix il file di configurazione è unico. 
+
 
 
 \end{document}
