@@ -1311,7 +1311,7 @@ BGP è dimostrato che non è stabile, esistono configurazioni per cui la best os
 
 \section{TCP}
 
-\section{Trasmissioni Efficienti}
+\subsection{Trasmissioni Efficienti}
 
 La socket è vista dall'applicazione come un file descriptor, una sequenza di 16 bit, associato ad un'istanza di conversazione. 
 Quando si vuole mandare un messaggio ad una macchina remota, l'applicazione scrive il messaggio su una di queste socket, con gli stessi comandi per la scrittura su di un file. 
@@ -1422,6 +1422,104 @@ Questi due algoritmi vengono implementati insieme.
 Se la connessione è stabile si impiega metà della banda effettiva, in un andamento a dente di sega, aumentando linearmente fino a quando non si raggiunge il doppio della soglia e ritornando giù, utilizzando quindi tre quarti della banda disponibile. Generalmente è tre, ma non sempre poiché dipende dalla crescita lineare dell'uso della banda. L'intuizione è usare ack duplicati per percepire le perdite. 
 %% TODO spiegare meglio andamento a dente di sega
 
+
+
+\clearpage
+
+\section{Livello Applicativo}
+
+I servizi basati sul web sono cruciali ed è importante avere la possibilità di scalare. 
+
+Con hit si intende la singola richiesta da parte del client, con page request si indica una richiesta che consiste di varie hit. Una sessione è la sequenza di page request consecutive da parte dello stesso client. Gli oggetti possono essere statici o dinamici, o sicuri. Ci si concentra principalmente su di oggetti statici e dinamici. 
+La pagina stessa è dinamica poiché dipende dall'accesso, unendo dei dati appresi dal server. 
+
+Il contenuto dinamico si vede in qualunque sito che ha una qualche forma di login. 
+
+
+Per rendere un sistema web più scalabile dal punto di vista del fornitore del servizio, si può analizzare il comportamento normale di una richiesta dell'utente comporta l'interazione con un DNS prima di ottenere l'indirizzo del web server ed iniziare una connessione TCP per HTTP. 
+Una singola sessione richiede molte hit singole, ed ognuna di questa genera una nuova connessione, e viene terminata dopo molto poco, con un timeout che spreca risorse. 
+
+Per risolvere questo problema si utilizzano connessioni TCP persistenti con HTTP 1.1, in modo da effettuare un numero arbitrario di richieste, in modo che tutte le hit per una stessa page request viaggino su una stessa connessione TCP, risparmiando risorse sul client, sul servizio, e sulla rete, con un migliore uso della banda. 
+
+Permette di effettuare slow-start TCP per ogni richiesta, con un migliore uso di banda. 
+
+C'è un tradeoff da voler raggiungere, per decidere quando mantiene attiva una connessione, e quanto tempo la mantiene dopo la fine delle richieste. Un web server come Apache crea un nuovo processo con ogni nuova connessione, e tenendole attive tutte queste possono causare uno spreco di risorse al lato server. 
+Su HTTP si può specificare un tempo per mantenere attiva la connessione, in genere di qualche minuto e poi il server butta giù la connessione del client. 
+
+Per effettuare più connessioni contemporaneamente un client può aprire connessioni multiple con lo stesso server, e si creano comunque meno connessioni di quante sono le hit. Se viene permesso, dal lato server si potrebbero permettere un numero arbitrario di nuove connessioni, quindi vengono limitata al lato server. 
+
+Questi tipi di scalabilità sono al lato client. Pre rendere più veloce questo processo si può effettuare \textit{client-side caching}. 
+
+Il server ci avvisa tramite il contenuto cosa può essere salvato in cache e suggerisce al browser quanto tenere in vita una cache. 
+
+Si usa una cache anche per il DNS locale, o il resolver locale, solitamente si fidano del TTL che gli viene fornito, anche se nella realtà non è così semplice. 
+
+
+Risorse statiche usano un ETag, negli header della richiesta, dov'è contenuto l'hash di questo file. 
+In HTTP esiste un metodo HEAD per richieste solamente l'header della pagina. Mettere l'ETag nell'header fa lavorare la cache. I browser moderni effettuano prima una HEAD, e se il valore dell'ETag è uguale a quello noto, prende il contenuto dalla cache, altrimenti effettua una nuova richiesta. 
+
+
+In un contesto aziendale si usano proxy web, anche  se ormai quest'architettura non viene più utilizzata. Questo proxy ha una sua cache, ed in caso non è presente in cache effettua tutto il percorso di richiesta del client precedente, quando ottiene la richiesta, oltre ad inviarla al cliente, la salva in cache. 
+
+
+Quando si inserisce un layer di cifratura, questa lavora end-to-end, quindi non si può usare un proxy intermedio, altrimenti si dovrebbe rompere la cifratura. 
+
+
+
+Un servizio web scalabile è composto da vari server, un meccanismo per lo scheduling, per assegnare la richiesta al server migliore, determinato da un algoritmo di scheduling, ed un'entità che esegue l'algoritmo ed il relativo meccanismo di scheduling. 
+
+% L'entità può essere cloudflare
+
+
+Si potrebbero avere meccanismi basati sulla risoluzione di nomi, gestito dal DNS, al livello di sessione. 
+Si possono avere dei meccanismi anycast BGP, dove si annunciano di proposito due prefissi da due punti diversi che sono lo stesso prefisso, in modo che automaticamente i router nei dintorni scelgano il server migliore. Si basa sull'idea che lo stesso indirizzo IP si può attribuire a più server. L'entità è a livello di routing, ed anche in questo caso si lavora a livello di sessione. 
+Si possono avere meccanismi di HTTP redirection, con un web server a livello di page request, per un livello di granularità elevato. 
+Per packet indirection localmente viene gestito da un load balancer, e ha un effetto a livello di sessione, page request o hit. 
+
+
+I web server possono avere una distribuzione locale con dei cluster, scheduling a livello di load balancer o/e redirection. Mentre con una distribuzione globale, si hanno server distribuiti globalmente, utilizzando tecniche di mirroring, redirection, DNS o anycast. 
+
+\subsection{Scalabilità Locale}
+
+Per avere una scalabilità locale, un requisito è avere un cluster di server nella stessa locazione fisica, i server possono essere macchine fisiche o virtuali. 
+Il mondo esterno vede un solo indirizzo virtuale, chiamato \textit{Virtual IP} (VIP), a cui provvederà il load balancer a determinare a quale server inviare quella richiesta. 
+
+Si potrebbero specializzare i server, potrebbero essere per tipo di richiesta, così che il load balancer quando legge un pacchetto lo invia al server specifico in base alla richiesta. Altre tecniche di load balancing sono Round Robin, oppure conoscendo lo stato dei server, inviando la richiesta al server meno carico. 
+
+Se si divide il carico in modo tale che le richieste vadano sullo stesso server, si può effettuare caching molto più facilmente. 
+
+Si possono avere dei load balancer hardware oppure software su un normale sistema operativo. Possono realizzare un controllo sulle richieste, chiamati \textit{Web Switch} (WS). Con dei load balancer di livello quattro lo possono aprire fino al livello di trasporto. Ma non si può fare load balancing in base al contenuto della richiesta. Per realizzare questo si usano load balancer di livello 7 che possono leggere il tipo di richiesta o anche sui cookies, quindi sulle identità del client. 
+
+I load balancer di livello quattro lavorano al livello delle connessioni TCP, e deve avere una tabella per ricordarsi a quale server inviare quella connessione, poiché TCP è stateful il load balancer si deve ricordare a chi ha assegnato le connessioni. 
+Per determinare una nuova connessione ed inserire nuovi elementi sulla tabella si guardano ai link di connessione. Se passa un FIN rimuove quella entry nella tabella. 
+
+Ci sono due possibili architetture, l'architettura a due vie, dove i pacchetti in arrivo ed in partenza attraversano sempre il load balancer. Questo però non è necessario, poiché quando arriva una richiesta ad un web server questo la può inviare direttamente a chi ha effettuato la richiesta. Tuttavia, questo non è semplice da realizzare. 
+
+L'architettura a due vie si implementa con un NAT, bisogna ricalcolare la checksum TCP poiché dipende anche dall'indirizzo IP, ma per i numeri di sequenza, anche se sono inizializzati random, il WS può inviare al server un SYN con lo stesso numero di sequenza per averli già sincronizzati. 
+
+A livello TCP la scelta avviene dal primo SYN, altrimenti bisognerebbe tenerlo in memoria. Si creano due connessioni TCP con gli stessi numeri di sequenza, in modo da non doverli modificare. 
+
+
+L'architettura ad una via non ha problemi dal punto di vista di TCP poiché si usano gli stessi numeri di sequenza. L'indirizzo IP della connessione è del VIP, ma non è del web server, quindi dovrebbe mandare un pacchetto con un indirizzo IP che non è suo. 
+Sui server si può inserire sulla loopback o su di un'altra interfaccia l'indirizzo IP del load balancer. Non possono accettare connessioni da fuori su questo indirizzi, ma a questo punto sono in grado di creare un pacchetto con quell'indirizzo IP sorgente. 
+
+Il meccanismo è basato sul MAC, il forwarding del load balancer è effettuato al livello MAC, usando il MAC del server destinatario, non è necessario riscrivere il livello IP, e non server ricalcolare la checksum. I load balancer ed i server devono appartenere alla stessa rete fisica per poter instradare a livello due. 
+
+Questo non è un comportamento standard, non è possibile farlo realizzare ad un computer general purpose, poiché quando ricevono un pacchetto lo aprono e lo inviano alla pila ISO-OSI. 
+
+
+Algoritmi di scheduling possono essere random, se uniformemente casuali, si comportano come round robin, per gli algoritmi statici. Si potrebbero realizzare algoritmi dinamici, basati su informazione dei clienti o lo stato del server, come un round robin pesato, o partizionando i client in base al loro indirizzo IP. 
+
+
+I load balancer di livello sette devono iniziare loro la connessone TCP, aprire il pacchetto HTTP e capire in base alle informazioni a quale web server inviarlo. Questo permette di realizzare politiche  più efficienti. 
+Dopo il three-way handshake con il client il LB effettua lo stesso con il server, ed al termine invia la sua risposta con i dati al client. 
+Tuttavia, in questo modo si introduca una latenza alla risposta del client, che deve aspettare un altro three-way handshake. 
+
+Poiché sono connessioni diverse si possono pre-istanziate dal giorno in cui si accende, potenzialmente tenute aperte per sempre, dopo aver ricevuto una richiesta, avendo una sessione già aperta con tutti i server, la risposta è diretta. La connessione tra il WS in questo caso, ed il server è diretta, già attiva. La problematica diventa il tradurre i numeri di sequenza. Si toglie la latenza introdotta nella versione base. 
+
+Anche con un load balancer di livello sette si potrebbe realizzare un'architettura a due vie, ma non è efficiente per le capacità del load balancer. 
+
+È possibile cambiare server durante una sessione tra il client ed il WS, poiché sono indipendenti, per ri-allocare un server. 
 
 
 \clearpage
