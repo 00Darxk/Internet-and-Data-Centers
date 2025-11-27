@@ -1634,6 +1634,105 @@ Computer moderni in realtà realizzano molte query extra per dare l'idea di anda
 
 Si possono usare dei web cluster distribuiti per sommare le due tecnologie, avendo uno scheduling a livello globale per identificare quale specifico cluster da interrogare, ed in seguito si usa uno scheduling a livello locale per scegliere lo specifico server del cluster da richiedere. 
 
+\clearpage
+
+\section{Data Center}
+
+\subsection{Multi-Path}
+
+L'idea di multi-path consiste nella presenza di più rotte per uno stesso prefisso, quindi avere vari next-hop possibili. Dal momento in cui sono più di uno diventa multi-path. 
+BGP invece di scegliere una best sceglie due rotte di qualità uguale, e quindi le accetta entrambe, scrivendole in tabella. Anche alcuni IGP possono effettuarlo. 
+
+Serve il supporto kernel per poter avere più next-hop in tabella di instradamento, ma nel momento in cui si va su un pezzo di hardware si ha bisogno di hardware support per queste capacità. 
+
+Molte politiche non si possono usare, quindi si applicano politiche molto semplici come round robin. 
+
+Il concetto più importante è di inviare pacchetti dello stesso flusso sullo stesso percorso. Un flusso viene identificato a livello quattro, la quadrupla indirizzo e porta, sorgente e destinazione. Per una comunicazione bidirezionale si avranno due flussi, scambiando gli indirizzi e porte. 
+Si effettua poiché riordinare i pacchetti è computazionalmente pesante. 
+
+
+Dentro un data center si vuole poter sfruttare tutto fino all'estremo. Quando si mandano dei pacchetti, TCP può ricevere pacchetti fuori sequenza e riordinarli, inviando ack duplicati, mantenendoli nel buffer. In un data center non si ha la dimensione di buffer in grado di gestire l'enorme quantità di dati che passano al suo interno. Si usano link da almeno 100 gigabit. 
+
+Se si manda un pacchetto fuori ordine per poterlo riordinare il pacchetto deve inviare un ack duplicato ed un interrupt, e si perde il vantaggio del multi-path. 
+Si vuole immaginare una politica che i pacchetti dello stesso flusso prendano lo stesso percorso. 
+
+
+Ci si concentra sul tipo di multi-path più usato, \textit{Equal-Cost Multi-Path} (ECMP), accettando varie alternative solo se hanno lo stesso costo. 
+
+Spesso vengono usati nei \textit{Fat-Tree} dei data centers. Le policy più famose sono basate su una funzione di hash in base al flusso livello 3 e 4, anche se tecnicamente più complesso può utilizzare al meglio il multi-path. Oppure si può usare algoritmo round robin, anche se non è così efficiente come si crede. 
+Queste policy permettono di parallelizzare la banda. 
+
+
+I data center qua trattati avranno multi-path, questi non funzionano su Windows, poiché il suo kernel non permette multi-path, mentre questo è disponibile su Linux e Mac. 
+
+\subsection{Hyper-scale Data Centers}
+
+Quando si parlano di data centers si parla di hyper-scale data centers. Bisogna conoscere la differenza tra i due, questi sono data center che scalano tanto, i data center di AWS, Azure, Google Cloud. 
+
+Il Namex usa una struttura ridotta di questa architettura, ma è comunque dello stesso tipo. 
+
+Un data center deve avere connessioni ad internet, sono multiple, ridondanti, ad alta velocità ed in fibra ottica. 
+Per fabric si intende l'insieme di router e switch, l'infrastruttura dedicata a collegare i server all'internet, ci si concentra principalmente sulla fabric. 
+Il cuore del data center è la server farm, contenente le applicazioni ed i servizi. 
+
+Lo standard vuole che siano rappresentati verticalmente dall'alto verso il basso con Internet, fabric e server farm. Per cui si parlerà di link verso nord e verso sud, quindi verso l'alto e verso il basso, universalmente usata per i data center. 
+
+
+%% !! FABRIC ARCHITECTURE
+
+
+I link sono tutti in fibra ottica, poiché bisogna andare velocemente ed avere bassa latenza, e tutte le qualità che non sono garantite da cavi in rame. Ogni connessione ha link da almeno 100 gigabit al secondo. Uno switch ha almeno 64 porte, si parla di circa 5000 oggetti di rete e 60000 server. 
+
+In un anno si suppone che migliaia di macchine ed hard drive si rompano, è alta la probabilità di avere almeno un fallimento del trasformatore dedicato, e si avrà una completa sostituzione di tutte le fibre ottiche del server. 
+
+
+
+Ci sono tre principali service-models, il primo \textit{on-premise} è costruito ed operato da una stessa società, ospitato in un edificio dell'organizzazione. Questa strategia con la moda del cloud sta venendo sempre più accantonata. 
+I \textit{colocation} data centers comprano un edificio e gestisce l'infrastruttura, ed altre compagni o organizzazione pagano l'affitto per portare là la propria macchina, comprando parte dell'infrastruttura e della connessione. In questo caso ci sono dei server non di proprietà della compagnia che possiede l'infrastruttura. 
+L'ultima opzione sono i \textit{cloud} data centers di proprietà di grande compagnie, generalmente OTT, a cui si può pagare per utilizzare macchine e risorse virtuali. 
+
+Nel cloud, chi possiede il data center affitta le sue risorse. Nell'on-premise chi le possiede le usa. 
+
+Si possono identificare due tipi di flussi di traffico in un data center, i flussi \textit{north-south}, entranti o uscenti dal data center per l'Internet. 
+Oppure i flussi \textit{east-west} per permettere ai server di interagire tra di loro, soprattutto per architetture a microservizi e distribuite. 
+
+
+Le macchine all'interno di un data-center si muovono in continuazione, per qualunque coppia di server si vuole avere un'elevata banda di comunicazione. Dal punto di vista di un utente, le macchine virtuali rimangono sempre disponibili, trasparenti alle modifiche dell'hardware sottostanti. 
+
+La rete deve essere in grado di scalare in modo efficiente e resiliente, poiché non sono molto adatti all'uomo, poiché sono estremamente rumorosi e freddi, con illuminazione opzionale. 
+
+
+I nodi interni di un data center possono essere connessi con hardware specializzato, creato appositamente per comunicazione ad alta velocità tra cluster di migliaia di nodi, questa è la scelta adottata da Google, ed è la scelta più costosa. 
+L'idea di vendor lock-in è l'idea di comprare apparati dello stesso vendor, e si sarà costretti a comprare solo apparati di quella marca, altrimenti non sarebbe compatibile con la l'infrastruttura. L'hardware specializzato rappresenta vendor lock-in, e si vuole evitare. 
+L'altra opzione consiste di usare modelli normali, non specializzati, più economico, ed anche meno affidabili. Questa sarà la decisione che verrà usata andando avanti. 
+
+La topologia deve essere scalabile, deve poter essere ingrandita senza ricostruire l'intera infrastruttura o spegnere l'intero data center, in modo trasparente dal punto di vista degli utenti e del data center, e senza avere una spesa eccessiva. Inoltre, si vorrebbe che gli host della fabric siano in grado di comunicare tutti con tutti, utilizzando ciascuno la piena banda della sua NIC. Questo requisito di banda sarà una guida fondamentale nelle decisioni successive. 
+
+Bisogna andare su topologie di rete dedicate a realizzare data center. A livello di letteratura o altri data center OTT, si usano altre topologie, oltre a Fat-Tree, come Clos\dots
+
+
+La Clos è stata progettata nel 1938 per gestire la scalabilità in reti telefoniche, formalizzata da Charles Clos nel 1953. 
+Il problema che la Clos vuole risolvere è consentire di avere $N$ linee di input e $N$ linee di output in contemporanea, senza usare un singolo grande switch. 
+
+I Fat-Tree sono stati creati nel nel 1985, di certo non progettati per i data center. Sono un caso speciale della Clos, e consiste in un'architettura a tre livelli di nodi ad alta ridondanza. Consente una bisezione costante della banda disponibile. Tutti possono parlare con tutti usando tutta la banda. I nodi hanno le stesse caratteristiche, per immagazzinare più facilmente i ricambi. 
+
+La topologia Fat-Tree è modulare, facilmente scalabile. Viene definito da due soli parametri, il radix del nodo, un valore pari rappresentato con $2K$, indica il numero di porte del singolo apparato di rete. Mentre il fattore di ridondanza $R$, compreso tra $1$ e $K$, più è alto avrà più ridondanza, più è basso più è grande la topologia. 
+Dato un apparato si avranno $K$ porte verso nord e $K$ porte verso sud. Secondo la definizione del Fat-Tree si potrebbero usare diverse scelte, non analizzate in questo corso. 
+
+
+Le \textit{Leaf} sono apparati connessi direttamente alla server farm, le \textit{Spine} connettono leaf ai nodi ToF. 
+I \textit{Top of Fabric} (ToF) sono i nodi che forniscono comunicazione tra i PoD. 
+I \textit{Point of Delivery} (PoD) son oun insieme di spine in full mesh con tutte le leaf. 
+Non sono presenti link orizzontali, bisogna sempre salire e poi scendere per attraversare orizzontalmente. 
+
+Il fattore $R$ determina il massimo numero di link tra un nodo ToF ad una PoD. Diminuendo la ridondanza si aumentano le connessioni tra un nodo ToF a più PoD. 
+
+
+Anche aumentando la dimensione di $K$, lo schema matematico rimane invariato. Quando $K\neq R$ il fat-tree si chiama multi-plane. I nodi ToF si possono separare in insiemi chiamati piani, si distinguono perché tutti i nodi di un plane si connettono alla $i$-esima posizione nella spine. 
+Rappresentazione tridimensionale. 
+
+Per collegare il Fat-Tree all'Internet si possono avere due metodi principali. Si potrebbe inserire nella ToF usando apparati con più porte, rompendo il vincolo di avere apparati solo uguali, ma si ha Internet su porte dedicate sui piani. Un'altra opzione consiste nell'usare un PoD collegandolo ad Internet, qua si sacrifica la capacità di attaccare qualcuno dei server al data center, ma si rimane rispettosi delle regole base dei Fat-Tree. 
+
 
 \clearpage
 
@@ -2311,7 +2410,6 @@ Inoltre, si può controllare il file \texttt{error.log} sulla stessa directory.
 Si può osservare la configurazione con \texttt{apache2 -l}. 
 
 Apache è estremamente configurabile con file \texttt{.htaccess}, ma proprio per questo è molto più lento di Ngnix. Poiché Apache controlla su ogni directory se è presente questo file, fino alla radice del filesystem, mentre su Ngnix il file di configurazione è unico. 
-
 
 
 \end{document}
