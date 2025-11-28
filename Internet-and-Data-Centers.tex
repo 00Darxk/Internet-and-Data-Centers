@@ -2127,9 +2127,9 @@ Il customer assegna una preferenza minore al link di backup, questo influisce su
 Non si possono inserire due route map sullo stesso peering, o due prefix list. Il nome delle route map e delle prefix list è case sensitive, ed in caso sia sbagliato, nel loro utilizzo, non le applica. Per cui bisogna fare particolarmente attenzione al nome di queste etichette. 
 \begin{minted}{bash}
     neighbor {indirizzo-isp-primario} prefix-list mineOutOnly out
-    neighbor {indirizzo-isp-primario} prefix-list default in
+    neighbor {indirizzo-isp-primario} prefix-list defaultIn in
     neighbor {indirizzo-isp-backup} prefix-list mineOutOnly out
-    neighbor {indirizzo-isp-backup} route-map metriOut out
+    neighbor {indirizzo-isp-backup} route-map metricOut out
     neighbor {indirizzo-isp-backup} prefix-list defaultIn in
     neighbor {indirizzo-isp-backup} route-map localPrefIn in    
 \end{minted}
@@ -2140,7 +2140,7 @@ Si usa una route map che fa uso di un aggregato che viene definito da un access 
     access-list myAggregate permit {prefisso-stub}/{netmask-stub}
 
     ip prefix-list mineOutOnly permit {prefisso-stub}/{netmask-stub}
-    ip prefix-list defaultIn permit{prefisso-stub}/{netmask-stub}
+    ip prefix-list defaultIn permit {prefisso-stub}/{netmask-stub}
     
     route-map metricOut permit 10
     match ip address myAggregate
@@ -2348,7 +2348,7 @@ Condizioni tipiche di set sono \texttt{prepend}, per aggiungere in modo virtuale
 Tutte le match sono in and logico tra di loro, tuttavia più condizioni sullo stesso oggetto risultano in un or logico, per esempio matchando una tra più prefix list. 
 
 
-Si usano le access list anche per matchare le rotte più specifiche, si può scrivere sulle access list \texttt{exact-math} per avere un match esatto dei prefissi. 
+Si usano le access list anche per matchare le rotte più specifiche, si può scrivere sulle access list \texttt{exact-match} per avere un match esatto dei prefissi. 
 
 \subsubsection{Transit AS}
 
