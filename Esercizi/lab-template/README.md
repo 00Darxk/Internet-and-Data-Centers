@@ -21,6 +21,10 @@ vtysh -e "sh ip bgp"
 vtysh -e "sh bgp sum"
 vtysh -e "sh bgp nexthop"
 
+telnet localhost zebra
+(telnet) show ip route {prefisso}/{netmaks}
+(telnet) show ip route {indirizzo}
+
 less /var/log/frr/frr.log
 
 links {indirizzo}
