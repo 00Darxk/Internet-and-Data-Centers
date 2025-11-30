@@ -1,4 +1,13 @@
+# Aggiungi un indirizzo ad un interfaccia
 ip address add {prefisso}/{netmask} dev {interfaccia}
+# Inserisci una rotta nella tabella di instradamento kernel (statica)
 ip route add {prefisso}/{netmask} via {indirizzo} dev {interfaccia}
+# Inserisci un default gateway nella tabella di instradamento kernel (statica)
+route add default gw {prefisso}/{netmask}
+ip route add default via {indirizzo} dev {interfaccia}
+
+# Avvia servizi:
+#    frr (router)
 systemctl start frr
+#    apache2 (web server)
 systemctl start apache2
