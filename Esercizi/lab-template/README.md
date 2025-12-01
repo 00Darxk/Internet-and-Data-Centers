@@ -8,6 +8,19 @@ Non è necessario configurare l'immagine per un router se la default è ```katha
 
 # Comandi Utili
 
+Per creare facilmente un lab da terminale:
+```bash
+# crea i file di startup e lab.conf
+touch lab.conf {host-1}.startup {...} {host-N}.startup
+# crea le directory 
+mkdir {host-1} {...} {host-N}
+# copia il contenuto di etc (per router)
+cp -r {$PATH_TO_THIS}/lab-template/etc {host-i}
+# copia il contenuto di var (per web server)
+cp -r {$PATH_TO_THIS}/lab-template/var {host-i}
+```
+
+Per debuggare:
 ```bash
 ip address flush dev {interfaccia}
 ifconfig {interfaccia} down
@@ -20,6 +33,7 @@ vtysh -e "sh ip database network" | grep "{prefisso LAN}" # LAN ID
 vtysh -e "sh ip ospf"
 vtysh -e "sh ip rip"
 vtysh -e "sh ip bgp"
+vtysh -e "sh ip bgp {indirizzo}"
 vtysh -e "sh bgp sum"
 vtysh -e "sh bgp nexthop"
 
@@ -27,7 +41,8 @@ telnet localhost zebra
 (telnet) show ip route {prefisso}/{netmask}
 (telnet) show ip route {indirizzo}
 
-less /var/log/frr/frr.log
+less /var/log/frr/frr.log 
+less /var/log/frr/frr.log | grep {indirizzo-peer}
 
 links {indirizzo}
 
