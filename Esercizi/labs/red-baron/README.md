@@ -1,0 +1,3 @@
+# 
+
+Per questa configurazione sono sufficienti le prefix list ```myCustomers``` su [r10](r10/etc/frr/frr.conf) e [r20](r20/etc/frr/frr.conf), per ottenere il comportamento voluto. Questi due router non vogliono essere usati come transit dai propri peer per raggiungere il proprio provider, quindi è sufficiente annunciare le rotte solo verso i propri clienti ai peer. Tutte le altre route map sarebbe utili se fosse presente una struttura più complessa con altri AS peer sarebbero utili per bypassare le connessioni provider.  
