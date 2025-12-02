@@ -6,6 +6,7 @@
  - [nefertiti](https://github.com/KatharaFramework/Kathara-Labs/tree/main/exam-labs/2021-02-10-nefertiti/nefertiti.pdf)
  - [puzzle](https://github.com/KatharaFramework/Kathara-Labs/tree/main/exam-labs/2020-11-18-puzzle/puzzle.pdf)
  - [red-baron](https://github.com/KatharaFramework/Kathara-Labs/blob/main/exam-labs/2020-12-18-red-baron/red-baron.pdf)
+ - [right-hopscotch](right-hopscotch/right-hopscotch.pdf)
  - [right-weight](right-weight/right-weight.pdf)
  - [smile](https://github.com/KatharaFramework/Kathara-Labs/tree/main/exam-labs/2022-12-19-smile/smile.pdf)
  - [stairs](https://github.com/KatharaFramework/Kathara-Labs/tree/main/exam-labs/2018-01-17-stairs/Stairs.pdf)
