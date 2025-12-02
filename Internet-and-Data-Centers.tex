@@ -2411,5 +2411,127 @@ Si può osservare la configurazione con \texttt{apache2 -l}.
 
 Apache è estremamente configurabile con file \texttt{.htaccess}, ma proprio per questo è molto più lento di Ngnix. Poiché Apache controlla su ogni directory se è presente questo file, fino alla radice del filesystem, mentre su Ngnix il file di configurazione è unico. 
 
+\subsection{Data Center Routing}
+
+Nel routing all'interno di data center, ci si trova in uno stesso AS, gestito dalla stessa organizzazione, nonostante questo verrà usato BGP al loro interno. 
+
+
+Di solito all'interno di una rete locale si effettua instradamento attaccando varie VLAN, solamente usando switch. Questa configurazione è più semplice, ma non è efficiente, poiché in un Fat-Tree si massimizza la banda, quindi la maggior parte delle porte verranno spente. Si potrebbe effettuare load balancing utilizzando VLAN, ma è estremamente complicato. 
+LAN più grandi di barra 16 non sono effettivamente utilizzabili, a causa del protocollo ARP tutti i dispositivi collegati inviano pacchetti broadcast per ARP. 
+Nei data center si vuole evitare il più possibile, poiché si sprecherebbe una porzione di banda solo per ARP request. Se si occupa la rete occupando qualcosa che non dovrebbe passare, è banda sprecata, utilizzo sprecato. 
+
+Per risolvere questi problemi, si lavora al livello tre, parlando di multipath, servono protocolli di routing. Queste configurazioni sono complesse, e si vuole rendere automatica, per evitare che errori umani compromettano la rete. 
+
+Si potrebbero usare protocolli di rete IGP classici, OSPF o IS-IS, invece di RIP. Si potrebbe usare BGP, usato in data center hyper-scale. 
+
+Il protocollo RIFT, \textit{Routing In Fat-Trees}, standardizzato dall'IETF, è open source e ha prestazioni eccellenti sui Fat-Tree, ma viene implementato solo da alcuni vendor, per cui si potrebbero avere situazioni di vendor lock. 
+Altri protocolli com OpenFabric, una variante di IS-IS per topologie Clos, o SDN. 
+
+
+BGP è uno dei protocolli che genera meno flooding di tutti, è stabile, la maggior parte dei problemi è stata sistemata dopo trent'anni di utilizzo. BGP ha un processo decisionale complesso, e può generare ECMP, \textit{Equal-Cost Multi-Path} a costo zero, semplicemente interrompendo il processo decisionale. 
+
+
+iBGP non fa routing, ma condivide rotte, è necessario un protocollo sottostante per il routing, quindi bisogna usare eBGP. 
+In iBGP il multi-path è estremamente complesso da impostare e realizzare. 
+
+
+La modalità di routing inter-dominio è diversa rispetto alla modalità di routing nei data centers. 
+In Internet la connettività è molto sparsa, mentre nei data center la connettività è molto densa. 
+In Internet si preferisce la stabilità rispetto ai tempi di convergenza, se un router BGP riceve una rotta simile ad una già presente in tabella, la mantiene invariata, si preferisce essere stabile. Mentre in un data center guasti non devono avvenire, quindi bisogna trovare alternative immediatamente a scapito della stabilità. 
+In BGP una nuova rotta per convergere ci mette una decina di minuti, questo non è possibile in un data center. 
+Lo scopo di BGP è computare una singola best-path per una destinazione, nei data center si vuole computare tante rotte possibili per una stessa destinazione, per massimizzare la banda. Questo non si effettua sull'Internet pubblico, il multi-path funziona se tutte le macchine sono della stessa organizzazione. 
+
+Esiste uno standard su come usare BGP all'interno di un data center, descritto da RFC 7938. Si assegnano numeri di AS, si modificano le policy per ECMP, e bisogna modificare i timer interni del protocollo. 
+
+Per usare eBGP si hanno diversi AS che parlano tra di loro. Non bisogna usare numeri di AS noti, poiché gli operatori li associano ai nomi e riportarli nei data center può risultare in fraintendimenti. Inoltre, è pericoloso in caso ci siano delle leak di annunci BGP, che potrebbero causare interruzioni sulla rete, o rivelare informazioni interne al data center, che si vogliono mantenere segrete. 
+
+Si utilizza il range di ASN privati, solo i 1023 AS nell'intervallo 64512 e 65534 sono privati. Se un router riceve annunci con questi numeri di AS, li scarta, se non ne appartiene. BGP è stato aggiornato per avere 4 byte per i numeri degli AS, supportando quasi un cento milioni di AS privati, sufficienti per configurare BGP in un data center. 
+
+L'assegnazione più semplice comprenderebbe di associare ogni nodo con un AS diverso, per il problema di BGP \textit{path exploration}. Nel momento in cui cade un pezzo della rete, va a ricerca di percorsi alternativi, essendo un algoritmo distribuito ogni router implementa una sua alternativa, comportando uno stato transitorio, prima di stabilizzarsi. 
+
+Per indicare multipath FRR indica le rotte migliori con \texttt|*|, e la prima viene indicata con \texttt|>|, le altre rotte equivalenti vengono marcate con \texttt|=|, per dire che sono equivalenti. Questo propaga la rotta incrociata, che non viene scelta poiché ha un AS path più lungo
+
+Se un router si spegne a causa di un guasto, i suoi peer se ne accorgono dato che l'interfaccia va giù, e la connessione TCP per il peering cade. Questi annunciano ai loro vicini di rimuovere i prefissi precedentemente annunciati che passano al router ora spento. Ma in caso di multi-path, le rotte dirette vengono rimosse, ma quelle incrociate non vengono rimosse, quindi è possibile che il traffico rimbalzi in maniera incontrollata tra i router presenti, è possibile che venga creato un loop di rete. Ed in un data center il quantitativo di traffico è presente a link saturo, quindi anche pochi secondi di loop possono realizzare problemi gravi. 
+
+
+Per assegnare gli AS allora si utilizza una diversa alternativa, ogni foglia di un PoD ha un suo AS, i nodi spine di una stessa PoD hanno lo stesso AS. Mentre tutti i nodi dei ToF sullo stesso piano appartengono allo stesso AS. 
+Qui non si hanno peering iBGP, poiché i nodi nei ToF e nelle spine dei PoD non sono direttamente collegati. 
+Inoltre, serve siano sullo stesso AS solamente per l'algoritmo di loop avoidance di BGP, si blocca automaticamente senza rout-map le rotte incrociate. Automaticamente sono valley free, senza inserire politiche. 
+
+Si ottiene la scalabilità originale dei Fat-Tree, unita al loop avoidance, ed in caso di guasti prolungati evita di realizzare rotte anomale. Questo permette di avere più percorsi tra due foglie nello stesso PoD. 
+Per foglie tra due PoD diversi invece il numero di multi-path è esponenziale all'aumento di K. Questi passano per l'AS dello spine del proprio PoD, l'AS del ToF, e l'AS dello spine del PoD dove si trova la foglia. Essendo questi percorsi di stessa lunghezza, si può usare ECMP, essendo tutti dello stesso costo. 
+
+
+
+In realtà BGP se si abilita ECMP di default, considera due rotte uguali se hanno tutte le metriche dell'algoritmo decisionale, eccetto per il router-ID, ma questo implica che i due annunci siano uguali, confrontando l'AS path elemento per elemento. Nelle multi-plane gli AS path non necessariamente saranno identici, quindi alcuni annunci avranno un percorso e per altri il contenuto dell'AS path sarà diverso. 
+
+Si utilizza l'opzione di FRR, ed in tutti i maggiori vendor, \texttt{as-path multipath-relax}, per usare la versione rilassata e controllare solamente gli AS path per la loro lunghezza. Questo non si può usare in BGP vero, poiché si rischiano situazioni in cui il traffico è degradato per l'attivazione del multipath. 
+
+
+Il primo timer da modificare è l'\textit{advertisement interval timer}, di default di 30 secondi, in un data center si imposta a zero secondi, per inviare appena possibile un nuovo annuncio. Poiché è necessario un algoritmo di instradamento rapido. 
+
+I timer di keepalive sono come per TCP, mentre hold indica quanti keepalive da aspettare prima di buttare giù il peering. Di default in BGP il keepalive viene mandato ogni minuto, mentre l'hold sono tre minuti, il tempo di tre keepalive, prima di tagliare il peering. 
+Nei data center si impone un keepalive di tre secondi, ed un hold di 9 secondi. 
+Il connect timer, è il tempo prima di provare a riconnettersi ad un peer, nei data center si tiene a 10 secondi, di default è un minuto. 
+
+Bisogna automatizzare la configurazione, si ha necessità di renderla flessibile. Si usano due configurazioni la prima \textit{unnumbered interfaces} e la seconda \textit{peer groups}. 
+Per evitare di realizzare tutti i peer singolarmente, utilizzando unnumbered interfaces non si inserisce l'indirizzo IP su quelle interfacce. Inoltre, si usa l'indirizzo IPv6, che autonomamente si crea un indirizzo link-local. Grazie a questo si può indicare di realizzare un peering su chi si trova all'altro lato di un'interfaccia. Si possono creare configurazioni boilerplate, permettendo di scalar tanto. 
+
+Invece di applicare le policy direttamente ai vicini, uno ad uno, si può applicare una policy ad un gruppo, ed aggiungere tutti i vicini interessati a quel gruppo. 
+
+
+In questa versione per connettersi ai server, si assegnano dei prefissi, poiché nel cloud computing, si affittano VM o container all'interno di un server. Per accedere a questi container o macchine virtuali, si utilizza parte del prefisso assegnato per indirizzare i container o le VM contenuto nel server. Sarà la foglia ad assegnare il prefisso del server. 
+
+Bisogna abilitare IPv6 su tutti i router, specificando nel \texttt{lab.conf} per tutti le macchine:
+\begin{minted}{bash}
+    {host}[ipv6]=True
+\end{minted}
+
+La nomenclatura in questi laboratori segua la convenzione: \verb|{tipo}_x_y_z|. Il tipo può essere \texttt{tof}, \texttt{leaf}, \texttt{spine} e \texttt{server}. 
+Per i ToF i numeri \texttt{x}, \texttt{y} e \texttt{z} sono rispettivamente il numero del piano, il livello, sempre due, ed il numero di ToF. Per una foglia si ha il numero di PoD, il livello, sempre zero, ed il numero della fogli.a. Per Spine si ha il numero di PoD, il livello, sempre uno, ed il numero di spine. Per un server, il primo è il numero di PoD, il numero di foglia corrispondente ed il numero del server. 
+
+Inoltre bisogna abilitare la multipath policy, si usa l'opzione \texttt{sysctl} per impostare i parametri nel kernel:
+\begin{minted}{bash}
+    {host}[sysctl]="net.ipv4.fib_multipath_hash_policy=1"
+\end{minted}
+Il multipath con quest'opzione si basa anche al livello quattro. 
+
+\subsubsection{ToF}
+
+Per i tof la configurazione di \texttt{tof\_x\_y\_z.startup} è sempre e solo avviare FRR:
+\begin{minted}{bash}
+    systemctl start frr
+\end{minted}
+
+Nella configurazione bisogna impostare il BGP router ID, rappresentato come un'indirizzo IP, di default BGP si prende il numero di una delle sue interfacce, ma non avendo IPv4, avrebbe \texttt{0.0.0.0}, quindi bisogna specificarlo. 
+\begin{minted}{bash}
+    router bgp {ASN}
+        timers bgp 3 9
+        bgp router-id {indirizzo-ID}
+        no bgp ebgp-requires-policy
+        bgp bestpath as-path multipath-relax
+\end{minted}
+
+
+Si creano dei peer group come:
+\begin{minted}{bash}
+    neighbor {nome-gruppo} peer-group
+    neighbor {nome-gruppo} remote-as external
+    neighbor {nome-gruppo} advertisement-interval 0
+    neighbor {nome-gruppo} timers connect 10
+\end{minted}
+Per indicare di effettuare peering con un'interfaccia si usa:
+\begin{minted}{bash}
+    neighbor {interfaccia} interface peer-group {nome-gruppo}
+\end{minted}
+
+Inoltre bisogna abilitare IPv4, poiché gli indirizzi usati sono IPv6, bisogna attivare la modalità per annunciare indirizzi IPv4:
+\begin{minted}{bash}
+    address-family ipv4 unicast
+        neighbor fabric activate
+        maximum-paths 64
+    exit-address-family
+\end{minted}
+Su un peering IPv6, scambia prefissi IPv4, e quando installa questi prefissi, avrà come next hop un indirizzo IPv6. Inoltre limita le rotte multipath a 64, questa è l'opzione che effettivamente attiva multipath. 
 
 \end{document}
