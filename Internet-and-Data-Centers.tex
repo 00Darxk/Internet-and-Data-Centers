@@ -634,7 +634,98 @@ A questo punto tutti i bridge abbassano i valori di timer del protocollo in risp
 
 \subsection{VLAN}
 
-%% TODO add 9/10/25
+Spesso nelle LAN di organizzazioni si pone il problema di separare area di dominio diverso tra di loro, per non interferire a vicenda e diminuire il rumore sulla rete. Questo poiché molti protocolli inviano pacchetti di broadcast, che in caso di molte macchine sulla rete possono sprecare molta banda inviando pacchetti broadcast, come ARP e DHCP request. Inoltre ogni pacchetto broadcast deve ricevuto deve essere analizzato dalla scheda di rete della macchina, provocando un interrupt, questo può essere un problema se si intasa la rete di pacchetti broadcast, soprattutto in applicazioni time-sensitive come nei data center. 
+Quando su una rete con switch il traffico raggiunge il 20\% di utilizzo, non si può più utilizzare correttamente, mentre il traffico broadcast rimane invariato. 
+
+Normalmente per permettere l'accesso alla rete ad un dipendente, questo viene collegato da un punto di accesso ad uno switch tramite un permutatore. Ma in questo modo si uniscono dipartimenti, o società diverse tra di loro, con possibili criteri di sicurezza diversi. Infatti, tutte le macchine su una stessa LAN sono contrattabili da tutte le altre, e quando un router si trova in stato transitorio, ovvero invia il traffico in broadcast, si può osservare tutto il traffico della rete. 
+
+
+Utilizzando la virtualizzazione all'interno di una LAN fisica, si può partizionare la rete a piacimento, senza modificare la topologia sottostante, in modo flessibile e semplice, invece di acquistare nuovi switch per separare LAN fisiche. Si può utilizzare un solo switch per creare diverse VLAN, \textit{Virtual LAN}, definite dallo standard IEEE 802.1Q. 
+Queste VLAN definiscono una topologia logica indipendente, che viva sulla topologia fisica delle rete, realizzate sullo stesso switch. L'idea principale consiste nel tenere completamente separato il traffico di VLAN diverse. 
+
+All'interno di uno switch l'amministratore di rete definisce queste entità software chiamate VLAN, possono essere impostate semplicemente in base alla porta usata, ma non è un approccio flessibile. Una situazione più complessa permette di definire la VLAN a cui appartiene un pacchetto dalla porta di appartenenza, ed il suo contenuto, come l'indirizzo MAC, indirizzo o header IP, ecc. Queste diverse regole vengono fornite dal costruttore. 
+I pacchetti indirizzati ad una VLAN vengono inoltrati solamente a quella VLAN, quindi queste entità si comportano come un filtro, all'interno dello switch. 
+
+
+
+Una VLAN denota un insieme di pacchetti in transito per uno switch. Un singolo pacchetto può appartenere ad una singola VLAN, in base a regole specificate dallo switch. I pacchetti in entrata vengono partizionati in VLAN, ed in caso non siano definite VLAN, tutti questi pacchetti vengono attribuiti ad una VLAN di default. 
+
+
+Per assegnare un pacchetto ad una VLAN, questo deve arrivare su un certo insieme di porte chiamato \textit{ingress port}, e rispettare certe caratteristiche. 
+I pacchetti che sono stati assegnati ad una VLAN, invece, possono uscire solamente attraverso un altro insieme di porte chiamate \textit{egress port}. 
+Questi due insiemi di porte possono sovrapporsi parzialmente o totalmente. 
+
+Ad ogni VLAN è associato un identificatore, VLAN ID, nell'intervallo 1-4094, che la identifica. La default ha un ID pari ad uno. 
+Inoltre, si può spesso attribuire un nome alfanumerico, più facile da ricordare, il nome non viene condiviso da una macchina all'altra, mentre in VLAN distribuite su più switch, il loro ID potrebbe essere distribuito. L'idea di collegare VLAN diverse, su uno stesso switch, consiste nell'usare un router che comunica a queste su porte diverse dello stesso switch. Il router deve assegnare i prefissi corretti a queste VLAN, quindi potrebbero essere consapevoli della presenza delle VLAN. 
+
+Ci potrebbe essere una singola interfaccia, ed un router VLAN aware, grazie a delle tecniche o informazioni nel pacchetto, è in grado di determinare a quale VLAN appartiene per instradare correttamente il traffico. 
+
+
+Nel momento che uno switch, in presenza di VLAN, riceve un pacchetto, ne determina la VLAN di appartenenza, altrimenti lo assegna alla VLAN di default. In seguito individua le porte da utilizzare per trasmettere il pacchetto, dal filtering database, ed eventualmente lo ritrasmette. 
+
+Gli switch determinano a quale VLAN assegnare un pacchetto, in base al loro filtering database. Questa tabella assomiglia ad una tabella di instradamento, e può essere configurata secondo due alternative, in base allo switch. Uno switch può operare in modalità IVL, \textit{Independent VLAN Learning}, dove ogni VLAN ha un suo filtering database dedicato, e la modalità SVL, \textit{Shared VLAN Learning}, dove è presente un singolo database comune, condiviso tra tutte le VLAN. Alcuni switch possono operare solamente in modalità SVL. 
+
+Quando un pacchetto viene cercato nel filtering database, se non si trova il suo destinatario, allora viene inviato in broadcast a tutte le egress port della VLAN di appartenenza. 
+Se invece si trova la porta da cui ritrasmettere prima controlla che la porta individuata sia stat configurata come egress port per la specifica VLAN, altrimenti scarta il pacchetto. 
+
+Quando una porta è sia ingress che egress per una VLAN, si parla di VLAN simmetriche, in generale l'insieme delle egress porta potrebbe essere diverso da quelle delle ingress port. In generale si parla di VLAN asimmetriche, dove l'insieme delle egress port può essere diverso da quelle di ingress. 
+
+Le connessioni virtuali possono essere asimmetriche, ovvero una porta può essere una porga di ingress o egress per un'altra VLAN. In questo modo si possono configurare le connessioni tra varie VLAN, impostando correttamente le porte di ingress ed egress. 
+In presenza di VLAN asimmetriche, è conveniente usare il router in modalità SVL, altrimenti se non venisse trovata la porta corrispondente di egress per la VLAN destinazione, il pacchetto verrebbe mandato in broadcast, degradando le prestazioni. Usando un singolo filtering database per le varie VLAN si può identificare la porta di egress corretta appartenente alla VLAN di destinazione. 
+
+
+
+Avendo rete con più switch, bisogna provare a supportare le VLAN anche in questa configurazione. Si vorrebbe che ad ogni router si possa attaccare una VLAN, e che queste comunichino solamente tra di loro, o secondo certe policy. 
+Non è possibile connettere due porte dedicate ad una stessa VLAN tra due router, poiché se si attaccasse un cavo per ogni VLAN, il bridge disattiva autonomamente tutti i link tranne uno, e quindi questo metodo non è utilizzabile. Il protocollo 802.1D parte prima della comunicazione, quindi non è possibile impedire disattivare tutti gli altri link superflui. 
+
+Questo si risolve nel protocollo IEEE 802.1Q, che prevede che tra due switch possa essere dichiarato un \textit{trunk 1Q}, una somma di regole o policy, che può essere definita a mano, per definire in che modo possano transitare i pacchetti tra varie VLAN, definendo ingress ed egress port corrispondenti. 
+
+Per riconoscere se un certo pacchetto appartiene ad una certa VLAN, viene etichettato, inserendo un nuovo campo nell'header di livello due, chiamato tag, o etichetta. In base al tag il pacchetto viene estratto e consegnato alla VLAN corretta. Se il tag è vuoto è possibile configurare la porta per scartare il pacchetto, analogamente si può configurare di scartare se è presente un tag. 
+
+Per ogni porta di uno switch, si può definire a quale VLAN corrisponde, e configurare se deve etichettare i pacchetti in uscita come appartenenti a quella VLAN. 
+In ricezione quando riceve un pacchetto, in base al tag può essere attribuito a quella VLAN oppure utilizzando le regole definite per quella porta. 
+
+Una porta quindi può essere \textit{access}, ricevendo ed inviando solo pacchetti non etichettati, \textit{trunk} ricevendo ed inviando solo pacchetti etichettati, oppure ibrida. 
+
+La specifica viene definita nello standard IEEE 802.3ac, inserendo un campo di due byte, length e type, per ethernet 802.e assume il valore \texttt{81-00}, è seguito da due byte di tag. Usando quattro byte, la lunghezza massima del pacchetto passa da 1518 a 1522. 
+Per distinguere questi pacchetti in ethernet 2.0 e IEEE 802.3, si guarda ai byte corrispondenti al campo type o size. Questo campo in ethernet 2.0 specifica il tipo del pacchetto, e viene inserito qua il valore \texttt{81-00}, per indicare che è stato aggiunto un tag di due byte di seguito. Altrimenti lo switch lo legge e determina se si tratta di un campo type o size, per distinguerlo da IEEE 802.3. 
+%% TODO add img distinguere eth2.0/+802.3ac/802.3+802.2/+802.3ac
+Se uno switch non è VLAN aware, smista il traffico guardando la destinazione e la sorgente, quindi neanche lo legge il tag, basando l'istradamento solo sull'indirizzo destinazione e sorgente, rendendolo retrocompatibile. 
+Le macchine ci mettono molto poco ad essere VLAN aware. 
+
+Lo standard ha introdotto l'idea di \textit{double tagging} usando due etichette consecutive, molto usato dagli ISP. Questi sovrappongono due tag, uno per identificare il pacchetto in base al cliente, C-TAG, e la seconda etichetta per associare il pacchetto ad un servizio, S-TAG. 
+
+
+\subsection{Evoluzione dello Spanning Tree Protocol}
+
+Avendo delle VLAN, si è notato come parte prima il protocollo di spanning tree, quindi non è possibile collegare le diverse VLAN con link fisici tra due stessi switch. 
+Questo problema non è risolubile. 
+
+
+Lo spanning tree ha avuto molte evoluzioni, alcune variazioni sono configurare per la velocità, in caso di esigenze particolari, come in ambito militare. Nel 2002 si è introdotto l'ultimo spanning tree protocol, chiamato \textit{Multiple Spanning Tree Protocol}. Inoltre, Cisco introduce degli algoritmi di spanning tree proprietari per le VLAN, il problema consiste nel realizzare uno spanning tree diverso per le varie VLAN, prima che queste entrino in configurazione. 
+
+Gli switch dovrebbero conoscere prima le VLAN. Vengono usate in reti di qualsiasi dimensioni, e sono supportate da quasi tutti gli switch anche di fascia bassa. Nelle reti con VLAN potrebbe comunque essere necessario individuare uno spanning tree per evitare cicli. 
+Se ogni trunk 1Q trasporta tutte le VLAN, uno spanning tree tradizionale non rischia di disconnettere qualche VLAN, altrimenti potrebbe disconnetterle dalla rete. 
+
+Anche con trunk 1Q completi, non rappresenta una scelta ottimale, potrebbe bloccare collegamenti veloci o solo per certe VLAN. 
+
+Si risolve calcolando in un primo periodo più spanning tree diversi, che poi verranno associati successivamente a VLAN diverse. Lo standard IEEE 802.1s prevede la presenza contemporanea di più spanning tree sulla LAN. In questo modo si può associare un'istanza dello spanning tree specifica ad ogni VLAN. 
+Lo spanning tree di un'istanza è generalmente diverso da altre istanze, e permette di associare ogni VLAN all'istanza desiderata, ed ogni VLAN può essere associata ad un'unica istanza, mentre uno stesso spanning tree può avere più VLAN associate. 
+
+L'amministratore di rete deve configurare correttamente queste varie istanze alle VLAN, conoscendo i meccanismi dello spanning tre. 
+
+
+In realtà nel comportamento normale dello switch, non c'è una modifica sostanziale dello spanning tree. Modificando i parametri di priorità tra i vari switch per le varie porte configurate con le VLAN si possono calcolare istanze diverse dello spanning tree. 
+
+Il traffico etichettato da una certa VLAN esce da una porta se questa è aperta, rispetto allo spanning tree associato a quella VLAN. La porta deve essere configurata per permettere l'uscita di pacchetti provenienti da VLAN. 
+
+Utilizzando VLAN e spanning tree multiplo, si può lasciare attivo un numero considerevole di link, avendo un sistema di distribuzione del traffico migliore, sostenendo comunque la tolleranza ai guasti, ricalcolando dinamicamente solamente gli alberi la cui topologia è modificata. 
+
+Si può inserire un router, VLAN aware, che può inoltrare il traffico in maniera omogenea o eterogenea in base alla VLAN a cui è destinato. 
+
+Lo spanning tree viene associato a valle ad una singola VLAN, mentre durante il calcolo non dipende dal colore della stessa VLAN. 
+
+Lo standard \textit{Multi-Spanning Tree Protocol} permette di usare questo concetto anche in LAN molto grandi, suddividendo la LAN in regioni, avendo per ogni regione un'istanza di spanning tree indipendente rispetto alle regioni vicine. Un ulteriore spanning tree a livello più alto le collega tra di loro. 
 
 \subsection{Software Defined Network}
 
