@@ -1519,7 +1519,71 @@ Questi due algoritmi vengono implementati insieme.
 Se la connessione è stabile si impiega metà della banda effettiva, in un andamento a dente di sega, aumentando linearmente fino a quando non si raggiunge il doppio della soglia e ritornando giù, utilizzando quindi tre quarti della banda disponibile. Generalmente è tre, ma non sempre poiché dipende dalla crescita lineare dell'uso della banda. L'intuizione è usare ack duplicati per percepire le perdite. 
 %% TODO spiegare meglio andamento a dente di sega
 
+\subsection{Advanced TCP Topics}
 
+%% ** recap: due algoritmi: 1) slow start, 2) fast recovery
+
+
+In una situazione dove il routing è stabile, TCP conosce tutti i dettagli del cammino in Internet fino alla destinazione, ed è l'unico traffico nella rete, si vuole determinare il miglior tempo per TCP per inviare i segmenti a destinazione. 
+
+Si considera un modello semplice, dove due macchine sono connessi da una serie di $n$ link $d_i$, di banda $\mu_i$, questa banda rappresenta la banda disponibile per la connessione, in una situazione reale questa non è costante, ma è variabile rispetto al traffico per quel link. Ad ogni router viene associato un buffer, di dimensione $b_i$. 
+Inoltre, $W$ è la dimensione della finestra di controllo di congestione \texttt{cwnd} della macchina mittente. E si suppone sia costante nel tempo. 
+Si suppone che la finestra di controllo di flusso \texttt{fwnd} della seconda macchina è arbitrariamente grande. 
+
+Il flusso è limitato dalla minima banda possibile $\underline{\mu}=\min(\mu_i)$, solitamente questo collo di bottiglia non è della macchina stessa, poiché l'interfaccia direttamente collegata generalmente è più veloce dei link intermedi. 
+
+Poiché può mandare dati solamente alla velocità $\mu_1$, se li inviasse continuamente, con $\underline{\mu}<\mu_1$ si saturerebbero velocemente i buffer dei router, quindi si distanziano i pacchetti tra di loro per avere una velocità effettiva di trasmissione media pari al collo di bottiglia. Dovendo inviare pacchetti da $L$ bit, la macchina può inviare al massimo $\underline{\mu}/L$ pacchetti al secondo. 
+In questo modo si occupa il meno possibile il buffer dei vari router, questi contengono al massimo un solo pacchetto. 
+
+Per potere inviare pacchetti ad intervalli regolari, bisognerebbe inserire un cronometro su TCP, ma è costoso dal punto di vista del sistema operativo. 
+
+Questi pacchetti arrivano con una latenza minima data da:
+\begin{gather*}
+    \frac{L}{\mu_1}+\cdots+\frac{L}{\mu_n}+2d_1+\cdots+2d_n
+\end{gather*}
+
+Se la banda dell'ultimo link corrisponde a quello del collo di bottiglia, si potrebbe avere una trasmissione continua alla destinazione, ed un uso della banda con la massima efficienza possibile. 
+
+
+
+Se TCP non conosce la topologia della rete, invia pacchetti in base alla sua \texttt{cwnd}. Questi arrivano al router che li mette in coda e li invi in modo continuo. Quando ritorna un ack, al ritorno vengono automaticamente spaziati tra di loro dal tempo del collo di bottiglia. Da questo si può temporizzare il processo senza usare un clock interno. Quindi invia pacchetti subito dopo aver ricevuto un ack, per temporizzarli esattamente come vorrebbe il collo di bottiglia. Temporizzando in maniera ottimale, la coda di uscita dei router è vuota, mentre nella fase iniziale si stressa. 
+
+QUesto è il meccanismo \textit{self-clocking}, che permette alle macchine di auto-regolarsi per trasmettere pacchetti senza intasare la coda dei router. In questo modo non è neanche necessario conoscere la topologia della rete, avendo una temporizzazione esattamente al sul collo di bottiglia. 
+
+Questa finestra di ack di ritorno non permette di trasmettere continuamente, è troppo corta e comunque ci impone di inviare pacchetti a ``singhiozzo''. Se la finestra è troppo larga, mentre si stanno inviando i pacchetti potrebbe arrivare un ack precedente. 
+
+Se il tempo di immissione sul collo di bottiglia $t_{I\min}$, moltiplicato per il numero di pacchetti per la finestra $W$: $W/L\cdot t_{I\min}$. Si ha una finestra di controllo di congestione ideale quando questo prodotto corrisponde al tempo di round trip:
+\begin{gather*}
+    \frac{W}{L}\cdot\frac{L}{\underline{\mu}}=\text{RTT}\\
+    W=\text{RTT}\cdot\underline{\mu}\tageq
+\end{gather*}
+
+Questo corrisponde si indica come prodotto banda-latenza. La dimensione della finestra di congestione dipende da questi due fattori, 
+
+Se il mittente non conosce i dettagli della connessione, non può calcolare direttamente la finestra di gestione di controllo. Può solo stimare RTT, ed ignora generalmente i valori della banda. 
+
+Per determinare il valore migliore per $W$ si può incrementare linearmente ad ogni ack la complessità di \texttt{cwnd}
+
+Ma in questo modo determinare il numero adatto di pacchetti è molto più lungo di quanto necessario. Slow-start ha uno scopo diverso, e per stimare più velocemente questa finestra effettua una ricerca dicotomica, raddoppiando ogni volta la finestra fino a quando non supera la banda massima, potendo facilmente stimare l'ordine di grandezza. Questa è un'esplorazione esponenziale dello spazio delle soluzioni. 
+
+Il meccanismo di \textit{Addictive-Increase Multiplicative-Decrease}, (AIMD) per TCP, vuole migliorare l'andamento a regime basato su fast-recovery e fast-retransmit. 
+QUando la finestra di congestione aumenta, si ha una fase di congestion avoidance, ed aumenta di una quantità costante nel tempo, è un incremento additivo lineare. Ogni volta che la finestra diminuisce, questa viene dimezzata, quindi moltiplicata per $0.5$. 
+Questo comportamento di TCP ha un buon effetto sulla fairness, sull'uguale trattamento con cui la rete tratta diverse connessioni TCP, quando queste si contendono una banda, con AIMD se la dividono equamente. Nessuna delle connessioni ha precedenza, per esempio sul tempo da cui è attiva. 
+
+%% TODO ADD a simple scenario, TCP reno throughput
+
+Il controllo di congestione è basato sulla perdita dei pacchetti, si vorrebbe avere dei segnali o informazioni per poterlo determinare prima di raggiungere la perdita dei pacchetti. nell'andamento a dente di sega, si aumenta il flusso di pacchetti linearmente rispetto al numero degli ack. 
+Questi mettono dei pacchetti in coda al router più congestionato, un segno precoce di congestione è la dimensione del buffer collo di bottiglia. 
+Solo quando questo buffer è saturato, si cominciano a perdere i pacchetti. Per un lungo tempo si aumenta il numero di pacchetti nella finestra di controllo di congestione e si registra lo stesso RTT, in un caso stabile, mentre quando si satura, si registra un RTT maggiore. I tempi di immissione di uscita da quella coda aumentano, ogni pacchetto ci mette di più e quindi il RTT aumenta. 
+Controllando il RTT, nella fase di crescita lineare questo RTT cresce altrettanto, se un buffer si sta saturando. Quindi ci si può accorgere di star inserendo ei pacchetti in coda su un router. 
+
+La versione Google di TCP usa questo meccanismo di BRR per evitare le perdite, senza la necessità di un meccanismo di fast-recovery, rimanendo sospeso al livello di poco sotto l'ottimo. 
+L'efficienza ottenuta corrisponde alla massima efficienza possibile, invece dei 3/4 dell'andamento a dente di sega. 
+
+A volte si prova ad aumentare la finestra, se si rileva un cambiamento del RTT, si rallenta l'invio dei pacchetti. 
+
+Questo è più opportuno in una rete controllata, dove si conoscono tutte le caratteristiche. In Internet, si ha una situazione più caotica, e non è possibile determinare il motivo per l'aumento del RTT. 
+Inoltre, non è un meccanismo equo nei confronti di altre connessioni TCP basate sulle perdite. Può essere considerato troppo greedy. 
 
 \clearpage
 
@@ -1724,6 +1788,60 @@ Lo scheduling generico può utilizzare più meccanismi in successione, a più li
 Computer moderni in realtà realizzano molte query extra per dare l'idea di andare più velocemente. 
 
 Si possono usare dei web cluster distribuiti per sommare le due tecnologie, avendo uno scheduling a livello globale per identificare quale specifico cluster da interrogare, ed in seguito si usa uno scheduling a livello locale per scegliere lo specifico server del cluster da richiedere. 
+
+\subsection{Content Delivery Network}
+
+Il problema di condividere risorse è comune a molti provider, motori di ricerca, servizi di streaming, social networks, ecc. 
+Tutti questi dovrebbero singolarmente risolvere un problema così difficile. 
+
+Da questo problema nasce il business dei \textit{Content Delivery Networks}, (CDNs), aiutano a realizzare un sistema di distribuzione con le risorse a disposizione dei loro clienti. 
+Realizzano un sistema di distribuzione globale, scegliendo opportuni punti, gestito da loro, ed ospitato da loro o ISP interessati. 
+
+I content provider sono i clienti che pagano, e firmano dei contratti con i CDN per distribuire i loro contenuti. Questi CDN formano una rete astratta superiore alla rete IP, per sincronizzare tutti i server, e si trova sotto alle applicazioni distribuite sul web. 
+
+Akamai è il più grande CDN, amministra centinaia di migliaia di router, ma pubblicizza di non avere risorse proprie, dice di usare, infatti, solamente gli apparati dei loro clienti. Altri CDN famosi sono CloudFlare CDN e Amazon CloudFront. 
+
+
+Akamai applica tutte le tecnologie trattate per i servizi scalabili per garantire una distribuzione geografica e globale. Molti dei meccanismi adottati sono segreti industriali, altri sono stati rivelati per pubblicizzarli o da parte dei ricercatori di Akamai per favorire lo sviluppo e la ricerca. 
+
+Ogni provider di contenuti, vuole offrire ai suoi clienti sia un contenuto statico che dinamico, questo è il contenuto più difficile, poiché deve essere comunque richiesto alla fonte. Ma ci sono vari tempi del dinamismo, alcuni contenuti devono essere riprodotti ad intervalli di tempo variabili. 
+
+La strategia di Akamai consiste nell'usare un singolo sistema di distribuzione globale basato cluster in diversi punti di presenza ISP e proprietari di Akamai. 
+Inoltrando le richieste di un utente al punto di accesso più vicino, la latenza sarà bassa, altrettanto per il traffico sulla rete. 
+
+Un altro meccanismo consiste nel classificare i contenuti in statico e dinamico, per gestirli entrambi sistematicamente. 
+Per andare a prendere alla fonte contenuto dinamico, deve utilizzare dei cammini veloci, non quelli forniti da Internet stesso. 
+
+
+Hanno dei centri per misurare i tempi di percorrenza, monitorando la rete, per valutare le prestazioni di possibili richieste, e mettono insieme valori di latenza e di banda per riuscire a trasferire informazioni dinamiche dalla sorgente fino al centro di calcolo per instradarla all'utente, lungo cammini veloci. 
+Inoltre ottimizzano i parametri TCP per favorire il trasferimento veloce di questi dati. 
+
+Hanno dei linguaggi per descrivere le parti statiche e dinamiche all'interno di una pagina. I cammini veloci vengono usati per trasferire la parte dinamica. 
+Ci sono altre tecnologie che utilizzano, ma non documentano per favorire questo scopo, questi permettono di forzare il traffico a passare per certi punti intermedi, quindi su rotte diverse da quelle annunciate dalla rete. 
+
+Le prestazioni sono migliorare assemblando frammenti dinamici e statici da repliche diverse. Si usa il linguaggio di markup \textit{Edge Side Includes} (ESI), per definire i componenti dinamici per l'assemblaggio su una pagina web. 
+Tutto questo è trasparente al livello del cliente, che riceve una pagina web normale. I componenti ottenuti statici e dinamici vengono assemblati i una pagina web dalla replica, ogni componente ha il suo stesso TTL. Questo aumenta le prestazioni del caching alle repliche. 
+
+I due meccanismi più comuni di distribuzione globale usati sono la ridirezione DNS, e l'URL rewriting. Questi permettono di indirizzare la richiesta di un cliente ad un particolare server. Offrono degli strumenti per realizzare al volo un rewrite dell'URL per puntare ai server del CDN, per raccogliere tipologie di traffico specificate. 
+
+Può essere usato per una piena redistribuzione del sito, o solo di una parte, attraverso certe repliche. Il server originale può quindi essere nascosto dal resto del mondo, ed accessibile solamente dalle repliche. Alternativamente è possibile renderlo accessibile dal resto del mondo, e mantenere specifici URL o risorse su delle repliche specifiche, per rendere più veloce queste richieste, possibili colli di bottiglia. 
+
+Ci sono degli script forniti dal CDN che in maniera trasparente si passano le pagine e traducono tutti gli indirizzi di un certo tipo per puntare ai server replica di Akamai. Tutte queste operazioni sono trasparente dal punto di vista del browser. 
+
+La prima DNS hit può avvenire direttamente dal content provider, oppure per un server replica di Akamai. Questa ridirezione può avvenire a più livelli, possono inoltrare le richieste a server DNS Akamai, a cui si manda una prima richiesta di risoluzione. Quel DNS che riceve la richiesta, utilizza un meccanismo di delega per capire la posizione dell'utente che richiede la risorsa, per avvicinarlo a dei server per gestire meglio la sua richiesta. 
+Dentro le stringhe DNS che si vedono girare quando usano il CNAME, vi è codificato dentro anche il customer. 
+La scelta del server è basata sul customer, la sua posizione, ed il tipo di contenuto richiesto. 
+
+
+Se qualcosa cambia dinamicamente, rimane comunque invariato nella versione in cache, quindi Akamai gioca sui TTL, modificandoli e diminuendolo all'aumentare della granularità del DNS server da cui ha ottenuto la richiesta. 
+
+Alcuni CDN funzionano come singoli AS, con una rete globale per raggiungere punti strategici nel territorio. L'AS di akamai è AS20940. Questi instaurano peering BGP con AS \textit{eyeball networks}, con degli utenti che principalmente guardano all'Internet per raggiungere contenuti. 
+
+Altre CDN hanno più AS e POP diversi, il più possibile sparsi sul mondo. Akamai offre sia single-ISP e multi-ISP CDN. 
+
+
+Le CDN possono instaurare peering tra di loro per espandere l'area di influenza reciproca, si formano delle federazioni sostanzialmente per offrire contenuti a prestazioni migliori e costi minori rispetto a singoli CDN. Questa rappresenta la tendenza attuale del mercato. 
+
 
 \clearpage
 
