@@ -2705,14 +2705,13 @@ Inoltre bisogna abilitare la multipath policy, si usa l'opzione \texttt{sysctl} 
 \end{minted}
 Il multipath con quest'opzione si basa anche al livello quattro. 
 
-\subsubsection{ToF}
 
 Per i tof la configurazione di \texttt{tof\_x\_y\_z.startup} è sempre e solo avviare FRR:
 \begin{minted}{bash}
     systemctl start frr
 \end{minted}
 
-Nella configurazione bisogna impostare il BGP router ID, rappresentato come un'indirizzo IP, di default BGP si prende il numero di una delle sue interfacce, ma non avendo IPv4, avrebbe \texttt{0.0.0.0}, quindi bisogna specificarlo. 
+Nella configurazione bisogna impostare il BGP router ID, rappresentato come un'indirizzo IP, di default BGP si prende il numero di una delle sue interfacce, ma non avendo IPv4, avrebbe \texttt{0.0.0.0}, quindi bisogna specificarlo. Questo è un campo di 32 byte che si rappresenta per facilità come un indirizzo IPv4. 
 \begin{minted}{bash}
     router bgp {ASN}
         timers bgp 3 9
@@ -2720,6 +2719,10 @@ Nella configurazione bisogna impostare il BGP router ID, rappresentato come un'i
         no bgp ebgp-requires-policy
         bgp bestpath as-path multipath-relax
 \end{minted}
+
+Tendenzialmente i router sono collegati ad una LAN di management, dedicata all'amministratore per entrare su di una macchina e controllarne lo stato, potenzialmente queste interfacce avranno come indirizzo quello corrispondente al router-ID, quindi si inseriscono indirizzi IP privati univoci. 
+Gli operatori di tipo wireless, hanno torri radio sparse sul territorio, connesse tramite fibra, con una sim 4G dedicata per poter sempre connettersi su un canale \textit{out-of-band}, che in caso di guasto può essere usato dall'operatore per gestire il guasto. 
+In questi lab, la LAN di gestione non viene rappresentata. 
 
 
 Si creano dei peer group come:
@@ -2729,6 +2732,7 @@ Si creano dei peer group come:
     neighbor {nome-gruppo} advertisement-interval 0
     neighbor {nome-gruppo} timers connect 10
 \end{minted}
+Questi gruppi possono essere \texttt{fabric}, per indicare che vadano verso l'alto, o \texttt{TOR}, \textit{Top Of the Rack} che vanno verso il basso. Si chiamano così poiché vengono messe in cima ad uno stesso rack, 
 Per indicare di effettuare peering con un'interfaccia si usa:
 \begin{minted}{bash}
     neighbor {interfaccia} interface peer-group {nome-gruppo}
@@ -2742,5 +2746,80 @@ Inoltre bisogna abilitare IPv4, poiché gli indirizzi usati sono IPv6, bisogna a
     exit-address-family
 \end{minted}
 Su un peering IPv6, scambia prefissi IPv4, e quando installa questi prefissi, avrà come next hop un indirizzo IPv6. Inoltre limita le rotte multipath a 64, questa è l'opzione che effettivamente attiva multipath. 
+
+Una spine ha due peer group, per differenziare i link che vanno verso l'alto e verso il basso. 
+
+La leaf ha un solo peer group, ed inoltre annuncia i prefissi dei suoi server direttamente collegati:
+\begin{minted}{bash}
+    address-family ipv4 unicast
+        neighbor TOR activate
+        network {prefisso-1}/{netmask}
+        network {prefisso-1}/{netmask}
+        maximum-paths 64
+    exit-address-family
+\end{minted}
+Bisogna indicare negli startup delle leaf i punto uno dei prefissi a cui sono collegate, inoltre ai server si assegna un indirizzo IP, per esempio il due, e si inserisce una rotta di default verso la sua leaf. Tutti gli altri 252 indirizzi possono essere usati per indirizzare le macchine virtuali dentro i server. Queste si possono re-serializzare in altro modo, si possono assegnare prefissi più piccoli ai server in base alle necessità. 
+
+
+Normalmente l'instradamento avviene al livello due, quindi il router usa l'indirizzo IPv4 o IPv6 del next-hop per ottenere o con ARP, o con solicited node, un indirizzo MAC, per instradare il pacchetto. Per cui si possono instradare pacchetti IPv6 o IPv4 con next-hop IPv4 o IPv6. 
+
+
+Quando si usa il multipath, il traceroute perde completamente di valore, poiché mostra un solo percorso tra i tanti possibili. Per calcolare più strade bisogna modificare l'hash, che dipende dall'indirizzo e la porta. Sono stati inventati due nuovi strumenti \texttt{paris-traceroute} e \texttt{dublin-traceroute}, questi effettuano un traceroute con pacchetti di livello quattro, per alterare il contenuto e modificare l'hash, per poter mostrare in output il multipath. Non è detto che usando questi strumenti sia possibile vedere l'output come un normale traceroute, ma viene fornito come file JSON abbastanza complessi, esistono strumenti online per visualizzare questi risultati. 
+
+
+Usando traceroute, quando un router riceve un ICMP per time exceeded devono mandare un pacchetto ICMP per avvisare il router mittente, ma non hanno un IPv4 configurato. Quindi esiste un indirizzo IPv4 apposito da utilizzare quando non si ha un indirizzo IPv4 configurato, \texttt{192.0.0.8}. 
+
+
+Facendo routing il traffico broadcast non esiste, avendo solamente connessioni via cavo tra due macchine, un pacchetto è sempre unicast a livello pratico, azzerando il broadcast, se non nella LAN dei server. Copiando una configurazione, bisogna modificare solamente il router ID, e l'ASN. 
+
+\subsubsection{VXLAN}
+
+In una configurazione normale di un Fat Tree ogni server è legato solamente ad una leaf, se questa guasta, tutti i container su quel server vanno offline. 
+Un orchestratore quando vede che un set di container è andato offline, prova a crearne altri, per mantenere il numero di container prestabilito. 
+Oltre a questo scopo di creare container, ha lo scopo di bilanciare il carico spostandoli tra i vari server possibili, per avere un'esperienza utente migliore possibile. 
+Lo scopo dell'orchestratore deve verificare che tutto è funzionante, quindi se dei container cadono prova a riavviarli, se si accorge che il server è guasto li re-istanzia sugli altri server. 
+
+Gli orchestratori possono effettuare queste operazioni anche su richiesta dell'utente. 
+Poiché questi container hanno un indirizzo IP, questo è legato al server, se vengono spostati su un altro server4, cambia l'indirizzo IP. All'interno di un datacenter i container vengono migrati spesso nella loro vita, per cui questo non può rappresentare un rallentamento per il data center. Non si possono reindirizzare i container ogni volta. 
+Per aspettare che le cache di DNS si allineino ci sarebbe un down time considerevole. 
+Nel momento in cui un datacenter diventa di un cloud provider, i container in un server appartengono ad utenti diversi, e si vedono tutti uno vicino all'altro perdendo l'isolamento tra server. 
+
+Non si ha modo di muovere i container senza ri-mappare gli indirizzi IP, gli utenti utilizzatori di un servizio cloud saranno costretti ad usare gli indirizzi IP del data center. 
+Questi vorrebbero usare una LAN privata per comunicare con altre macchine dell'organizzazione. Oppure un utente potrebbe essere un AS, e vorrebbe indirizzare le richieste alle proprie macchine. 
+
+Per gestire più utenti, bisogna capire l'architettura dei server. I server sono gestiti a tre livelli, il livello bare metal, l'hardware su cui operano le virtual machine, in queste macchine virtuali vengono creati i container offerti ai propri clienti. Si creano le VM per poter separare le risorse in modo più preciso. 
+In questo corso, si parlerà di due livelli soltanto, quindi si tratterà in maniera mischiata container o VM, a livello della rete non si hanno differenze. 
+Si deve permettere lo spostamento delle VM o container tra i vari server. Quando si vuole istanziate un orchestratore, per lavorare la meglio richiede una serie di qualità. Quando si sposta un container vuole avere un downtime minimo, e poter portare appresso l'indirizzo MAC del dispositivo. Tecnicamente è fattibile, poiché gli indirizzi MAC di VM e container sono virtuali. Dal punto di vista delle prestazioni di rete si vogliono per evitare di effettuare nuovamente richieste ARP. 
+
+Quando si ha una VM, il suo indirizzo MAC è scritto all'interno della VM stessa, altrimenti si avrebbero problemi a migrare tra VM. Si vuole avere uno spostamento rapido, e non si possono toccare tutte le macchine del data center per modificarne la cache. 
+
+Ulteriori requisiti dipendono dal tenant, o cliente, vorrebbero poter creare la propria LAN, e mantenerla privata, senza che altre VM o container sullo stesso server possano sniffare il traffico. 
+SI vuole isolare il traffico tra quello di altri clienti, ed isolare il traffico da quello del data center. 
+
+Questo è un requisito fondamentale del traffico, inoltre, ogni cliente vuole poter gestire il proprio indirizzo IP, come se la VM o container nel cloud fosse all'interno della rete privata, con IP privato, o all'interno dell'organizzazione del cliente. 
+
+Si vuole poter gestire il proprio spazio di indirizzamento. Quando si parla di IP privati, chiunque può usarli, quindi bisogna stare attenti a tenere le reti virtuali dei vari clienti isolate, altrimenti si potrebbero mischiare al traffico di altri utenti, che potrebbero essere malevoli. 
+
+
+Per rispettare questi requisiti si usano dei tunnel, dei canali di traffico che usano un'incapsulamento aggiuntivo, non usano il solito stack protocollare, ma è presente una duplicazione di parte dello stack protocollare. Si creano dei tunnel tra tutti i container dello stesso tenant, per isolarlo dal traffico del data center e dagli altri tenant. 
+
+Il problema consiste nell'utilizzare un protocollo di tunnel opportuno, si vuole avere un tunnel incapsulato all'interno del livello quattro, per utilizzare a pieno il multi-path, il pacchetto deve essere almeno di livello tre, per poter attraversare i router. Inoltre, si vuole attraversare l'Internet, tra due data center dello stesso cloud provider, in modo trasparente dal punto di vista dell'utente. Se si usasse una stessa tecnologia per questi requisiti sarebbe molto favorevole dal punto di vista del data center. 
+I pacchetti di livello tre hanno dei problemi a passare sulla rete, poiché la maggior parte dei firewall usati in rete sono di livello quattro, per cui è necessario incapsularli a livello quattro, per evitare di essere scartati. 
+
+
+I protocolli di tunnel conosciuti sono VLAN, tecnicamente sono protocolli di tunnel, sono di livello due, quindi non possono essere usati nei data center di livello tre. MPLS può essere una scelta, poiché per ogni nuovo tenant bisogna creare una nuova etichetta e quindi riconfigurare ogni router, per effettuare label swapping correttamente, analogamente all'aggiunta di un container. La configurazione è pesante, e non è facile farlo passare via Internet, poiché è necessario avere accordi con ISP per inoltrarli sulla base dell'etichetta. 
+
+Si usa un nuovo protocollo chiamato VXLAN, creato ad-hox per risolvere problemi simili. \textit{Virtual eXtensible Local Area Network}, standardizzato in un RFC 7348. È stato creato apposta per gestire più tenant all'interno dello stesso data center. 
+Incapsula pacchetti di livello due, in realtà al livello due si parla di frame non di pacchetti, in pacchetti UDP. 
+Questo permette di migrare anche gli indirizzi MAC, per non alterare il pacchetto, non si ha bisogno di ricalcolare il checksum, che nel caso del pacchetto di livello due si chiama FCS, in coda al pacchetto. 
+
+Si è ottenuto isolamento, incapsulamento degli indirizzi MAC, attraversamento dei router e dell'Internet. 
+
+Dentro l'header UDP si inserisce un piccolo header VXLAN. Si hanno 24 bit per il campo VNI, \textit{VXLAN Network Identifier}, dedicato all'identificativo del tunnel, ben oltre le possibili VLAN, purtroppo si hanno 32 bit sprecati, sono bit riservati, per usi futuri, ma si è capito fossero completamente inutili. 
+Inoltre si hanno altri 8 bit per il VTEP, \textit{VXLAN Tunnel End Point}, il dispositivo della rete che si occupa dell'incapsulamento e de-incapsulamento dei pacchetti. 
+
+La porta di destinazione standard per VXLAN è definita dallo standard 4789. La porta sorgente è un campo che in realtà non serve a molto, solo quando si fanno delle connessioni TCP per avere dei pacchetti di ritorno. Si usa il campo sorgente di VXLAN ad un numero casuale in modo che ogni flusso di VXLAN ha un numero che cambia. Pensando al flusso tra due container, si avrà un outer IP uguale, così come la porta di destinazione, se non si variasse la porta sorgente, verrebbe scelto sempre lo stesso percorso, per cui si prende casuale per poter sfruttare al meglio il multi path. 
+
+
 
 \end{document}
