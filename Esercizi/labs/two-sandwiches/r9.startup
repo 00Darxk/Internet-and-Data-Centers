@@ -1,5 +1,4 @@
 ip address add 30.10.0.2/25 dev eth0
 ip address add 32.0.0.3/24  dev eth1
 ip address add 30.20.0.1/25 dev eth2
-ip route add 5.5.5.2 via 32.0.0.2 dev eth1
 systemctl start frr
