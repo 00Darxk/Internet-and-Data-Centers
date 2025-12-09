@@ -2820,6 +2820,84 @@ Inoltre si hanno altri 8 bit per il VTEP, \textit{VXLAN Tunnel End Point}, il di
 
 La porta di destinazione standard per VXLAN è definita dallo standard 4789. La porta sorgente è un campo che in realtà non serve a molto, solo quando si fanno delle connessioni TCP per avere dei pacchetti di ritorno. Si usa il campo sorgente di VXLAN ad un numero casuale in modo che ogni flusso di VXLAN ha un numero che cambia. Pensando al flusso tra due container, si avrà un outer IP uguale, così come la porta di destinazione, se non si variasse la porta sorgente, verrebbe scelto sempre lo stesso percorso, per cui si prende casuale per poter sfruttare al meglio il multi path. 
 
+%% !! RECAP
+
+Bisogna essere completamente trasparente dal punto di vista dell'utente, non deve avere visibilità di nulla oltre al container. Bisogna incapsulare tutto ciò che passa attraverso il data-center e de-capsularlo quando esce. La porta sorgente è volutamente casuale per poter utilizzare il multi-path. 
+
+All'interno di un data center, si ha una rete privata, quindi si può aumentare la MTU usando un'opzione di ethernet chiamata jumbo-frame, che porta il frame a 9000 byte, quindi un overhead di 50 byte per l'incapsulamento VXLAN non è considerevole.   
+
+
+Il problema di base è che in un data center si hanno tante VTEP, ma si vorrebbe che il pacchetto avendo un MAC di destinazione arrivasse alla VTEP giusta. La VTEP di una macchina quando incapsula un pacchetto, deve sapere a chi inviarlo, a quale VTEP sulla stessa VNI.  
+Usa la tabella MAC-to-VTEP, altrimenti dovrebbe inviare il pacchetto in broadcast. Questa tabella tiene delle coppie MAC ed IP, dove il MAC è l'indirizzo della macchina interna alla VTEP, mentre l'indirizzo IP è relativo alla VTEP associata. 
+Lavorano esattamente come le tabelle degli switch, quando passa un pacchetto attraverso una VTEP, si segna dove sono presenti le macchine, associando l'IP sorgente del pacchetto, ed il MAC interno aprendo il pacchetto. Queste entry hanno una scadenza, esattamente come la tabella degli switch. 
+Questo lega un indirizzo MAC ad un indirizzo IP, a differenza di uno switch che lega un indirizzo MAC ad una porta dello switch. 
+
+Per poter comunicare tra le due macchine, è necessario inviare un messaggio ARP, con un indirizzo MAC destinazione broadcast, e questi pacchetti sono diversi dal broadcast di una VTEP che non conosce l'indirizzo MAC destinazione. Gli apparati di rete moltiplicano il pacchetto, la macchina ha mandato un solo pacchetto. In questa situazione, non si può mandare veramente in broadcast, ma si manda una copia del pacchetto per ogni VTEP che esiste. 
+Si usa il multicast, associando ad ogni VNI un IP multicast della rete fisica, in modo che si evita di mandare copie del pacchetto, ma uno solo destinato al gruppo multicast e saranno i dispositivi di rete a sdoppiarlo per i vari indirizzi. Quando una VTEP appartiene ad una VNI, si iscrive anche al gruppo multicast relativo a quella VNI. Questa è una soluzione molto più scalabile, ma usare multicast in rete richiede di usare molti più protocolli, IGMP, IGMP Snooping, PIM, ecc. Sono tre protocolli abbastanza ostici da configurare, e devono essere configurati abbastanza bene, altrimenti può diventare una broadcast storm. Deve funzionare bene anche il sistema delle iscrizioni, IGMP Snooping, gli switch devono ricordarsi le iscrizioni, IGMP, e PIM, nella sua versione sparse, deve gestire queste connessioni. 
+Poiché non vengono usati quasi mai, non è nota quell'esperienza necessaria per poterli configurare adeguatamente. 
+
+Invece di disabilitare il traffico multicast, si utilizza la tecnica del proxy ARP, questo è il protocollo che causa il più traffico broadcast. Quando ad una VTEP arriva una ARP request, si potrebbe realizzare un proxy ARP su una VTEP, in modo che se un pacchetto ARP passa per un apparato che conosce la risposta, blocca il broadcast e risponde come se fosse il vero utente, invece di lasciar continuare la richiesta broadcast, creando un pacchetto finto, spacciandosi per l'utente finale e rispondendo. 
+
+Invece di questa soluzione, si usa EVPN-BGP, standardizzato da RFC, \textit{Ethernet VPN}, (EVPN). Utilizza MP-BGP, \textit{Multi-Protocol BGP}, questa è la capacità di BGP di trasportare dati di protocolli diversi. Questo è quello usato per andare oltre BGP classico, come IPv6, poiché BGP è nato con IPv4. L'idea è che esistono degli identificatori chiamati AFI, \textit{Address Family Identifier}, e SAFI, \textit{Subsequent AFI}, che rappresentano una famiglia di indirizzi. Vengono usati da BGP per trasmettere indirizzi IPv6, next-hop IPv6. Usando AFI pari a 25, e SAFI pari a 70, BGP, protocollo livello tre, annuncia indirizzi MAC. 
+Una VTP apprende automaticamente gli indirizzi MAC locali e gli annuncia alle altre VTEP della stessa VNI. Inoltre, le VTEP fanno da proxy ARP per limitare il traffico broadcast. 
+
+
+Due VTEP instaurano un peering eBGP multi-hop. All'accensione le macchine si mandano sempre un pacchetto, per cui una VTEP impara subito il MAC di una macchina locale, e lo passa subito annunciandolo ai suoi VTEP peer. 
+
+
+Implementare VXLAN, si ha un overhead di 50 byte, per cui nello startup delle macchine connesse alle VTEP, bisogna modificare la MTU:
+\begin{minted}{bash}
+    ip link set dev {interfaccia} mtu 1450    
+\end{minted}
+Inoltre, nella VTEP corrispondente bisogna impostare BGP:
+\begin{minted}{bash}
+    router bgp {asn}
+        no bgp ebgp-requires-policy
+    
+        neighbor {indirizzo-peer} remote-as {asn-peer}
+
+        address-family l2vpn evpn
+            neighbor {indirizzo-peer} activate
+            advertise-all-vni
+        exit-address-family
+\end{minted}
+Bisogna attivare l'address family giusta, in questo caso \texttt{l2vpn} e \texttt{evpn}, questi sono standardizzati dallo IANA, bisogna attivarli sul vicino giusto, ovvero gli altri VTEP. Inoltre, bisogna far passare i pacchetti per tutte le VNI. Bisogna permettere cambiamenti nella configurazione del data center, senza dover modificare la configurazione, per cui non è noto a priori quale VNI passeranno. 
+
+
+Lo startup dei VTEP è più complesso, manca l'interfaccia \texttt{eth0}, poiché è quella connessa verso le macchine da connettere. La VTEP è al livello due, non può avere un indirizzo IP. 
+Bisogna aggiungere un'interfaccia VXLAN, specificando un nuovo nome, il VNI corrispondente, la porta e l'indirizzo di destinazione, e si specifica di non usare multicast con l'opzione \texttt{nolearning}. 
+Bisogna inserire un companion bridge, necessario per una VTEP. Si indica di non generare indirizzi su questo nuovo bridge, questo lavora solo a livello due e bisogna specificarlo, altrimenti Linux genererà per lui un indirizzo livello tre. 
+Attaccare un'interfaccia ad un bridge su Linux si chiama \textit{enslaving}, si specifica di attaccare questo bridge all'interfaccia VTEP creata. 
+Si attacca l'interfaccia \texttt{eth0} al bridge, e si accendono queste interfacce. 
+L'ultima istruzione è accendere FRR, che si connette in automatico al bridge creato, per connettersi alla MAC-to-VTEP table e trasmetterla tramite BGP. 
+\begin{minted}{bash}
+    ip address add {indirizzo} dev eth1
+    
+    ip link add {nome-vtep} type vxlan id {vni} dev eth1 dstport {porta} local {indirizzo} nolearning
+
+    ip link add {nome-bridge} type bridge
+    ip link add {nome-bridge} addrgenmode none
+
+    ip link set dev {nome-vtep} master {nome-bridge} addrgenmode none
+    ip link set {nome-vtep} type bridge_slave neigh_suppress on learning off
+    ip link set dev eth0 master {nome-bridge} 
+
+    ip link set up dev {nome-vtep}
+    ip link set up dev {nome-bridge}
+
+    systemctl start frr
+\end{minted}
+
+Si usa un bridge poiché bisogna salvare questa tabella da MAC a VTEP, e verrà salvata dentro ad un bridge. Questo diventa un bridge normalissimo quando si attacca alla VTEP. FRR si connette solamente al bridge per annunciare ed inserire le informazioni che passano su eBGP. 
+
+
+Avviando il lab si possono verificare molti indirizzi con \texttt{ip link}. 
+
+
+Con \texttt{sh bgp sum}, si vedono i peering instaurati con L2VPN. 
+Si usa il comando \texttt{sh evpn mac vni all}, sempre dentro vtysh, per vedere la tabella MAC-to-VTEP. 
+Questo indica il numero di macchine remote e locali, ad ogni entry della tabella è inserito l'indirizzo MAC, ed indica se sono remoti o locali, con l'indirizzo a cui è connesso. 
+Per vedere la tabella di instradamento del bridge, si usa il comando \texttt{brctl showmacs} seguito dal nome del bridge. Per ogni entry è indicato se è locale, ed il suo ageing timer. Gli indirizzi MAC locali possono apparire duplicati, ma non causa problemi. 
 
 
 \end{document}
