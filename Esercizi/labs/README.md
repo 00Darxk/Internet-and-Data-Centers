@@ -4,6 +4,7 @@
  - [clouds](https://github.com/KatharaFramework/Kathara-Labs/tree/main/exam-labs/2022-11-04-clouds/clouds.pdf)
  - [incognita-desconocida](https://impianti.inf.uniroma3.it/HomePage25-26/lezioni2/IDC-2023-2024-seconda-prova-01.pdf), oppure [incognita](https://github.com/xReniar/Esami_IDC/blob/master/2023-11-27-incognita/2023-11-27-incognita.pdf), [desconocida](https://github.com/xReniar/Esami_IDC/blob/master/2023-11-27-desconocida/traccia.jpeg)
  - [nefertiti](https://github.com/KatharaFramework/Kathara-Labs/tree/main/exam-labs/2021-02-10-nefertiti/nefertiti.pdf)
+ - [patchwork](https://github.com/xReniar/Esami_IDC/blob/master/2024-01-22-patchwork/2024-01-22-patchwork.pdf)
  - [puzzle](https://github.com/KatharaFramework/Kathara-Labs/tree/main/exam-labs/2020-11-18-puzzle/puzzle.pdf)
  - [red-baron](https://github.com/KatharaFramework/Kathara-Labs/blob/main/exam-labs/2020-12-18-red-baron/red-baron.pdf)
  - [right-hopscotch](right-hopscotch/right-hopscotch.pdf)

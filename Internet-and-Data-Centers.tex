@@ -2921,9 +2921,9 @@ Verranno create le VTEP corrispondenti a tutti i possibili tenant, preconfiguran
     ip address add {indirizzo-lo}/32 dev lo:1
     ip route add {indirizzo-lo}/32 dev lo:1
 
-    ip link add {vtep-vni-1} id {vni-1} dev lo dstport 4789 local {indirizzo-lo} nolearning
+    ip link add {vtep-vni-1} type vxlan id {vni-1} dev lo dstport 4789 local {indirizzo-lo} nolearning
     ...
-    ip link add {vtep-vni-n} id {vni-n} dev lo dstport 4789 local {indirizzo-lo} nolearning
+    ip link add {vtep-vni-n} type vxlan id {vni-n} dev lo dstport 4789 local {indirizzo-lo} nolearning
 
     ip link add {nome-br} type bridge
     ip link set {nome-br} addrgenmode none
@@ -2938,6 +2938,7 @@ Si attaccano tutti questi al bridge, e si abilita la VLAN su questo bridge:
     ...
     ip link set dev {vtep-vni-n} master {nome-br} addrgenmode none
     ip link set {vtep-vni-n} type bridge_slave neigh_suppress on learning off
+    ip link set dev {interfaccia-verso-server} master {nome-br}
     
 
     ip link set dev {nome-br} type bridge vlan_filtering 1
@@ -3011,9 +3012,9 @@ Si crea nel server un bridge per aprire i pacchetti VLAN in modo intelligente.
 \begin{minted}{bash}
     ip link add {nome-br} type bridge
 
-    ip lnk set dev eth0 master {nome-br}
+    ip link set dev eth0 master {nome-br}
     ...
-    ip lnk set dev eth{n} master {nome-br}
+    ip link set dev eth{n} master {nome-br}
 
     
     ip link set dev {nome-br} type bridge vlan_filtering 1
