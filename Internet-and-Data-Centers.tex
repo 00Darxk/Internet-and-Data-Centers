@@ -2899,5 +2899,163 @@ Si usa il comando \texttt{sh evpn mac vni all}, sempre dentro vtysh, per vedere 
 Questo indica il numero di macchine remote e locali, ad ogni entry della tabella è inserito l'indirizzo MAC, ed indica se sono remoti o locali, con l'indirizzo a cui è connesso. 
 Per vedere la tabella di instradamento del bridge, si usa il comando \texttt{brctl showmacs} seguito dal nome del bridge. Per ogni entry è indicato se è locale, ed il suo ageing timer. Gli indirizzi MAC locali possono apparire duplicati, ma non causa problemi. 
 
+\subsubsection{Configurazione}
+
+In una struttura di Fat-Tree in un data center, bisogna determinare l'apparato che si occupa di essere la VTEP. Non può essere il server, poiché deve poter parlare BGP, ed un server non può usare questo protocollo. Una soluzione migliore è usare una leaf, poiché già parla BGP, il problema è che tra la leaf ed il sever è presente un unico cavo, e quindi estraendo i pacchetti il server non può distinguere a quale tenant appartengono, e quindi un utente malevolo potrebbero leggere tutto il traffico. 
+Si usa una VLAN all'interno del singolo link tra la leaf ed il server per distinguere tra loro i vari tenant. Tuttavia, c'è un problema sulla scalabilità avendo al massimo 4096 VLAN, questo è abbastanza per un server. Si mappano le VNI con unu set di VLAN, si potrebbero mappare tecnicamente per ogni server. Nei lab si usa una versione semplificata dove il mapping è univoco in tutto il data center, ma è impossibile mappare un dominio di 4 milioni su un codominio di 4 mila. 
+La lef estrae i pacchetti VXLAN, e li incapsula in un pacchetto VLAN, il server sa gestire la VLAN a livello hardware direttamente, e quindi è sufficiente rimappare queste VLAN ai tenant. 
+Dalla leaf in sù si parla VXLAN, sulla leaf si parla anche VLAN con il sever, ed all'interno del server non ci incapsulamenti. Sono necessari due mapping, uno nella leaf per mappare la VLAN ad un VNI, ed uno nel server per mappare dalla VLAN al tenant, quindi i suoi container. I container si parlano senza incapsulare il pacchetto e credono di essere sulla stessa LAN virtuale, non vedono hop tra di loro, è completamente trasparente. 
+
+Quando si sposta un container, ed appena manda un pacchetto, la leaf corrispondente manda un annuncio BGP, in modo che tutto il traffico arrivi correttamente al container, senza problemi. 
+
+
+Ogni tenant ha il suo VNI, VLAN ID e prefisso. Un indirizzo IP lo hanno solamente i container e le leaf, attraverso interfacce di loopback. Nei lab i container sono macchine a parte connesse alle macchine server, questi non hanno una logica applicativa relativa al server, poiché a livello pratico si comportano come uno switch, si toglie quanto più possible carico di lavoro ai server, per aumentarne le loro risorse computazionali. Bisogna inserire un IP alla leaf della macchina, per mantenere la raggiungibilità. Le loopback verranno annunciate su BGP, quindi le uniche rotte sulla fabric saranno verso questi prefissi di loopback, essendo delle barra 32 sono essenzialmente degli indirizzi. 
+
+Si potrebbero sovrapporre i prefissi dei tenant, e funzionerebbe comunque, poiché sono distinti dalla VLAN e VXLAN, ma si tengono divisi nei lab per facilitare la comprensione. 
+
+Per ogni leaf, allo startup si inserisce l'indirizzo di loopback e si crea forzatamente una rotta in tabella di routing con quella loopback. Questa rotta serve poiché verrà usata dopo. 
+Verranno create le VTEP corrispondenti a tutti i possibili tenant, preconfigurando tutte le leaf con tutte le VTEP, in modo che ovunque si sposti il container la leaf è già pronta. 
+
+
+\begin{minted}{bash}
+    ip address add {indirizzo-lo}/32 dev lo:1
+    ip route add {indirizzo-lo}/32 dev lo:1
+
+    ip link add {vtep-vni-1} id {vni-1} dev lo dstport 4789 local {indirizzo-lo} nolearning
+    ...
+    ip link add {vtep-vni-n} id {vni-n} dev lo dstport 4789 local {indirizzo-lo} nolearning
+
+    ip link add {nome-br} type bridge
+    ip link set {nome-br} addrgenmode none
+\end{minted}
+
+Il bridge creato sarà unico tra le due interfacce in uscita e con tutte le VTEP in entrata. 
+
+Si attaccano tutti questi al bridge, e si abilita la VLAN su questo bridge:
+\begin{minted}{bash}
+    ip link set dev {vtep-vni-1} master {nome-br} addrgenmode none
+    ip link set {vtep-vni-1} type bridge_slave neigh_suppress on learning off
+    ...
+    ip link set dev {vtep-vni-n} master {nome-br} addrgenmode none
+    ip link set {vtep-vni-n} type bridge_slave neigh_suppress on learning off
+    
+
+    ip link set dev {nome-br} type bridge vlan_filtering 1
+    bridge vlan add vid {vlan-id-1} dev {vtep-vni-1} pvid untagged
+    ...
+    bridge vlan add vid {vlan-id-n} dev {vtep-vni-n} pvid untagged
+    bridge vlan add vid {vlan-id-1} dev {interfaccia-verso-server}
+    ...
+    bridge vlan add vid {vlan-id-n} dev {interfaccia-verso-server}
+\end{minted}
+
+Aggiungere un nuovo tenant implicherebbe riconfigurare tutte le leaf, si potrebbero pre-configurare con un approccio telescopico, ma in ambiente reale si un kernel proprietario, degli stessi produttori di FRR, che permette di associare una VTEP ad un intervallo di VNI, per non dover riconfigurarlo all'aggiunta di una nuova VNI. 
+Il link tra il bridge e le VTEP non sono etichettati, poiché nel mondo reale si ha un altro mapping tra VNI e VLAN, essendo molte di meno. Sono etichettati solamente i pacchetti in uscita verso il server. 
+
+Alla fine bisogna attivare le interfacce ed il bridge:
+\begin{minted}{bash}
+    ip link set up dev {vtep-vni-1}
+    ...
+    ip link set up dev {vtep-vni-n}
+    ip link set up dev {nome-br}
+
+    systemctl start frr
+\end{minted}
+
+Nella configurazione BGP, si usa come router ID l'indirizzo della loopback associata alla leaf. 
+
+\begin{minted}{bash}
+    router bgp {ASN}
+        timers bgp 3 9
+        bgp router-id {indirizzo-lo}
+        no bgp ebgp-requires-policy
+        bgp bestpath as-path multipath-relax
+
+        neighbor TOR peer-group
+            neighbor TOR remote-as external
+            neighbor TOR advertisement-interval 0
+            neighbor TOR timers connect 10
+            neighbor eth0 interface peer-group TOR
+            neighbor eth1 interface peer-group TOR
+\end{minted}
+
+La differenza è inserire un redistribute dentro BGP, è un errore gravissimo inserirlo dentro BGP. Si usa una route-map per matchare un'interfaccia, rendendo la configurazione BGP identica per tutte le leaf, e qualunque IP posto alla loopback questo li annuncia. Per questo server la rotta statica, inserita nel server. 
+\begin{minted}{bash}
+    address-family ipv4 unicast
+        neighbor TOR activate
+        redistribute connected route-map LOOPBACKS
+        maximum-path 64
+    exit-address-family
+
+    address-family l2vpn evpn
+        neighbor TOR activate
+        advertise-all-vni
+    exit-address-family
+
+    route-map LOOPBACKS permit 10
+        match interface lo
+\end{minted}
+
+
+Sulla spine, si attiva l'AFI/SAFI corretto per avviare BGP. Sulla parte alta della fabric non è cambiato niente, solamente questa configurazione aggiuntiva:
+\begin{minted}{bash}
+    address-family l2vpn even
+        neighbor fabric activate
+        neighbor TOR activate
+    exit-address-family
+\end{minted}
+Si aggiunge alle spine, e non alle ToF. 
+
+
+Si crea nel server un bridge per aprire i pacchetti VLAN in modo intelligente. 
+\begin{minted}{bash}
+    ip link add {nome-br} type bridge
+
+    ip lnk set dev eth0 master {nome-br}
+    ...
+    ip lnk set dev eth{n} master {nome-br}
+
+    
+    ip link set dev {nome-br} type bridge vlan_filtering 1
+    bridge vlan add vid {vlan-id-1} dev eth1 pvid untagged
+    ...
+    bridge vlan add vid {vlan-id-n} dev eth{n} pvid untagged
+    bridge vlan add vid {vlan-id-1} dev eth0
+    ...
+    bridge vlan add vid {vlan-id-n} dev eth0
+
+    ip link set up dev {nome-br}
+\end{minted}
+Il server è non etichettato verso i propri tenant, mentre è etichettato verso la leaf, poiché utilizza la VLAN
+
+Per la comunicazione tra due container di uno stesso tenant, un pacchetto non etichettato passa al server. Questo lo etichetta con la VLAN corrispondete al tenant e lo passa al companion bridge della leaf. Questa lo apre, legge la VLAN ID e lo manda alla VTEP corrispondente. Questa legge dalla MAC-to-VTEP table dove mandarlo per raggiungere il MAC destinazione, da questo conosce l'indirizzo loopback destinazione. Crea il pacchetto VXLAN relativo a questa VTEP, ci inserisce il pacchetto di livello due ricevuto, senza il tag VLAN, verso l'indirizzo di loopback della leaf destinazione. Questo arriva con multipath, e lo apre, guarda alla VXLAN, ed in base alla VNI determina la VTEP a cui inviarlo. Lo manda alla VTEP, questa lo passa al companion bridge, che lo associa alla VLAN corrispondente. Da questo companion bridge viene inviato al server che legge il suo VLAN ID e lo invia al tenant associato ospitato. 
+
+Ci sono delle primitive kernel con cui un protocollo come eBPF può leggere le informazioni quando passano il kernel. 
+
+Avendo due possibilità, per ogni pochetto che si riceve si mandano due pacchetti dalla ToF. 
+
+\subsubsection{Bonding}
+
+Il lab senza la parte di no bond non è stabile, poiché si utilizza il kernel Linux pubblico e quindi non funzionano correttamente pezzi di tecnologia necessari. 
+Il link tra la leaf ed il server è unico, se si rompe il server si buttano già tutti i link di quella lef. 
+Il problema si risolve utilizzano la tecnologia chiamata bonding, di livello due. Tecnologie di livello più alto non si possono usare. Questo aggrega più interfacce di rete per creare un'unica interfaccia virtuale. Si possono usare diverse policy, mantenendo una attiva ed una di backup, oppure mantenendo tutte le interfacce attive. 
+Per questa modalità bisogna bilanciare il traffico, si può usare round robin, oppure usando lo xor per implementare una forma di hashing. 
+Lo standard ethernet 802.3ad realizza un bilanciamento guardando anche all'utilizzo dei singoli link. 
+
+Si ha un problema, poiché il dual-attached è progettato per avere due link verso lo stesso switch, ma in un Fat Tree si hanno due link a due leaf diverse, da parte di un server. 
+Questa tecnologia si chiama invece MLAG, \textit{Multi-Chassis Link Aggregation}, l'idea di avere un bond con due interfacce che punta a due switch diversi. Il kernel classico di Linux non supporta questa tecnologia. Questo permette di avere ridondanza, usando due switch su due porte diverse come se appartenessero ad un singolo switch logico. 
+Ogni server dovrebbe essere legato ad entrambe le leaf. 
+
+Se un link cade per un server, bisognerebbe che la leaf corrispondente invii all'altra leaf i pacchetti destinati a questo server. 
+Il problema è che leaf di un PoD hanno lo stesso indirizzo anycast, quindi i pacchetti possono arrivare in maniera completamente indifferente ad una leaf o all'altra. 
+
+
+Ci sono compagnie e società che valutano l'uso di una topologia diversa. Il Fat-Tree più comunemente utilizzato è a tre livelli, per data center più piccoli sono sufficienti topologie a due livelli. 
+
+Si potrebbero aggiungere più leaf, o rimuovere il ToF, semplicemente modificando i peering, si possono aggiungere altri server o container, ma bisogna modificare molte più configurazioni. 
+
+
+Gli step relativi al debugging è analogo per gli altri lab, bisogna verificare che le leaf sono raggiungibili tra di loro. Si verifica se i peering sono funzionanti, sia delle ToF che delle leaf, e si controllano gli as-path, si segue la propagazione dei prefissi, poiché deve essere presente su ogni apparato della fabric. 
+Per le VTEP è più complesso, ed è importante inserire gli indirizzi giusti. Sulle VLAN si può inserire uno sniffer con wireshark, oppure si può usare \texttt{tcpdump}. 
 
 \end{document}
