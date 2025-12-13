@@ -1,0 +1,10 @@
+# Aggiungi un indirizzo ad un interfaccia
+ip address add {prefisso}/{netmask} dev {interfaccia}
+# Inserisci una rotta nella tabella di instradamento kernel (statica)
+ip route add {prefisso}/{netmask} via {indirizzo} dev {interfaccia}
+
+# Se è un tenant in un data center, si modifica la MTU sull'interfaccia connessa al server
+ip link set dev {eth-verso-server} mtu 1450
+
+# Avvia servizio di routing frr
+systemctl start frr

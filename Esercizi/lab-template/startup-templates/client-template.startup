@@ -1,13 +1,13 @@
 # Aggiungi un indirizzo ad un interfaccia
 ip address add {prefisso}/{netmask} dev {interfaccia}
-# Inserisci una rotta nella tabella di instradamento kernel (statica)
-ip route add {prefisso}/{netmask} via {indirizzo} dev {interfaccia}
 # Inserisci un default gateway nella tabella di instradamento kernel (statica)
 route add default gw {prefisso}/{netmask}
+#       oppure
 ip route add default via {indirizzo} dev {interfaccia}
 
-# Avvia servizi:
-#    frr (router)
-systemctl start frr
-#    apache2 (web server)
+
+# Se è un tenant in un data center, si modifica la MTU sull'interfaccia connessa al server
+ip link set dev eth0 mtu 1450
+
+# Avvia il servizio apache2 (web server)
 systemctl start apache2

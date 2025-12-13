@@ -1,5 +1,5 @@
 #!/bin/bash
-# first parameter ($1) is directory to create lab. defaults to current dir
+echo -e "first parameter (\$1) is directory to create lab. defaults to current dir"
 # set -euo pipefail
 # only RIP and OSPF router config
 
