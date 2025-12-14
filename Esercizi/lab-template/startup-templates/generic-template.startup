@@ -5,9 +5,8 @@ route add default gw {prefisso}/{netmask}
 #       oppure
 ip route add default via {indirizzo} dev {interfaccia}
 
-
 # Se è un tenant in un data center, si modifica la MTU sull'interfaccia connessa al server
-ip link set dev eth0 mtu 1450
+ip link set dev {interfaccia-verso-server} mtu 1450
 
 # Avvia il servizio apache2 (web server)
 systemctl start apache2
