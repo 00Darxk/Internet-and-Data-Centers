@@ -1,6 +1,15 @@
 #!/bin/bash
+# TODO fix colors and variables in read commands
 set -euo pipefail
-echo -e "\e[1;34mFirst parameter (\$1) is path to create lab in (defaults to working dir)"
+
+NC=$'\e[0;0m'
+RED=$'\e[1;31m'
+YEL=$'\e[1;33m'
+BLUE=$'\e[1;34m'
+PRL=$'\e[1;35m'
+CYAN=$'\e[1;36m'
+
+echo -e "${BLUE}First parameter (\$1) is path to create lab in (defaults to working dir)"
 echo -e "Second parameter (\$2) is path to lab-template (defaults to working dir)\n"
 
 LABPATH="$(pwd)"
@@ -13,7 +22,7 @@ if ! [ -z "${2++}" ]; then
 fi
 
 configure_startup() {
-    echo -e "\e[1;36mNames syntax: leaf{...}, spine{...} , tof{...}, s{...} (server), c{...} (container)\e[0;0m"
+    echo -e "${CYAN}Names syntax: leaf{...}, spine{...} , tof{...}, s{...} (server), c{...} (container)${NC}"
     while :
     do
         read -p "Enter hostname ('q' to quit): " HOSTNAME
@@ -23,13 +32,13 @@ configure_startup() {
         cp "$LAB_TEMPLATE/startup-templates/$( echo $HOSTNAME | sed -r "s/([a-z]*).*/\1/" )-template.startup" "$LABPATH/$HOSTNAME.startup" > /dev/null 2>&1 ||
         cp "$LAB_TEMPLATE/startup-templates/$( echo ${HOSTNAME:0:1} )erver-template.startup" "$LABPATH/$HOSTNAME.startup" > /dev/null 2>&1 ||
         cp "$LAB_TEMPLATE/startup-templates/$( echo ${HOSTNAME:0:1} )ontainer-template.startup" "$LABPATH/$HOSTNAME.startup" > /dev/null 2>&1 ||
-        echo -e "\e[1;31mInvalid name\e[0;0m (empty .startup)"
-        echo -e "\e[1;36mCreated $LABPATH/$HOSTNAME.startup\e[0;0m"
+        echo -e "${RED}Invalid name${NC} (empty .startup)"
+        echo -e "${CYAN}Created $LABPATH/$HOSTNAME.startup${NC}"
     done
     HOSTS="$(ls "$LABPATH" | grep "[a-z]*\.startup" | sed "s/\.startup//" )"
-    echo -e "\e[1;36m"
+    echo -e "${CYAN}"
     ls "$LABPATH" | grep "[a-z]*\.startup" | sed "s/\.startup//"
-    echo -e "\e[0;0m"
+    echo -e "${NC}"
 
     VXLANS=()
     VLANS=()
@@ -39,11 +48,11 @@ configure_startup() {
         if [ "$VNI" = "q" ] || [ "$VNI" = "Q" ] || [ -z "${VNI}" ]; then
             break;
         fi
-        read -p "[VNI] Enter VLAN ID ('q' to quit): " VLAN
+        read -p "[VNI: $VNI] Enter VLAN ID ('q' to quit): " VLAN
         if [ "$VLAN" = "q" ] || [ "$VLAN" = "Q" ] || [ -z "${VLAN}" ]; then
             break;
         fi
-        echo -e "Added (${VNI})-(${VLAN})"
+        echo -e "Added (VNI=${VNI})-(VLAN_ID=${VLAN})"
         VXLANS+=("$VNI")
         VLANS+=("$VLAN")
     done
@@ -74,6 +83,41 @@ configure_startup() {
             done
             # elimina tutte le righe segnate con ##
             sed -r -i "s/^##(.*(\{vtep-vni-i\}|\{vni-i\}|\{vlan-id-i\}).*)//" "$cur_path"
+
+
+            while :
+            do
+                s_eth0="$( grep "(eth[0-9]*)" "$cur_path" | sed 's/^.*(\(eth[0-9]*\)).*(\(eth[0-9]*\)).*/\1\n\2/' | head -1 )" 
+                s_eth1="$( grep "(eth[0-9]*)" "$cur_path" | sed 's/^.*(\(eth[0-9]*\)).*(\(eth[0-9]*\)).*/\1\n\2/' | head -2 | tail -1 )" 
+
+                s_eth=""
+                read -p $'['"$cur"']> Swap server-leaf link interface \033[1;34m'"$s_eth0"'\033[0;0m? [y/N]: ' SWAP
+                if ! [ "$SWAP" = "y" ] && ! [ "$SWAP" = "Y" ]; then
+                    read -p $'['"$cur"']> Swap server-leaf link interface \033[1;34m'"$s_eth1"'\033[0;0m? [y/N]: ' SWAP
+
+                    if ! [ "$SWAP" = "y" ] && ! [ "$SWAP" = "Y" ]; then
+                        break;
+                    fi
+
+                    s_eth=$s_eth1
+                fi
+
+
+                tmp_eth=$s_eth0
+                if [[ -z "${s_eth}" ]]; then
+                    s_eth=$s_eth0
+                    tmp_eth=$s_eth1
+                fi
+                
+                echo "eth0 eth1 eth2 eth3" | sed -r "s/(${s_eth})/${BLUE}\1${NC}/" | sed -r "s/(${tmp_eth})/${RED}\1${NC}/" 
+                read -p $'['"$cur"']> Enter interface to swap with \033[1;34m'"$s_eth"'\033[0;0m: ' SWAP
+
+                if [[ $SWAP == "eth"* ]]; then
+                    sed -i "s/${SWAP}/\x0/g; s/${s_eth}/${SWAP}/g; s/\x0/${s_eth}/g" "$cur_path"
+                else
+                    echo "$SWAP: Invalid interface name"
+                fi
+            done
         elif [[ $cur == "s"* ]] && [[ $cur != "spine"* ]]; then
             ETHS=()
             while :
@@ -112,24 +156,43 @@ configure_startup() {
                 sed -r -i "s/(^[^#\n]*)(\{eth-i\})/\1${eth}/" "$cur_path"
             done
             # elimina tutte le righe segnate con ##
-            sed -r -i '/\{vlan-id-j\}/! s/^##(.*\{eth-i\}.*)//' "$cur_path" 
+            sed -r -i '/\(\{eth-i\}\)/! s/^(.*\{eth-i\}.*)//' "$cur_path" 
 
+            while :
+            do
+                s_eth="$( grep "(eth[0-9]*)" "$cur_path" | sed 's/.*(\(eth[0-9]*\)).*/\1/' )"
+
+                read -p $'['"$cur"']> Swap server-leaf link interface \033[1;34m'"$s_eth"'\033[0;0m? [y/N]: ' SWAP
+                if ! [ "$SWAP" = "y" ] && ! [ "$SWAP" = "Y" ]; then
+                    break;
+                fi
+                
+                ( printf "[$cur]> Interfaces: eth0 " ;  echo "${ETHS[*]}" ) | sed -r "s/(${s_eth})/${BLUE}\1${NC}/"
+
+                read -p $'['"$cur"']> Enter interface to swap with \033[1;34m'"$s_eth"'\033[0;0m: ' SWAP
+
+                if [[ $SWAP == "eth"* ]]; then
+                    sed -i "s/${SWAP}/\x0/g; s/${s_eth}/${SWAP}/g; s/\x0/${s_eth}/g" "$cur_path"
+                else
+                    echo "$SWAP: Invalid interface name"
+                fi
+            done
         elif [[ $cur == "c"* ]]; then
             read -p "[$cur]> Enter IP address (x.x.x.x): " IP
             sed -i "s/{indirizzo}/${IP}/" "$cur_path"
             read -p "[$cur]> Enter netmask (${IP}/y): " NET
             sed -i "s/{netmask}/${NET}/" "$cur_path"
 
-            read -p "[$cur]> Enable apache2 web server? [Y/n]: " APA
-            if [ "$APA" = "y" ] || [ "$APA" = "Y" ] || [ -z "$APA" ]; then
+            read -p "[$cur]> Enable apache2 web server? [y/N]: " APA
+            if [ "$APA" = "y" ] || [ "$APA" = "Y" ]; then
                 sed -r -i "s/^##(.*(apache2).*)/\1/" "$cur_path" 
                 read -p "[$cur]> Enter identifier: " WEB
-                mkdir "$LABPATH/$cur" > /dev/null 2>&1 && echo -e "\e[1;36mDirectory '$LABPATH/$cur' created\e[0;0m" || echo -e "\e[1;36mDirectory '$LABPATH/$cur' already exists\e[0;0m"
+                mkdir "$LABPATH/$cur" > /dev/null 2>&1 && echo -e "${CYAN}Directory '$LABPATH/$cur' created${NC}" || echo -e "${CYAN}Directory '$LABPATH/$cur' already exists${NC}"
                 cp -r "$LAB_TEMPLATE/web-server-template/var" "$LABPATH/$cur"
                 sed -i "s/{HOSTNAME}/${WEB}/" "$LABPATH/$cur/var/www/html/index.html"
                 read -p "[$cur]> Test web-server? [y/N] " WEB
                 if [ "$WEB" = "y" ] || [ "$WEB" = "Y" ]; then
-                    links "$LABPATH/$cur/var/www/html/index.html" > /dev/null 2>&1 || echo -e "\e[1;31m'links' not working or 'index.html' not present\e[0;0m"
+                    links "$LABPATH/$cur/var/www/html/index.html" > /dev/null 2>&1 || echo -e "${RED}'links' not working or 'index.html' not present${NC}"
                 fi
             fi  
         fi
@@ -170,27 +233,27 @@ main() {
     echo -e "###########################################\n"
 
     echo -e "This script will search the current lab directory for .startup(s) files"
-    echo -e "Leaves, spines, and tofs are 'leaf*', 'spine*' and 'tof*'.\e[0;0m\n" 
-    read -p $'Configure .startup(s)? (\e[1;31mTHIS WILL OVERWRITE THEM, CONTINUE?\e[0;0m) [Y/n] ' CONT
+    echo -e "Leaves, spines, and tofs are 'leaf*', 'spine*' and 'tof*'.${NC}\n" 
+    read -p $"Configure .startup(s)? (${RED}THIS WILL OVERWRITE THEM, CONTINUE?${NC}) [Y/n] " CONT
 
     if  [ "$CONT" = "y" ] || [ "$CONT" = "Y" ] || [ -z "$CONT" ]; then
         configure_startup
     fi
 
     echo -e "\nSearching directory..."
-    echo -e "Leaves:\e[1;34m"
-    ls "$LABPATH" | grep "leaf\S*\.startup" | sed "s/\.startup//" || echo  -e "\e[0;0mno leaves" 
+    echo -e "Leaves:${BLUE}"
+    ls "$LABPATH" | grep "leaf\S*\.startup" | sed "s/\.startup//" || echo  -e "${NC}no leaves" 
     LEAVES="$( ls "$LABPATH" | grep "leaf\S*\.startup" | sed "s/\.startup//" )" || LEAVES=""
 
-    echo -e "\e[0;0m\nSpines:\e[1;34m"
-    ls "$LABPATH" | grep "spine\S*\.startup" | sed "s/\.startup//" || echo  -e "\e[0;0mno spines"
+    echo -e "${NC}\nSpines:${BLUE}"
+    ls "$LABPATH" | grep "spine\S*\.startup" | sed "s/\.startup//" || echo  -e "${NC}no spines"
     SPINES="$( ls "$LABPATH" | grep "spine\S*\.startup" | sed "s/\.startup//" )" || SPINES=""
 
-    echo -e "\e[0;0m\nToFs:\e[1;34m"
-    ls "$LABPATH" | grep "tof\S*\.startup" | sed "s/\.startup//" || echo -e "\e[0;0mno tofs"
+    echo -e "${NC}\nToFs:${BLUE}"
+    ls "$LABPATH" | grep "tof\S*\.startup" | sed "s/\.startup//" || echo -e "${NC}no tofs"
     TOFS="$( ls "$LABPATH" | grep "tof\S*\.startup" | sed "s/\.startup//" )" || TOFS=""
 
-    echo -e "\e[0;0m\nAttempting to create directories...\n"
+    echo -e "${NC}\nAttempting to create directories...\n"
 
     declare -a nodes=( "LEAVES" "SPINES" "TOFS" )
     for j in "${nodes[@]}"
@@ -202,7 +265,7 @@ main() {
         for i in $( seq 1 $( echo "$cur" | wc -l ) )
         do
             cur_i=$( sed -n ${i}p <<< "$cur" )
-            mkdir "$LABPATH/$cur_i" > /dev/null 2>&1 && echo -e "\e[1;36mDirectory '$LABPATH/$cur_i' created\e[0;0m"  || echo -e "\e[1;36mDirectory '$LABPATH/$cur_i' already exists\e[0;0m"
+            mkdir "$LABPATH/$cur_i" > /dev/null 2>&1 && echo -e "${CYAN}Directory '$LABPATH/$cur_i' created${NC}"  || echo -e "${CYAN}Directory '$LABPATH/$cur_i' already exists${NC}"
         done
     done
 
