@@ -6,6 +6,7 @@
  - [nefertiti](https://github.com/KatharaFramework/Kathara-Labs/tree/main/exam-labs/2021-02-10-nefertiti/nefertiti.pdf)
  - [patchwork](https://github.com/xReniar/Esami_IDC/blob/master/2024-01-22-patchwork/2024-01-22-patchwork.pdf)
  - [puzzle](https://github.com/KatharaFramework/Kathara-Labs/tree/main/exam-labs/2020-11-18-puzzle/puzzle.pdf)
+ - [quintaped](https://ingegneriacivileinformaticatecnologieaeronautiche.el.uniroma3.it/pluginfile.php/140095/mod_resource/content/0/IDC-2024-12-13-testo-filaA.pdf) (Moodle)
  - [red-baron](https://github.com/KatharaFramework/Kathara-Labs/blob/main/exam-labs/2020-12-18-red-baron/red-baron.pdf)
  - [right-hopscotch](right-hopscotch/right-hopscotch.pdf)
  - [right-weight](right-weight/right-weight.pdf)

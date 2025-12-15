@@ -943,7 +943,7 @@ Il router esegue un lookup sulla rete dov'è presente l'indirizzo del next hop. 
 
 L'iBGP che compila la tabella di instradamento prima che BGP inietti le rotte di instradamento, deve iniettare tutte le rotte esterne, altrimenti non sarebbe possibile effettuare il recursive lookup. In generale queste non servono, poiché protocolli IGP non si interessano di queste, ma sono necessarie per iniettare rotte BGP. 
 Per risolvere questo problema, si può inserire una clausola che impone di cambiare il next hop ad ogni passo, anche se ci si trova in uno stesso AS. In questo modo non bisogna portare in IGP tutte le rotte interne:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     neighbor x.x.x.x next-hop-self    
 \end{minted}
 
@@ -953,7 +953,7 @@ Si può usare uno schema di enumeratone semplice nelle loopback per tutti i rout
 
 Quando si realizzano dei peering, non si realizzano tra due interfacce vera, ma tra interfacce di loopback, che non cadano a meno che non viene disattivato l'intero router. Le sessioni iBGP non dipendono neanche dallo stato della rete interna. Fino a che l'AS è connesso, possono comunicare tutte le macchine. 
 Tuttavia, bisogna forzare l'indirizzo di peering, con quello di loopback, e non l'indirizzo dell'interfaccia da cui esce il pacchetto:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     neighbor x.x.x.x update-source y.y.y.y    
     neighbor x.x.x.x update-source lo:z    
 \end{minted}
@@ -1962,7 +1962,7 @@ Ogni dispositivo emulato ha una sua console, una memoria, un filesystem, e può 
 Per usare Kathar\'{a}: \href{https://github.com/00Darxk/Reti-di-Calcolatori/blob/main/Esercizi/Esercizi_Kathará.pdf}{appunti introduttivi} dal corso di Reti di Calcolatori. 
 
 Per visualizzare le informazioni sui pacchetti si può utilizzare \texttt{tcpdump}, specificando varie flag:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     tcpdump {flags}
 \end{minted}
 \begin{itemize}
@@ -1993,14 +1993,14 @@ In questo file possono essere presenti una serie di assegnazioni del tipo:
 Per indicare parametri o opzioni da attivare per un certo dispositivo emulato nel progetto. Si possono condividere file tra il filesystem interno dei dispositivi e quello esterno del calcolatore con le cartelle \texttt{/shared}, abilitato di default, e \texttt{/hostname}, per ogni dispositivo, disattivato di default. Tutto ciò che è contenuto in sottocartelle in quest'ultimo viene copiato e non riflesso anche nel filesystem esterno. 
 Nella stessa directory può essere inserito un file bash \verb|{hostname}.startup| che indica i comandi da eseguire all'avvio del progetto. 
 Si usano per configurare la tabella di instradamento statica e gli indirizzi per le interfacce della macchina:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
 ip address add {indirizzo-ip}/{netmask} dev {interfaccia}
 ip route add {indirizzo-dest}/{netmask} via {indirizzo-src} dev {interfaccia}
 \end{minted}
 Per aggiungere delle rotte di default si usa l'opzione \texttt{default} per l'indirizzo di destinazione 
 
 Inoltre si può usare per avviare servizi, come web server, routing frr, ecc. Queste macchine sono basate su linux e \texttt{systemd} come gestore dei servizi. Per avviare un servizio bisogna inserire in questo file:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     systemctl start {servizio}
 \end{minted}
 
@@ -2057,7 +2057,7 @@ Si può reindirizzare con per scrivere l'output su di un file, che può essere u
 
 RIP è un protocollo di routing distance vector, che può essere gestito da FRR. 
 Nel file di configurazione di FRR bisogna avviare RIP ed impostare la rete su cui può mandare pacchetti multicast:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     router rip
     network {prefisso}/{netmask}
 \end{minted}
@@ -2069,7 +2069,7 @@ OSPF è un protocollo di routing link state packet, che può essere gestito da F
 Per funzionare invia in multicast pacchetti contenti il suo stato attuale, interfacce e reti raggiungibili. Ed ogni router si genera il suo database per calcolarsi un albero dai cammini minimi. 
 
 Alcuni comandi utili per OSPF, da eseguire direttamente sulla shell della macchina o su \texttt{vtysh} sono:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     show ip ospf {route/interface/neighbor/database}
 \end{minted}
 
@@ -2085,12 +2085,12 @@ Vengono scelti per un router come l'indirizzo dell'interfaccia più alta che ha,
 Con il comando \texttt{... route} si possono vedere tutte le LAN raggiungibili e la loro area di appartenenza, tutte le reti presenti nell'area di backbone dovrebbero essere presenti, altrimenti la configurazione è errata. 
 
 Per configurare questo protocollo nel file di configurazione di FRR, si inserisce \texttt{router ospf} per indicare che si utilizza il protocollo, ed in seguito si possono definire le interfacce che appartengono ad una determinata area, tutte quelle che ricadono nel prefisso specificato:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     network {prefisso}/{netmask} area {area-id}    
 \end{minted}
 Per selezionare ogni interfaccia si usa \texttt{0.0.0.0/0}, per router con interfacce su più aree è necessario specificare singolarmente o a gruppi le interfacce. 
 Inoltre per definire il tipo di un'area backbone, stub o transit si usa la notazione:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     area {area-id} {area-type}    
 \end{minted}
 Questo non è richiesto per la backbone. 
@@ -2109,11 +2109,11 @@ A parità di costo per spareggiare si usa il costo dell'OSPF. %% TODO ??
 
 Per configurare BGP, si utilizza sempre \texttt{frr.conf}, per cominciare la configurazione si utilizza \verb|router bgp {ASN}|. Inserendo un comando non di BGP si esce automaticamente all'ambiente BGP. 
 Si dichiara subito l'ASN, a differenza degli OSPF. Per impostare i vicini si utilizza la sintassi:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     neighbor {ip-vicino} remote-as {asn-vicino}    
 \end{minted}
 Si può includere anche una descrizione, per aiutare a riconoscere i vari ASN
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     neighbor {ip-vicino} description {descrizione}    
 \end{minted}
 La connessione tra due router BGP è simmetrica, se i numeri IP non combinano non si alza la connessione. 
@@ -2121,19 +2121,19 @@ La connessione tra due router BGP è simmetrica, se i numeri IP non combinano no
 Nella configurazione \texttt{daemons} devono essere abilitati sia Zebra che BGP. 
 
 Le rotte statiche si inseriscono con un comando di tipo \texttt{network}:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     network {indirizzo-ip} mask {netmask}
     network {indirizzo-ip}/{netmask}    
 \end{minted}
 BGP effettua un controllo su questa rotta, controllando se l'indirizzo è nella tabella di instradamento, per evitare di condividere una rotta che non può soddisfare. Se non è presente la raggiungibilità nel data plane, non si possono eseguire queste operazioni nel control plane. 
 Questo è abilitato per sicurezza, per disabilitarlo e testare altre configurazioni si può usare:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     no bpg network import-check
 \end{minted}
 Disabilitando questa configurazione si possono trasmettere rotte non locali o non esistenti. 
 
 Un altro comando, di default abilitato è:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     no bpg egbp-requires-policy
 \end{minted}
 Questa configurazione quando attiva, impedisce di passare informazioni ad un vicino, se non sono presenti policy.
@@ -2205,14 +2205,14 @@ Per queste ed altre decisioni politiche si utilizzano dei filtri per evitare che
 Per realizzare questi filtri si usano elementi delle normali espressioni regolari, \texttt{regexp}. 
 
 Tutte queste politiche hanno alla fine un \texttt{deny all} implicito. 
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     neighbor {indirizzo} filter-list {nome-lista} in
     bgp as-path access-list {nome-lista} permit {regexp}    
 \end{minted}
 
 
 Si possono configurare le \texttt{route-map} come:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     neighbor {indirizzo} route-map {nome-map} {in/out}
     route-map {nome-map} {permit/deny} {seq-number}
         match {proprietà annuncio}
@@ -2243,7 +2243,7 @@ Un AS con un numero basso è più vecchio di uno con numero elevato.
 
 Uno stub AS si configura anche senza una policy eBGP, queste rotte vengono considerate con il comando \texttt{network}. Si assume che tutti i prefissi vengano considerati da questi comandi, ma non verificano che la LAN indicata sia posseduta da questo AS, non è certificato. Questo può quindi essere annunciato ad un router di frontiera, bisogna verificarlo alla fonte con un certificato di proprietà, ma solo nel momento in cui si utilizza. Ma questi certificati possono essere duplicati e modificati, per modificare anche la distanza. 
 Questo porta a problemi di sicurezza per BGP. 
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     router bgp {id-stub}
     no bgp ebgp-requires-policy
     network {prefisso-stub}/{netmask-stub}
@@ -2253,7 +2253,7 @@ Questo porta a problemi di sicurezza per BGP.
 I router di frontiera connessi con questi stub AS devono avere dei filtri e configurazioni di sicurezza, per garantire che riceve messaggi da indirizzi contenuti nel prefisso annunciato dallo stub AS, questo non può essere controllato automaticamente e si utilizzano dei filtri per realizzarlo. Disattivando l'opzione \texttt{bgp network import-check}, si possono annunciare anche rotte non presenti nel kernel, poiché definendo la rotta di default con \texttt{network}, questa non viene iniettata nel kernel. 
 Si mostrano questi filtri, realizzando due prefix list \texttt{customerIn} per ali annunci in entrata proveniente dallo stub, e \texttt{defaultOut} per gli annunci in uscita dal provider, contenente la rotta di default. 
 Si assegna la default per mostrare il funzionamento, ma ben pochi router possono avere questa configurazione con la default. 
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     router bgp {id-isp}
     no bgp network import-check
     
@@ -2281,7 +2281,7 @@ Se un router intermedio perde il link all'upstream contenente la rotta di defaul
 
 Il secondo comando per influenzare le policy è \texttt{route-map}, oltre ad essere è un filtro si comporta come modificatore, per esprimere una preferenza. 
 La rotta di default viene trattata come ogni altra rotta se è generata da \texttt{network}, mentre con \texttt{default-originate} è trattata da un'altra \texttt{route-map}:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     neighbor {indirizzo} default-originate route-map {nome} in
 \end{minted}
 
@@ -2293,7 +2293,7 @@ Con il comando \texttt{network} le policy sono applicate sulle route \texttt{in}
 \subsubsection{Stub AS Static}
 
 In queste situazioni semplici potrebbe essere più conveniente configurare rotte statiche verso e dallo stub. È sufficiente una default statica che punta al provider come next hop, per cui non è necessario utilizzare BGP:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     route add default gw {indirizzo-isp}
 \end{minted}
 In questo modo non si lancia un protocollo di instradamento nel customer, almeno se non serve per comunicare con i suoi vicini interni. 
@@ -2322,7 +2322,7 @@ Si può valutare rispetto alla metrica solo se l'annuncio arriva dallo stesso AS
 In base a questi valori di MED, lo stub probabilmente sceglierà il primario con la metrica più bassa. 
 Il customer assegna una preferenza minore al link di backup, questo influisce sugli annunci in entrata ed il traffico in uscita, preferendo link con valori maggiori. 
 
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     router bgp {id-stub}
     
     neighbor {indirizzo-isp-primario} remote-as {id-isp}
@@ -2334,7 +2334,7 @@ Il customer assegna una preferenza minore al link di backup, questo influisce su
 
 
 Non si possono inserire due route map sullo stesso peering, o due prefix list. Il nome delle route map e delle prefix list è case sensitive, ed in caso sia sbagliato, nel loro utilizzo, non le applica. Per cui bisogna fare particolarmente attenzione al nome di queste etichette. 
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     neighbor {indirizzo-isp-primario} prefix-list mineOutOnly out
     neighbor {indirizzo-isp-primario} prefix-list defaultIn in
     neighbor {indirizzo-isp-backup} prefix-list mineOutOnly out
@@ -2345,7 +2345,7 @@ Non si possono inserire due route map sullo stesso peering, o due prefix list. I
 
 
 Si usa una route map che fa uso di un aggregato che viene definito da un access list:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     access-list myAggregate permit {prefisso-stub}/{netmask-stub}
 
     ip prefix-list mineOutOnly permit {prefisso-stub}/{netmask-stub}
@@ -2376,13 +2376,13 @@ Questo lab è composto da tre AS: AS20, AS100, e AS200, quest'ultimi sono due st
 
 Viene usato RIP sia in AS20 che in AS100, bisognerebbe configurare RIP in questi due AS, in AS20 è semplice avendo due router, mentre in AS100 con tre router, RIP ha uno scopo molto più forte. 
 Questi router vengono configurati con RIP e per distribuire le rotte annunciate da BGP, con RIP:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     router rip
     network {prefisso}/{netmask}
     redistribute bgp    
 \end{minted}
 Questo per i router di frontiera, per i router interni che non devono parlare BGP si ha invece:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     router rip
     network {prefisso}/{netmask}
     redistribute connected    
@@ -2390,7 +2390,7 @@ Questo per i router di frontiera, per i router interni che non devono parlare BG
 
 Bisogna ignorare il \texttt{network import-check}, poiché si usano dei prefissi aggregati per gli indirizzi delle connessioni, e quindi non sono presenti nella tabella di instradamento. 
 Uno dei due peering viene definito primario, e l'altro secondario, tra i router di AS20. Si ha una politica semplice per il neighbor primario ed una più complessa per il neighbor secondario. 
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     debug bgp keepalives
     debug bgp updates in
     debug bgp updates out
@@ -2403,7 +2403,7 @@ Uno dei due peering viene definito primario, e l'altro secondario, tra i router 
 \end{minted}
 
 Si vuole evitare che il traffico per un link diretto a AS100 rimbalzi e ritorni ad AS20:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     neighbor {indirizzo-isp-primario} prefix-list mineOutOnly out
     neighbor {indirizzo-isp-backup} prefix-list mineOutOnly out
 
@@ -2411,7 +2411,7 @@ Si vuole evitare che il traffico per un link diretto a AS100 rimbalzi e ritorni 
 \end{minted}
 
 Poiché le tabelle di instradamento possono essere di elevate dimensioni, per AS piccoli è conveniente avere un unica rotta di default in entrata ai router di frontiera, per delegare l'instradamento esclusivamente ai router superiori. Questo si effettua creando un'altra prefix list in entrata:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     neighbor {indirizzo-isp-primario} prefix-list defaultIn in
     neighbor {indirizzo-isp-backup} prefix-list defaultIn in
 
@@ -2420,7 +2420,7 @@ Poiché le tabelle di instradamento possono essere di elevate dimensioni, per AS
 
 Per impostare i link primari e secondari bisogna impostare la MED e la preferenza locale del link scelto come secondario. 
 La default che arriva dal link primario si vuole preferire, quindi la local preference in arrivo sul link primario deve essere più alta. Si potrebbe alzare, oppure, come in questo caso, si diminuisce nel link di backup. Il default è 100. 
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     neighbor {indirizzo-isp-backup} route-map localPrefIn in
 
     route-map localPrefIn permit 10
@@ -2428,7 +2428,7 @@ La default che arriva dal link primario si vuole preferire, quindi la local pref
 \end{minted}
 
 Gli annunci in uscita invece devono passare esclusivamente sul link primario, quindi bisogna modificare la scelta che faranno i router dell'AS superiore, per preferire il link primario. Questo si effettua modificando la MED, diminuendo la MED del link primario o aumentando la MED del link secondario. Il default è 0. Questa si inserisce solo sugli annunci sugli indirizzi della propria LAN. 
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     neighbor {indirizzo-isp-backup} route-map metricOut out
     access-list myAggregate permit {prefisso-stub}/{netmask-stub}
     
@@ -2443,7 +2443,7 @@ L'unico router di AS200 deve avere la flag disattivata di \texttt{ebgp-requires-
 I peering iBGP sono obbligatori, altrimenti BGP non funziona, mentre i peering eBGP sono opzionali, in full mesh, ovvero se sono presenti tre router, bisogna realizzare tre link, tutti connessi con tutti, con un albero ricoprente completo. 
 
 I router di AS20 hanno quindi peering tra di loro ed anche con i router di frontiera dei router stub. Si considera il router connesso sia ad AS100 che AS200:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     router bgp 20
     no bgp network import-check 
 
@@ -2452,7 +2452,7 @@ I router di AS20 hanno quindi peering tra di loro ed anche con i router di front
     neighbor {indirizzo-as20} remote-as 20
 \end{minted}
 Questi router devono dichiarare le LAN interne, e le LAN di peering. Queste nella vita reale non vengono mai annunciate, poiché potrebbe essere possibile tagliare la connessione tra due router BGP, poiché viaggia su TCP, sarebbe possibile tagliarlo con tcp-reset. Per motivi di sicurezza le LAN di peering non sono annunciate, sono solo disponibili direttamente connesse. 
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     network {LAN-as20}
     network {LAN-peering-as100}
     network {LAN-peering-as200}
@@ -2460,7 +2460,7 @@ Questi router devono dichiarare le LAN interne, e le LAN di peering. Queste nell
 \end{minted}
 
 Si definiscono le liste di prefissi per poter annunciare permettere alle LAN stub di poter annunciare solo i loro prefissi:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     neighbor {indirizzo-as200} default-originate
     neighbor {indirizzo-as200} prefix-list as200In in
     neighbor {indirizzo-as200} prefix-list defaultOut out
@@ -2498,7 +2498,7 @@ Si considera un laboratorio con un AS radice AS1, con due AS di transito AS30 e 
 
 I router di AS300 devono avere in uscita solamente le proprie LAN, ed in entrata solo l'AS30 o l'AS40. 
 Entrambi questi router di frontiera annunciano la propria metà /$n+1$ ed il prefisso aggregato /$n$:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     neighbor {indirizzo-as30/as40} prefix-list mineOutOnly out
     neighbor {indirizzo-as30/as40} prefix-list defaultIn in
 
@@ -2532,7 +2532,7 @@ Prima bisogna dichiarare un neighbor, e poi vengono modificati i vari campi.
 
 I comandi \texttt{network} devono essere inseriti dentro BGP, quindi prima di comandi per le access list e prefix list. 
 La prefix list può essere composta da più statement, che hanno ciascuno un sequence number:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     ip prefix-list {nome} seq {numero} permit {prefisso}/{netmask}
 \end{minted}
 Questi statement vengono eseguiti in base al sequenze number. 
@@ -2574,7 +2574,7 @@ Di default per una macchina CISCO la propagazione di iBGP è disattivata.
 
 
 Per distribuire solo eBGP, evitando il problema dei rimbalzi, si crea una route map che permette solo rotte avendo come next hop le altre LAN di peering:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     ip prefix-list myNeighbors permit {peering-LAN} le 32
     route-map eBGP permit 10
         match ip next-hop prefix-list myNeighbors
@@ -2596,7 +2596,7 @@ Utilizzare un oggetto di livello applicativo è molto utile, poiché è molto pi
 In questo corso si vedranno dal punto di vista applicativo i WebServer, e verranno utilizzati per simulare dei servizi all'interno del datacenter. 
 
 Il server di default è \texttt{apache2}, il client usa \texttt{links}, un browser da linea di comando. Per avviare il webserver, si avvia il servizio di Apache con:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     systemctl start apache2
 \end{minted}
 
@@ -2612,7 +2612,7 @@ Si inserisce la pagina HTML su \texttt{/var/www/html/index.html}, sovrascrivendo
 Questo è necessario per valutare i load balancer per differenziare su quale server si è stati indirizzati. 
 
 Si possono monitorare gli accessi al webserver con:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     tail -f /var/log/apache2/access.log
 \end{minted}
 Inoltre, si può controllare il file \texttt{error.log} sulla stessa directory. 
@@ -2692,7 +2692,7 @@ Invece di applicare le policy direttamente ai vicini, uno ad uno, si può applic
 In questa versione per connettersi ai server, si assegnano dei prefissi, poiché nel cloud computing, si affittano VM o container all'interno di un server. Per accedere a questi container o macchine virtuali, si utilizza parte del prefisso assegnato per indirizzare i container o le VM contenuto nel server. Sarà la foglia ad assegnare il prefisso del server. 
 
 Bisogna abilitare IPv6 su tutti i router, specificando nel \texttt{lab.conf} per tutti le macchine:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     {host}[ipv6]=True
 \end{minted}
 
@@ -2700,19 +2700,19 @@ La nomenclatura in questi laboratori segua la convenzione: \verb|{tipo}_x_y_z|. 
 Per i ToF i numeri \texttt{x}, \texttt{y} e \texttt{z} sono rispettivamente il numero del piano, il livello, sempre due, ed il numero di ToF. Per una foglia si ha il numero di PoD, il livello, sempre zero, ed il numero della fogli.a. Per Spine si ha il numero di PoD, il livello, sempre uno, ed il numero di spine. Per un server, il primo è il numero di PoD, il numero di foglia corrispondente ed il numero del server. 
 
 Inoltre bisogna abilitare la multipath policy, si usa l'opzione \texttt{sysctl} per impostare i parametri nel kernel:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     {host}[sysctl]="net.ipv4.fib_multipath_hash_policy=1"
 \end{minted}
 Il multipath con quest'opzione si basa anche al livello quattro. 
 
 
 Per i tof la configurazione di \texttt{tof\_x\_y\_z.startup} è sempre e solo avviare FRR:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     systemctl start frr
 \end{minted}
 
 Nella configurazione bisogna impostare il BGP router ID, rappresentato come un'indirizzo IP, di default BGP si prende il numero di una delle sue interfacce, ma non avendo IPv4, avrebbe \texttt{0.0.0.0}, quindi bisogna specificarlo. Questo è un campo di 32 byte che si rappresenta per facilità come un indirizzo IPv4. 
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     router bgp {ASN}
         timers bgp 3 9
         bgp router-id {indirizzo-ID}
@@ -2726,7 +2726,7 @@ In questi lab, la LAN di gestione non viene rappresentata.
 
 
 Si creano dei peer group come:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     neighbor {nome-gruppo} peer-group
     neighbor {nome-gruppo} remote-as external
     neighbor {nome-gruppo} advertisement-interval 0
@@ -2734,12 +2734,12 @@ Si creano dei peer group come:
 \end{minted}
 Questi gruppi possono essere \texttt{fabric}, per indicare che vadano verso l'alto, o \texttt{TOR}, \textit{Top Of the Rack} che vanno verso il basso. Si chiamano così poiché vengono messe in cima ad uno stesso rack, 
 Per indicare di effettuare peering con un'interfaccia si usa:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     neighbor {interfaccia} interface peer-group {nome-gruppo}
 \end{minted}
 
 Inoltre bisogna abilitare IPv4, poiché gli indirizzi usati sono IPv6, bisogna attivare la modalità per annunciare indirizzi IPv4:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     address-family ipv4 unicast
         neighbor fabric activate
         maximum-paths 64
@@ -2750,7 +2750,7 @@ Su un peering IPv6, scambia prefissi IPv4, e quando installa questi prefissi, av
 Una spine ha due peer group, per differenziare i link che vanno verso l'alto e verso il basso. 
 
 La leaf ha un solo peer group, ed inoltre annuncia i prefissi dei suoi server direttamente collegati:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     address-family ipv4 unicast
         neighbor TOR activate
         network {prefisso-1}/{netmask}
@@ -2846,11 +2846,11 @@ Due VTEP instaurano un peering eBGP multi-hop. All'accensione le macchine si man
 
 
 Implementare VXLAN, si ha un overhead di 50 byte, per cui nello startup delle macchine connesse alle VTEP, bisogna modificare la MTU:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     ip link set dev {interfaccia} mtu 1450    
 \end{minted}
 Inoltre, nella VTEP corrispondente bisogna impostare BGP:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     router bgp {asn}
         no bgp ebgp-requires-policy
     
@@ -2870,7 +2870,7 @@ Bisogna inserire un companion bridge, necessario per una VTEP. Si indica di non 
 Attaccare un'interfaccia ad un bridge su Linux si chiama \textit{enslaving}, si specifica di attaccare questo bridge all'interfaccia VTEP creata. 
 Si attacca l'interfaccia \texttt{eth0} al bridge, e si accendono queste interfacce. 
 L'ultima istruzione è accendere FRR, che si connette in automatico al bridge creato, per connettersi alla MAC-to-VTEP table e trasmetterla tramite BGP. 
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     ip address add {indirizzo} dev eth1
     
     ip link add {nome-vtep} type vxlan id {vni} dev eth1 dstport {porta} local {indirizzo} nolearning
@@ -2917,7 +2917,7 @@ Per ogni leaf, allo startup si inserisce l'indirizzo di loopback e si crea forza
 Verranno create le VTEP corrispondenti a tutti i possibili tenant, preconfigurando tutte le leaf con tutte le VTEP, in modo che ovunque si sposti il container la leaf è già pronta. 
 
 
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     ip address add {indirizzo-lo}/32 dev lo:1
     ip route add {indirizzo-lo}/32 dev lo:1
 
@@ -2932,7 +2932,7 @@ Verranno create le VTEP corrispondenti a tutti i possibili tenant, preconfiguran
 Il bridge creato sarà unico tra le due interfacce in uscita e con tutte le VTEP in entrata. 
 
 Si attaccano tutti questi al bridge, e si abilita la VLAN su questo bridge:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     ip link set dev {vtep-vni-1} master {nome-br} addrgenmode none
     ip link set {vtep-vni-1} type bridge_slave neigh_suppress on learning off
     ...
@@ -2954,7 +2954,7 @@ Aggiungere un nuovo tenant implicherebbe riconfigurare tutte le leaf, si potrebb
 Il link tra il bridge e le VTEP non sono etichettati, poiché nel mondo reale si ha un altro mapping tra VNI e VLAN, essendo molte di meno. Sono etichettati solamente i pacchetti in uscita verso il server. 
 
 Alla fine bisogna attivare le interfacce ed il bridge:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     ip link set up dev {vtep-vni-1}
     ...
     ip link set up dev {vtep-vni-n}
@@ -2965,7 +2965,7 @@ Alla fine bisogna attivare le interfacce ed il bridge:
 
 Nella configurazione BGP, si usa come router ID l'indirizzo della loopback associata alla leaf. 
 
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     router bgp {ASN}
         timers bgp 3 9
         bgp router-id {indirizzo-lo}
@@ -2981,7 +2981,7 @@ Nella configurazione BGP, si usa come router ID l'indirizzo della loopback assoc
 \end{minted}
 
 La differenza è inserire un redistribute dentro BGP, è un errore gravissimo inserirlo dentro BGP. Si usa una route-map per matchare un'interfaccia, rendendo la configurazione BGP identica per tutte le leaf, e qualunque IP posto alla loopback questo li annuncia. Per questo server la rotta statica, inserita nel server. 
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     address-family ipv4 unicast
         neighbor TOR activate
         redistribute connected route-map LOOPBACKS
@@ -2999,7 +2999,7 @@ La differenza è inserire un redistribute dentro BGP, è un errore gravissimo in
 
 
 Sulla spine, si attiva l'AFI/SAFI corretto per avviare BGP. Sulla parte alta della fabric non è cambiato niente, solamente questa configurazione aggiuntiva:
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     address-family l2vpn even
         neighbor fabric activate
         neighbor TOR activate
@@ -3009,7 +3009,7 @@ Si aggiunge alle spine, e non alle ToF.
 
 
 Si crea nel server un bridge per aprire i pacchetti VLAN in modo intelligente. 
-\begin{minted}{bash}
+\begin{minted}[breaklines]{bash}
     ip link add {nome-br} type bridge
 
     ip link set dev eth0 master {nome-br}

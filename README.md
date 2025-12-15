@@ -77,8 +77,9 @@ Appunti tratti dal corso di Internet and Data Centers, Anno Accademico 2025/26, 
  - [asrank](https://asrank.caida.org/asns) sito per rankare autonomous system;
  - [RIPEstat](https://stat.ripe.net/) tool per le statistiche BGP di RIPE;
  - [BGP Looking Glass](https://www.bgplookingglass.com/) database di looking glass per vari AS;
- - [*Kathará*](https://github.com/KatharaFramework/Kathara), emulatore di reti, utilizzato durante il corso e per l'esame;
+ - [*Kathará*](https://github.com/KatharaFramework/Kathara), emulatore di reti, utilizzato durante il corso, esoneri ed esame;
  - [*Kathará* Labs](https://github.com/KatharaFramework/Kathara-Labs), repository contenente lab ufficiali di *Kathará*, tutorial, esoneri ed esami passati;
+ - [net-vis](https://github.com/Friscobuffo/net-vis-localhost) visualizzatore di reti per lab *Kathará*;
  - [Esami_IDC](https://github.com/xReniar/Esami_IDC), repository contenente soluzioni di esoneri ed esami passati per il corso;
  - [Sito del corso](http://impianti.inf.uniroma3.it), con i lucidi delle lezioni, esercizi, esoneri ed esami passati. 
 
