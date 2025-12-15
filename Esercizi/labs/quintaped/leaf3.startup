@@ -19,19 +19,20 @@ ip link set dev vtep5020 master br100 addrgenmode none
 ip link set vtep5010 type bridge_slave neigh_suppress on learning off
 ip link set vtep5020 type bridge_slave neigh_suppress on learning off
 
-# Si aggiunge l'interfaccia connessa al server (eth0) come slave al bridge
+# Si aggiunge le interfacce connesse ai server (eth2) e (eth3) come slave al bridge
 ip link set dev eth2 master br100 addrgenmode none
 ip link set dev eth3 master br100 addrgenmode none
 
 
 # Si configura la VLAN sul bridge, associando ogni i-esima VNI ({vtep-vni-i}) alla sua i-esima VLAN corrispondente ({vlan-id-i})
 ip link set br100 type bridge vlan_filtering 1
-# Si etichettano i pacchetti con la VLAN solamente sull'interfaccia tra il bridge ed il server (eth0), non tra il bridge e le VTEP
+# Si etichettano i pacchetti con la VLAN solamente sull'interfaccia tra il bridge ed i server (eth2) e (eth3), non tra il bridge e le VTEP
 bridge vlan add vid 10 dev vtep5010 pvid untagged
 bridge vlan add vid 20 dev vtep5020 pvid untagged
 
 bridge vlan add vid 10 dev eth2
 bridge vlan add vid 20 dev eth2
+
 bridge vlan add vid 10 dev eth3
 bridge vlan add vid 20 dev eth3
 
