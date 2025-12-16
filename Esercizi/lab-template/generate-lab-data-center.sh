@@ -4,13 +4,14 @@ set -euo pipefail
 NC=$'\e[0;0m'
 RED=$'\e[1;31m'
 GRN=$'\e[1;32m'
+ORG=$'\e[0;33m'
 YEL=$'\e[1;33m'
 BLUE=$'\e[1;34m'
 PRL=$'\e[1;35m'
 CYAN=$'\e[1;36m'
 
-echo -e "${BLUE}First parameter (\$1) is path to create lab in (defaults to working dir)"
-echo -e "Second parameter (\$2) is path to lab-template (defaults to working dir)\n"
+echo -e "${BLUE}First parameter is path to create lab in (defaults to working dir)"
+echo -e "Second parameter is path to lab-template (defaults to working dir)\n"
 
 LABPATH="$(pwd)"
 if ! [ -z "${1++}" ]; then
@@ -129,8 +130,8 @@ configure_startup() {
 
             while :
             do
-                s_eth0="$( grep "(eth[0-9]*)" "$cur_path" | sed 's/^.*(\(eth[0-9]*\)).*(\(eth[0-9]*\)).*/\1\n\2/' | head -1 )" 
-                s_eth1="$( grep "(eth[0-9]*)" "$cur_path" | sed 's/^.*(\(eth[0-9]*\)).*(\(eth[0-9]*\)).*/\1\n\2/' | head -2 | tail -1 )" 
+                s_eth0="$( grep -o "(eth[0-9]{1,})" "$cur_path" | sort -u | sed sed -r 's/.*(eth[0-9]*).*/\1/' | head -1 )" 
+                s_eth1="$( grep -o "(eth[0-9]{1,})" "$cur_path" | sort -u | sed sed -r 's/.*(eth[0-9]*).*/\1/' | tail -1 )" 
 
                 s_eth=""
                 printf "[${CYAN}$cur${NC}]> Swap server-leaf link interface ${BLUE}$s_eth0${NC}? [y/N]: " ; read SWAP
@@ -161,7 +162,7 @@ configure_startup() {
             ETHs=()
             while :
             do
-                printf "[${CYAN}$cur${NC}]> Enter interfaces, eth0 already enabled, ('q' to quit): " ; read ETH
+                printf "[${CYAN}$cur${NC}]> Enter interfaces, ${BLUE}eth0 already enabled${NC}, ('q' to quit): " ; read ETH
                 if [ "$ETH" = "q" ] || [ "$ETH" = "Q" ] || [ -z "${ETH}" ]; then
                     break
                 fi
@@ -199,7 +200,7 @@ configure_startup() {
 
             while :
             do
-                s_eth="$( grep "(eth[0-9]*)" "$cur_path" | sed 's/.*(\(eth[0-9]*\)).*/\1/' )"
+                s_eth="$( grep -o "(eth[0-9]*)" "$cur_path" | sed -r 's/.*(eth[0-9]*).*/\1/' )"
 
                 printf "[${CYAN}$cur${NC}]> Swap server-leaf link interface ${BLUE}$s_eth${NC}? [y/N]: "  ; read SWAP
                 if ! [ "$SWAP" = "y" ] && ! [ "$SWAP" = "Y" ]; then
@@ -255,6 +256,200 @@ configure_startup() {
     done
 }
 
+add_collision_domains() {
+    printf "[${CYAN}$1${NC}]> Change collision domains? [y/N] " ; read change
+    if [ "$change" = 'n' ] || [ "$change" = 'n' ] || [ -z "$change" ] ; then
+        return 0
+    fi
+
+    echo "${BLUE}Enter tilde '~' to remove collision domain, leave blank ' ' to leave unchanged${NC}"
+    for i in $( seq 1 $( echo "$2" | wc -l ) )
+    do
+        eth=$( sed -n ${i}p <<< "$2" | sed -r "s/[#]{0,2}([0-9]*)\=.*/\1/" )
+        if ! grep -q "$1\[[0-9]\{1,\}]" ; then
+            echo "##$1[$eth]=\"\"" >> "$LABPATH/lab.conf"
+        fi
+
+        dom=$( sed -n ${i}p <<< "$2" | sed -r 's/[#]{0,2}[0-9]*\=\"(.*)\"/\1/' )
+        if [ -z "$dom" ] ; then
+            dom=$ORG"DISCONNECTED"
+        fi
+
+        printf "[${CYAN}$1${NC}:${PRL}eth$eth${NC}=${PRL}$dom${NC}]> Enter collision domain: " ; read dom
+        if [ -z "$dom" ] ; then
+            continue
+        elif [ "$dom" = '~' ] ; then
+            sed -r -i "s/[##]{0,2}($1\[$eth\]\=).*/##\1\"\"/" "$LABPATH/lab.conf"
+        fi
+        sed -r -i "s/[##]{0,2}($1\[$eth\]\=).*/\1\"$dom\"/" "$LABPATH/lab.conf"
+    done
+}
+
+configure_collision_domains() {
+    DOMAINs=""
+    while : 
+    do
+        # interfacce da .startup '0'
+        ETHs="$( grep -oE "eth[0-9]{1,}" "$LABPATH/$1.startup" )" || ETHs=""
+        ETHs="$( echo -e "$ETHs" | sort -u )"
+        # interfacce da lab.conf connesse e sconnesse '0=""'
+        DOMAINs="$( grep -E "${1}\[[0-9]{1,}\]=\"[a-zA-Z0-9]*\"" "$LABPATH/lab.conf" | sed -r "s/${1}\[([0-9]{1,})\](.*)/\1\2/" | sort -u )" || DOMAINs=""
+
+        echo -e "[${CYAN}$1${NC}]> Interfaces: "
+        echo -e "STARTUP        LAB.CONF        DOMAIN"
+
+        missing=()
+        if [[ $1 == "leaf"* ]] || [[ $1 == "spine"* ]] || [[ $1 == "tof"* ]] ; then
+            missing=("eth0" "eth1" "eth2" "eth3")
+        fi
+        
+        let "i=1"
+        let "j=1"
+        while : 
+        do
+
+            eth_i=$( sed -n ${i}p <<< "$ETHs" | sed 's/eth//' )
+            eth_j=$( sed -n ${j}p <<< "$DOMAINs" | sed -r 's/[##]*(.*)=.*/\1/' )
+            domain=$( sed -n ${j}p <<< "$DOMAINs" | sed -r 's/.*\"(.*)\"/\1/' )
+            
+            if [ -z "$eth_i" -a -z "$eth_j" ] ; then
+                break
+            elif [[ "$eth_i" -gt "$eth_j" ]] || [ -z "$eth_j" ] ; then
+                missing+=( "eth"$eth_i )
+                eth_i=${RED}"eth"$eth_i${NC}
+                eth_j=""
+                domain=""
+                let "i=i+1"
+            elif [[ "$eth_i" -lt "$eth_j" ]] || [ -z "$eth_i" ]; then
+                missing=( ${missing[@]/"eth$eth_j"} )
+                eth_i=${YEL}""
+                eth_j="eth"$eth_j
+                if [[ -z $domain ]] ; then
+                    domain="${ORG}DISCONNECTED"
+                fi
+                domain=$domain${NC}
+                let "j=j+1"
+            else
+                missing=( ${missing[@]/"eth$eth_j"} )
+                eth_i=${GRN}"eth"$eth_i
+                eth_j="eth"$eth_j
+                if [[ -z $domain ]] ; then
+                    domain="${ORG}DISCONNECTED"
+                fi
+                domain=$domain${NC}
+                let "i=i+1"
+                let "j=j+1"
+            fi
+
+            len_i=$(echo $eth_i | wc -c)
+            len_j=$(echo $eth_j | wc -c)
+            len_1=22
+            len_2=16
+
+            let "len_i=len_1-len_i+1"
+
+            printf "$eth_i"
+            printf '%*s' "$len_i"
+
+            let "len_j=len_2-len_j+1"
+            
+            printf "$eth_j"
+            printf '%*s' "$len_j"
+
+            echo "$domain"
+        done
+
+        if [ ${#missing[@]} -eq 0 ] ; then
+            break
+        fi
+
+        printf "[${CYAN}$1${NC}]> Add missing interfaces: ${RED}${missing[*]}${NC}? [Y/n] " ; read scan
+        if [ "$scan" = 'Y' ] || [ "$scan" = 'y' ] || [ -z "$scan" ] ; then
+            for miss in ${missing[*]}
+            do
+                miss=$( echo $miss | sed 's/eth//' )
+                if ! grep -q $1 "$LABPATH/lab.conf" ; then
+                    echo "##$1[$miss]=\"\"" >> "$LABPATH/lab.conf" 
+                    continue
+                fi
+                sed -i -E "0,/$1/s/([#]{0,2}$1.*$)/##$1\[$miss\]\=\"\"\n\1/" "$LABPATH/lab.conf"
+            done
+        else 
+            break
+        fi
+    done
+
+    add_collision_domains $1 "$DOMAINs" 
+}
+
+change_image() {
+    if grep -q "$1\[image" "$LABPATH/lab.conf" ; then
+        sed -i -r "s|[#]{1,}($1\[image\]\=\"kathara/)[a-z]*\"|\1$2\"\n|" "$LABPATH/lab.conf"
+    elif ! grep -q "$1\[" "$LABPATH/lab.conf" ; then
+        echo "$1[image]=\"kathara/$2\"" >> "$LABPATH/lab.conf"
+    else
+        tail=$( grep "$1\[[0-9]\{1,\}" "$LABPATH/lab.conf" | tail -1 )
+        tail=$( echo "$tail" | grep -o $1 )"\["$( echo "$tail" | grep -o "[0-9]*" | tail -1 )
+        
+        sed -i -E "s|($tail.*$)|\1\n$1\[image\]\=\"kathara/$2\"|" "$LABPATH/lab.conf"
+    fi
+}
+
+configure_images() {
+    if [[ $1 == "leaf"* ]] || [[ $1 == "spine"* ]] || [[ $1 == "tof"* ]] ; then 
+        change_image $1 "frr"
+    else
+        while :
+        do
+            echo "${BLUE} Images: 'frr', 'base'. Leave blank to use default 'frr'${NC}"
+            image=$( grep "$1\[image" "$LABPATH/lab.conf" | sed -r 's|^.*/([a-z]*)\"|\1|' )
+            printf "[${CYAN}$1${NC}]> Current image: ${YEL}$image{$NC}"
+            printf "[${CYAN}$1${NC}]> Choose image: " ; read image
+            if [ -z "$image" ] ; then
+                change_image $1 "$image"
+            fi
+
+            if ! [ "$image" = 'frr' ] && ! [ "$image" = 'base' ] ; then
+                echo "${RED}Invalid image:${NC} ${YEL}$image${NC}"
+                continue
+            else
+                change_image $1 "$image"
+                break
+            fi
+        done
+    fi
+}
+
+enable_ecmp() {
+    if [[ $1 == "leaf"* ]] || [[ $1 == "spine"* ]] || [[ $1 == "tof"* ]] ; then 
+        if grep -q "$1\[sysctl" "$LABPATH/lab.conf" ; then
+            sed -r -i "s/[#]{1,}($1\[sysctl.*)/\1/" "$LABPATH/lab.conf"
+        else
+            sed -r -i "s|([#]{0,2}$1\[image.*$)|\1\n$1\[sysctl\]\=\"net\.ipv4\.fib\_multipath\_hash\_policy\=1\"\n|" "$LABPATH/lab.conf"
+        fi
+    fi
+}
+
+configure_lab_conf () {
+    HOSTs="$( ls "$LABPATH" | grep "[a-z]*\.startup" | sed "s/\.startup//"  )"
+    
+    if [ ! -f "$LABPATH/lab.conf" ] ; then
+        touch "$LABPATH/lab.conf"
+        echo -e "${CYAN}Created file '$LABPATH/lab.conf'${NC}"
+    else
+        echo -e "${CYAN}File '$LABPATH/lab.conf' already exists${NC}"
+    fi
+    
+    
+    for i in $( seq 1 $( echo "$HOSTs" | wc -l ) )
+    do
+        cur="$( sed -n ${i}p <<< "$HOSTs" )"
+        configure_collision_domains $cur
+        configure_images $cur
+        enable_ecmp $cur
+    done 
+}
+
 configure_bgp() {
     if [ -z "${1}" ]; then
         return
@@ -262,17 +457,28 @@ configure_bgp() {
     for i in $( seq 1 $( echo "$1" | wc -l ) )
     do
         cur="$( sed -n ${i}p <<< "$1" )"
-        printf "[${CYAN}$cur${NC}]> Enter ASN: " ; read ASN
         ID=""
+        ASN=""
+        lo=""
         if [[ $1 =~ "leaf" ]]; then
-            printf "[${CYAN}$cur${NC}]> Use loopback address for router ID? [Y/n] " ; read ID 
-            if [ "$ID" = "y" ] || [ "$ID" = "Y" ] || [ -z "$ID" ]; then
-                ID=$( cat "$LABPATH/$cur.startup" | grep lo:1 | sed -r "s/.*(\b[0-9]{1,3}(\.[0-9]{1,3}){3}).*/\1/" | sed -n 1p )
-            else
-                printf "[${CYAN}$cur${NC}]> Enter router ID (x.x.x.x): " ; read ID
+            printf "[${CYAN}$cur${NC}]> Use loopback address for router ID? [Y/n] " ; read lo 
+            if [ "$lo" = "y" ] || [ "$lo" = "Y" ] || [ -z "$lo" ] ; then
+                lo=$( cat "$LABPATH/$cur.startup" | grep lo:1 | sed -r "s/.*(\b[0-9]{1,3}(\.[0-9]{1,3}){3}).*/\1/" | sed -n 1p || echo "" )
+                if ! [ -z "$lo" ] ; then
+                    ID=$lo
+                    printf "[${CYAN}$cur${NC}]> Enter ASN (yyyyy): " ; read ASN
+                else
+                    echo "${RED}Invalid loopback address in '$LABPATH/$cur.startup'${NC}"
+                    lo=n
+                fi
+            fi
+            
+            if ! [ "$lo" = "y" ] && ! [ "$lo" = "Y" ] && ! [ -z "$lo" ] ; then
+                printf "[${CYAN}$cur${NC}]> Enter ASN (yyyyy) and router ID (x.x.x.x): " ; read -r ASN ID
             fi
         else
-            printf "[${CYAN}$cur${NC}]> Enter router ID, usually it uses the same prefixes as leaves' loopback (x.x.x.x): " ; read ID
+            echo "${BLUE}The router ID usually uses the same prefixes as leaves' loopback${NC}"
+            printf "[${CYAN}$cur${NC}]> Enter ASN (yyyyy) and router ID (x.x.x.x): " ; read -r ASN ID
         fi
         echo "[${CYAN}$cur${NC}]> ASN=$ASN Router-ID=$ID"
         cp -r "$LAB_TEMPLATE/$( echo $cur | sed -r "s/([a-z]*).*/\1/" )-template/etc" "$LABPATH/$cur"
@@ -296,15 +502,22 @@ main() {
     echo -e "###########################################"
     echo -e "Default lab configuration is 2x2 Fat-Tree"
     echo -e "Manually change configuration if needed"
-    echo -e "Manually configure lab.conf"
+    echo -e "Configuration order: "
+    echo -e ".startup -> lab.conf -> frr.conf"
     echo -e "###########################################\n"
 
     echo -e "This script will search the current lab directory for .startup(s) files"
-    echo -e "Leaves, spines, and tofs are 'leaf*', 'spine*' and 'tof*'.${NC}\n" 
+    echo -e "Leaves, spines, and tofs are 'leaf...', 'spine...' and 'tof...'" 
+    echo -e "Servers and containers are 's...' and 'c...'${NC}\n" 
     read -p $"Configure .startup(s)? [Y/n] " CONT
 
     if  [ "$CONT" = "y" ] || [ "$CONT" = "Y" ] || [ -z "$CONT" ]; then
         configure_startup
+    fi
+
+    read -p $"Configure lab.conf? [Y/n] " CONT
+    if  [ "$CONT" = "y" ] || [ "$CONT" = "Y" ] || [ -z "$CONT" ]; then
+        configure_lab_conf
     fi
 
     echo -e "\nSearching '${LABPATH}'..."
