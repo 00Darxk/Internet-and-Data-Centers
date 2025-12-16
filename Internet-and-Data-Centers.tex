@@ -3059,4 +3059,79 @@ Si potrebbero aggiungere più leaf, o rimuovere il ToF, semplicemente modificand
 Gli step relativi al debugging è analogo per gli altri lab, bisogna verificare che le leaf sono raggiungibili tra di loro. Si verifica se i peering sono funzionanti, sia delle ToF che delle leaf, e si controllano gli as-path, si segue la propagazione dei prefissi, poiché deve essere presente su ogni apparato della fabric. 
 Per le VTEP è più complesso, ed è importante inserire gli indirizzi giusti. Sulle VLAN si può inserire uno sniffer con wireshark, oppure si può usare \texttt{tcpdump}. 
 
+\clearpage
+
+\section{Introduzione a RPKI}
+
+%% * slide su moodle
+
+Il RPKI è un meccanismo abbastanza diffuso per la sicurezza di BGP, poiché è un protocollo non autenticato, dove sono possibili attacchi e situazioni possibili per errori di configurazioni che possono rompere BGP. 
+
+Dato un annuncio BGP, un router BGP potrebbe chiedersi se quell'AS è un suo vicino, inoltre si potrebbe chiedere se è veramente il proprietario di quel prefisso, poiché su BGP non sono presenti controlli ed è possibile annunciare rotte arbitrarie. Non ci sono controlli di default, quindi tutti i router si fidano arbitrariamente. 
+
+Il problema è che BGP assume che tutti dicano la verità, ma in caso di utenti malevoli, è facilmente impersonare altri AS, ed annunciare prefissi arbitrariamente. 
+Non necessariamente questo è un utente malevolo, può essere semplicemente un errore di configurazione. 
+ALcune situazioni possono generare un local hijack, dove solo la parte più locale viene instradata verso un finto prefisso. Oppure si potrebbe annunciare un annuncio più specifico, questi infatti verranno preferiti, causando un global hijack, redirezionando l'intero traffico destinato al prefisso più specifico, diffondendosi in maniera autonoma tra di loro, poiché BGP effettua solo check esatti. 
+
+In questo caso per mitigare l'attacco si potrebbero annunciare due rotte più specifiche per coprire il prefisso annunciato dall'utente malevolo. Questo problema consiste nella propagazione di moltissime rotte aggiuntive, facendo crescere in modo incontrollato la tabella di instradamento. Inoltre, si vorrebbe prevenire questo attacco, quindi risolverlo prima che l'attaccante possa annunciare questa rotta più specifica. C'è sempre un lasso di tempo dove l'attaccante può ottenere qualcosa. 
+
+
+Un altro tipo di global hijack consiste nell'annunciare una rotta inventandosi un AS path, annunciando lo stesso prefisso, in questo caso si contendono la rotta. 
+
+Questo succede poiché gli annunci BGP sono annunciati senza alcuna validazione. I router verificano autonomamente che come AS affiorante sia presente il primo AS nell'AS path, questa è una politica di sicurezza già usata da tempo, in modo da garantire che gli AS vicini inoltrino solo rotte dove si sono inseriti. 
+Questo si può disabilitare, in alcuni casi potrebbe essere utile. 
+
+In un IXP questa politica viene disabilitata, poiché l'IXP ha un suo AS, e dovendo connettere due AS diversi, gli annunci passano attraverso il route server interno dell'IXP. Concettualmente è un route reflector, ma è in un altro AS. 
+Non si inserisce nell'AS path poiché il traffico non lo attraversa, non applica il processo decisionale, ma anche non va a modificare gli annunci. 
+
+
+Un attaccante può applicare censura, rubare criptovalute, intercettare il traffico, effettuare blackholing, rubare delle credenziali, inviare spam, anche se sono presenti delle tecniche di cifratura sulle mail. 
+
+Non necessariamente si tratta di attacco, potrebbe essere una configurazione errata a causa di typo, oppure a causa di differenze nei linguaggi usati dai router BGP. Per esempio il prepending nei router della Cisco si configura inserendo l'ASN ed il moltiplicatore, mentre nei router Juniper si inserisce l'ASN tutte le volte necessarie. 
+Per questo è possibile individuare ASN come uno, due o tre, che appartengono a grandi Università americane. 
+Un altro problema può essere causato dai configurazioni errate di filtri. Degli annunci interni se vengono passati esternamente con route leak, oltre a problemi economici è possibile vengano saturati i link. 
+
+Modificare il protocollo BGP per realizzare protocolli non è realizzabile, poiché molti di questi router sono vecchi con un tempo di riavvio critico. 
+Per cui si punta a prevenire tutti gli attacchi non intenzionali. 
+
+Gli IRR sono dei registri di internet pubblicamente consultabili dove si indica la proprietà di un prefisso. Ma dato che è pubblico, bisogna comunque verificare le informazioni. Essendo scritte in maniera standard e pubbliche, queste informazioni possono essere utilizzate per creare automaticamente dei filtri BGP per AS, basati su informazioni verificabili. 
+
+Questi IRR non sono usati globalmente, non è presente un'autorità centrale, non necessariamente sono mantenuti ed accurati. Per cui utilizzando dei filtri automatici e stringenti, si blocca la maggior parte di Internet. 
+
+Una PKI, \textit{Public Key Infrastructure} è un sistema pubblico di chiavi, un albero di certificazione. Si può generare un certificato firmandolo da solo, ma questo è validato, si valida un certificato firmandolo da un certificato conosciuto, chiedendo ad organizzazioni riconosciute per la certificazione. Così si crea una catena di fiducia. 
+
+
+In questo modo si possono validare degli annunci BGP, associando gli ASN agli IP, creando un sistema di certificazione di certificati pubblici che accoppia la nozione che un certo prefisso è proprietà di un certo AS. Questo sta ignorando il problema di validazione di un path, si occupa solo dell'appartenenza di un certo prefisso. 
+
+RPKI aiuta a prevenire tutti quelli incidenti solitamente dovuti a configurazioni errate. RPKI deve fidarsi dei RIR come \textit{Trust Anchor}, le cinque organizzazioni che si dividono lo spazio fisico del globo per assegnare indirizzi IP ai propri AS. I RIR hanno il controllo sull'accuratezza e saranno loro a firmare i certificati per garantire i proprietari di un prefisso. 
+
+Il proprietario di un prefisso non è detto che sia chi annuncia un certo prefisso, questi possono essere affittati. 
+
+
+RPKI funziona con due oggetti totalmente separati, uno si occupa di certificare ASN e prefissi IP, ed un altro validatore, esterno al protocollo, si occupa di inserire le informazioni relative nelle configurazioni BGP. 
+
+Ogni RIR ha il suo certificato self signed, che firmerà i certificati, potrebbero essere affidati ai LIR, o direttamente agli utenti finali. Il termine ROA indica un certificato verificato da una catena di fiducia fino ad un root certificate. 
+
+Ognuno può firmare certificati per qualcosa di più specifico, i cinque RIR hanno root certificate per tutte le risorse, \texttt{\/0}. L'idea del ROA è che sono firmati dal LIR ed il LIR si prende un pezzo dell'indirizzamento. 
+
+Un singolo ROA può contenere una lista di prefissi al suo interno, potenzialmente potrebbero essere contenuti in un unico ROA, in base a criteri determinati dal LIR. Questi ROA possono essere sovrapposti, contengono informazioni base, la data di inizio e fine validità, una delle condizioni per cui possono essere sovrapponibili. 
+
+Tra le informazioni base sono il prefisso, gli origin AS verificati, e la massima lunghezza del prefisso, per evitare di poter annunciare prefissi più specifici. In questo modo si va a certificare un prefisso. 
+
+L'idea è che esistono protocolli adatti, in modo che il validatore possa leggere le repository RPKI, gli AS dovranno avere un validatore oppure fidarsi di un validatore esterno. Si validano come si valida qualunque certificato, confrontando la firma digitale del ROA, salendo la catena di fiducia controllando se è valida rispetto alla chiave pubblica del LIR che ha certificato il prefisso, analogamente si valida il certificato del LIR, da parte del RIR. 
+
+Una volta che si è verificata la validità, si installano sui router moderni, un protocollo moderno può interagire direttamente con queste repository, altrimenti software specifici li trasformano in route map da inserire direttamente nella configurazione BGP, per router più vecchi. 
+
+
+Per validare un annuncio, si controlla che il prefisso annunciato provenga da uno degli origin AS certificati, e si controlla che non sia più specifico della lunghezza massima presente nel certificato. 
+
+
+Questo sistema si scontra con la legacy degli AS, al giorno d'oggi molti prefissi hanno i ROA, ma pochi AS li verificano. Se arriva un ROA non verificato bisogna scegliere se accettarlo o scartarlo, dato che l'applicazione dei ROA non è uniformata su tutti gli AS. 
+
+Questo è un bilanciamento che si sta spostando nell'Internet, lentamente si filtrano gli indirizzi invalidi. In realtà invece di rifiutarli, si etichettano come una community, abbassando la loro local preference, se è valido si installa comunque, e se è invalido e non ha altro modo di arrivarci, viene installato comunque. 
+
+RPKI è favorito poiché non ha un costo ragionevole dal punto di vista dell'hardware ed economico, inoltre non modifica il protocollo. Alternative diverse da RPKI per validare il completo AS path esistono da tempo ma non sono utilizzate, poiché è necessario un cambiamento considerevole. 
+
+Il principio chiave di RPKI è che non è necessario, si può mantenere la configurazione legacy di BGP oppure implementarlo indipendentemente dagli altri. 
+
 \end{document}
