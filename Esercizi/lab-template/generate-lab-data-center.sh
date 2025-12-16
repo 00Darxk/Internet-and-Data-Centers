@@ -130,8 +130,8 @@ configure_startup() {
 
             while :
             do
-                s_eth0="$( grep -o "(eth[0-9]{1,})" "$cur_path" | sort -u | sed sed -r 's/.*(eth[0-9]*).*/\1/' | head -1 )" 
-                s_eth1="$( grep -o "(eth[0-9]{1,})" "$cur_path" | sort -u | sed sed -r 's/.*(eth[0-9]*).*/\1/' | tail -1 )" 
+                s_eth0="$( grep -o "(eth[0-9]\{1,\})" "$cur_path" | sort -u | sed -r 's/.*(eth[0-9]*).*/\1/' | head -1 )" 
+                s_eth1="$( grep -o "(eth[0-9]\{1,\})" "$cur_path" | sort -u | sed -r 's/.*(eth[0-9]*).*/\1/' | tail -1 )" 
 
                 s_eth=""
                 printf "[${CYAN}$cur${NC}]> Swap server-leaf link interface ${BLUE}$s_eth0${NC}? [y/N]: " ; read SWAP
@@ -315,6 +315,7 @@ configure_collision_domains() {
             if [ -z "$eth_i" -a -z "$eth_j" ] ; then
                 break
             elif [[ "$eth_i" -gt "$eth_j" ]] || [ -z "$eth_j" ] ; then
+                missing=( ${missing[@]/"eth$eth_i"} )
                 missing+=( "eth"$eth_i )
                 eth_i=${RED}"eth"$eth_i${NC}
                 eth_j=""
@@ -469,11 +470,11 @@ configure_bgp() {
                     printf "[${CYAN}$cur${NC}]> Enter ASN (yyyyy): " ; read ASN
                 else
                     echo "${RED}Invalid loopback address in '$LABPATH/$cur.startup'${NC}"
-                    lo=n
+                    lo="n"
                 fi
             fi
             
-            if ! [ "$lo" = "y" ] && ! [ "$lo" = "Y" ] && ! [ -z "$lo" ] ; then
+            if [ -z $ASN ] ; then
                 printf "[${CYAN}$cur${NC}]> Enter ASN (yyyyy) and router ID (x.x.x.x): " ; read -r ASN ID
             fi
         else
