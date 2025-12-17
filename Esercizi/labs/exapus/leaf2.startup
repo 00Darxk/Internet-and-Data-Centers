@@ -1,0 +1,54 @@
+# Aggiunge un indirizzo alla loopback, e rotta a quest'indirizzo
+ip address add 192.168.0.2/32 dev lo:1
+ip route   add 192.168.0.2/32 dev lo:1 
+
+
+# Aggiunge le interfacce VTEP ({vtep-vni-i}) per ogni i-esima VNI ({vni-i})
+ip link add vtep7100 type vxlan id 7100 dev lo dstport 4789 local 192.168.0.2 nolearning 
+ip link add vtep7200 type vxlan id 7200 dev lo dstport 4789 local 192.168.0.2 nolearning 
+ip link add vtep7300 type vxlan id 7300 dev lo dstport 4789 local 192.168.0.2 nolearning 
+
+
+# Aggiunge un bridge (br100) per comunicare con frr
+ip link add br100 type bridge
+ip link set br100 addrgenmode none
+
+# Si aggiunge ogni i-esima VTEP ({vtep-vni-i}) al bridge (br100) come slave
+ip link set dev vtep7100 master br100 addrgenmode none
+ip link set dev vtep7200 master br100 addrgenmode none
+ip link set dev vtep7300 master br100 addrgenmode none
+
+ip link set vtep7100 type bridge_slave neigh_suppress on learning off
+ip link set vtep7200 type bridge_slave neigh_suppress on learning off
+ip link set vtep7300 type bridge_slave neigh_suppress on learning off
+
+# Si aggiunge le interfacce connesse ai server (eth2) e (eth3) come slave al bridge
+ip link set dev eth2 master br100 addrgenmode none
+ip link set dev eth3 master br100 addrgenmode none
+
+
+# Si configura la VLAN sul bridge, associando ogni i-esima VNI ({vtep-vni-i}) alla sua i-esima VLAN corrispondente ({vlan-id-i})
+ip link set br100 type bridge vlan_filtering 1
+# Si etichettano i pacchetti con la VLAN solamente sull'interfaccia tra il bridge ed i server (eth2) e (eth3), non tra il bridge e le VTEP
+bridge vlan add vid 100 dev vtep7100 pvid untagged
+bridge vlan add vid 200 dev vtep7200 pvid untagged
+bridge vlan add vid 300 dev vtep7300 pvid untagged
+
+bridge vlan add vid 100 dev eth2
+bridge vlan add vid 200 dev eth2
+bridge vlan add vid 300 dev eth2
+
+bridge vlan add vid 100 dev eth3
+bridge vlan add vid 200 dev eth3
+bridge vlan add vid 300 dev eth3
+
+
+# Si attivano le interfacce, nell'ordine corretto (VTEP>bridge), per ogni i-esima VTEP
+ip link set up dev vtep7100
+ip link set up dev vtep7200
+ip link set up dev vtep7300
+
+ip link set up dev br100
+
+# Si avvia il servizio di routing
+systemctl start frr

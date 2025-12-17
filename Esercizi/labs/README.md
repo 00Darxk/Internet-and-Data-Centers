@@ -3,6 +3,7 @@
  - [ceci-nest-pas-une-pipe](https://github.com/KatharaFramework/Kathara-Labs/blob/main/exam-labs/2023-01-20-ceci-nest-pas-une-pipe/ceci-nest-pas-une-pipe.pdf)*: (versione corretta su [Moodle](https://ingegneriacivileinformaticatecnologieaeronautiche.el.uniroma3.it/pluginfile.php/140083/mod_resource/content/0/2023-01-20-ceci-nest-pas-une-pipe.pdf))
  - [cloth-cap](https://github.com/KatharaFramework/Kathara-Labs/blob/main/exam-labs/2013-12-20-cloth-cap/cloth-cap.pdf)
  - [clouds](https://github.com/KatharaFramework/Kathara-Labs/tree/main/exam-labs/2022-11-04-clouds/clouds.pdf)
+ - [exaxpus](https://github.com/xReniar/Esami_IDC/blob/master/2024-01-15-exapus/2024-01-15-exapus.pdf)
  - [incognita-desconocida](https://impianti.inf.uniroma3.it/HomePage25-26/lezioni2/IDC-2023-2024-seconda-prova-01.pdf), oppure [incognita](https://github.com/xReniar/Esami_IDC/blob/master/2023-11-27-incognita/2023-11-27-incognita.pdf), [desconocida](https://github.com/xReniar/Esami_IDC/blob/master/2023-11-27-desconocida/traccia.jpeg)
  - [nefertiti](https://github.com/KatharaFramework/Kathara-Labs/tree/main/exam-labs/2021-02-10-nefertiti/nefertiti.pdf)
  - [patchwork](https://github.com/xReniar/Esami_IDC/blob/master/2024-01-22-patchwork/2024-01-22-patchwork.pdf)
