@@ -60,7 +60,7 @@ configure_startup() {
         fi
 
         check="$( echo $LAN | sed 's/\./ /g' )"
-        if [[ $MASK > 32 ]] || [[ $MASK < 0 ]] || 
+        if [[ $MASK -gt 32 ]] || [[ $MASK -lt 0 ]] || 
             [[ "$( echo $check | awk '{print $1}' )" -gt 255 ]] || 
             [[ "$( echo $check | awk '{print $2}' )" -gt 255 ]] || 
             [[ "$( echo $check | awk '{print $3}' )" -gt 255 ]] || 
@@ -263,20 +263,22 @@ add_collision_domains() {
     fi
 
     echo "${BLUE}Enter tilde '~' to remove collision domain, leave blank ' ' to leave unchanged${NC}"
-    for i in $( seq 1 $( echo "$2" | wc -l ) )
-    do
-        eth=$( sed -n ${i}p <<< "$2" | sed -r "s/[#]{0,2}([0-9]*)\=.*/\1/" )
-        if ! grep -q "$1\[[0-9]\{1,\}]" ; then
-            echo "##$1[$eth]=\"\"" >> "$LABPATH/lab.conf"
-        fi
 
-        dom=$( sed -n ${i}p <<< "$2" | sed -r 's/[#]{0,2}[0-9]*\=\"(.*)\"/\1/' )
-        if [ -z "$dom" ] ; then
+    check="$( grep -o "$1\[[0-9]\{1,\}" "$LABPATH/lab.conf" || echo "" )" 
+    if [ -z "$check" ] ; then
+        echo "##$1[$eth]=\"\"" >> "$LABPATH/lab.conf"
+    fi
+
+    for i in $( seq 1 "$( echo "$2" | wc -l )" )
+    do  
+        eth=$( sed -n ${i}p <<< "$2" | sed -r "s/[#]{0,2}([0-9]*)\=.*/\1/" )
+        dom="$( sed -n ${i}p <<< "$2" | sed -r 's/[#]{0,2}[0-9]*\=\"(.*)\"/\1/' )"
+        if [ -z "$dom" ] || [[ "$dom" == " " ]] ; then
             dom=$ORG"DISCONNECTED"
         fi
 
         printf "[${CYAN}$1${NC}:${PRL}eth$eth${NC}=${PRL}$dom${NC}]> Enter collision domain: " ; read dom
-        if [ -z "$dom" ] ; then
+        if [ -z "$dom" ] || [[ "$dom" == " " ]] ; then
             continue
         elif [ "$dom" = '~' ] ; then
             sed -r -i "s/[##]{0,2}($1\[$eth\]\=).*/##\1\"\"/" "$LABPATH/lab.conf"
@@ -295,13 +297,23 @@ configure_collision_domains() {
         # interfacce da lab.conf connesse e sconnesse '0=""'
         DOMAINs="$( grep -E "${1}\[[0-9]{1,}\]=\"[a-zA-Z0-9]*\"" "$LABPATH/lab.conf" | sed -r "s/${1}\[([0-9]{1,})\](.*)/\1\2/" | sort -u )" || DOMAINs=""
 
-        echo -e "[${CYAN}$1${NC}]> Interfaces: "
-        echo -e "STARTUP        LAB.CONF        DOMAIN"
-
         missing=()
         if [[ $1 == "leaf"* ]] || [[ $1 == "spine"* ]] || [[ $1 == "tof"* ]] ; then
             missing=("eth0" "eth1" "eth2" "eth3")
+        else
+            while :
+            do
+                printf "[${CYAN}$1${NC}]> Enter interfaces ('q' to quit): " ; read add
+                if ! [ "$add" = 'q' ] && ! [ "$add" = 'Q' ] && ! [ -z "$add" ] ; then
+                    missing+=("$add")
+                else
+                    break
+                fi
+            done 
         fi
+
+        echo -e "[${CYAN}$1${NC}]> Interfaces: "
+        echo -e "STARTUP        LAB.CONF        DOMAIN"
         
         let "i=1"
         let "j=1"
@@ -309,7 +321,7 @@ configure_collision_domains() {
         do
 
             eth_i=$( sed -n ${i}p <<< "$ETHs" | sed 's/eth//' )
-            eth_j=$( sed -n ${j}p <<< "$DOMAINs" | sed -r 's/[##]*(.*)=.*/\1/' )
+            eth_j=$( sed -n ${j}p <<< "$DOMAINs" | sed -r 's/[##]*(.*)\=.*/\1/' )
             domain=$( sed -n ${j}p <<< "$DOMAINs" | sed -r 's/.*\"(.*)\"/\1/' )
             
             if [ -z "$eth_i" -a -z "$eth_j" ] ; then
@@ -364,7 +376,7 @@ configure_collision_domains() {
             break
         fi
 
-        printf "[${CYAN}$1${NC}]> Add missing interfaces: ${RED}${missing[*]}${NC}? [Y/n] " ; read scan
+        printf "[${CYAN}$1${NC}]> Add missing interfaces to lab.conf: ${RED}${missing[*]}${NC}? [Y/n] " ; read scan
         if [ "$scan" = 'Y' ] || [ "$scan" = 'y' ] || [ -z "$scan" ] ; then
             for miss in ${missing[*]}
             do
@@ -402,9 +414,9 @@ configure_images() {
     else
         while :
         do
-            echo "${BLUE} Images: 'frr', 'base'. Leave blank to use default 'frr'${NC}"
-            image=$( grep "$1\[image" "$LABPATH/lab.conf" | sed -r 's|^.*/([a-z]*)\"|\1|' )
-            printf "[${CYAN}$1${NC}]> Current image: ${YEL}$image{$NC}"
+            echo "${BLUE}Images: 'frr', 'base'. Leave blank to use default 'frr'${NC}"
+            image=$( grep "$1\[image" "$LABPATH/lab.conf" | sed -r 's|^.*kathara/([a-z]*)\"|\1|' )
+            echo "[${CYAN}$1${NC}]> Current image: ${PRL}$image${NC}"
             printf "[${CYAN}$1${NC}]> Choose image: " ; read image
             if [ -z "$image" ] ; then
                 change_image $1 "$image"
@@ -461,7 +473,7 @@ configure_bgp() {
         ID=""
         ASN=""
         lo=""
-        if [[ $1 =~ "leaf" ]]; then
+        if [[ $1 == "leaf"* ]] ; then
             printf "[${CYAN}$cur${NC}]> Use loopback address for router ID? [Y/n] " ; read lo 
             if [ "$lo" = "y" ] || [ "$lo" = "Y" ] || [ -z "$lo" ] ; then
                 lo=$( cat "$LABPATH/$cur.startup" | grep lo:1 | sed -r "s/.*(\b[0-9]{1,3}(\.[0-9]{1,3}){3}).*/\1/" | sed -n 1p || echo "" )
@@ -477,14 +489,34 @@ configure_bgp() {
             if [ -z $ASN ] ; then
                 printf "[${CYAN}$cur${NC}]> Enter ASN (yyyyy) and router ID (x.x.x.x): " ; read -r ASN ID
             fi
+            down1="$( grep -o "(eth[0-9]\{1,\})" "$LABPATH/$cur.startup" | sort -u | sed -r 's/.*(eth[0-9]*).*/\1/' | head -1 )"
+            down2="$( grep -o "(eth[0-9]\{1,\})" "$LABPATH/$cur.startup" | sort -u | sed -r 's/.*(eth[0-9]*).*/\1/' | head -2 | tail -1 )"
+            
+            defaults=( "eth0" "eth1" "eth2" "eth3" )
+            defaults=( ${defaults[@]/"$down1"} )
+            defaults=( ${defaults[@]/"$down2"} )
+            tor=()
+
+            for i in ${defaults[*]}
+            do
+                tor+=( "$i" )
+            done
         else
             echo "${BLUE}The router ID usually uses the same prefixes as leaves' loopback${NC}"
             printf "[${CYAN}$cur${NC}]> Enter ASN (yyyyy) and router ID (x.x.x.x): " ; read -r ASN ID
         fi
         echo "[${CYAN}$cur${NC}]> ASN=$ASN Router-ID=$ID"
-        cp -r "$LAB_TEMPLATE/$( echo $cur | sed -r "s/([a-z]*).*/\1/" )-template/etc" "$LABPATH/$cur"
+        cp -r "$LAB_TEMPLATE/$( echo ${cur:0:5} )-template/etc" "$LABPATH/$cur" > /dev/null 2>&1 ||
+        cp -r "$LAB_TEMPLATE/$( echo ${cur:0:4} )-template/etc" "$LABPATH/$cur" > /dev/null 2>&1 ||
+        cp -r "$LAB_TEMPLATE/$( echo ${cur:0:3} )-template/etc" "$LABPATH/$cur" > /dev/null 2>&1 || 
+        echo "${RED}Invalid hostname: $cur${NC}"
         sed -i "s/{ASN}/${ASN}/" "$LABPATH/$cur/etc/frr/frr.conf"
         sed -i "s/{router-id}/${ID}/" "$LABPATH/$cur/etc/frr/frr.conf"
+        if [[ $1 == "leaf"* ]] ; then
+            sed -r -i "0,/eth/s/eth[0-9]{1,}/~${tor[0]}/" "$LABPATH/$cur/etc/frr/frr.conf"
+            sed -r -i "s/[^~]{1}eth[0-9]{1,}/ ${tor[1]}/" "$LABPATH/$cur/etc/frr/frr.conf"
+            sed -r -i "s/~eth[0-9]{1,}/${tor[0]}/" "$LABPATH/$cur/etc/frr/frr.conf"
+        fi
     done
 }
 
@@ -523,16 +555,16 @@ main() {
 
     echo -e "\nSearching '${LABPATH}'..."
     echo -e "Leaves found:${BLUE}"
-    ls "$LABPATH" | grep "leaf\S*\.startup" | sed "s/\.startup//" || echo  -e "${NC}no leaves" 
-    LEAVES="$( ls "$LABPATH" | grep "leaf\S*\.startup" | sed "s/\.startup//" )" || LEAVES=""
+    ls "$LABPATH" | grep "^leaf.*\.startup" | sed "s/\.startup//" || echo  -e "${NC}no leaves" 
+    LEAVES="$( ls "$LABPATH" | grep "^leaf.*\.startup" | sed "s/\.startup//" )" || LEAVES=""
 
     echo -e "${NC}\nSpines found:${BLUE}"
-    ls "$LABPATH" | grep "spine\S*\.startup" | sed "s/\.startup//" || echo  -e "${NC}no spines"
-    SPINEs="$( ls "$LABPATH" | grep "spine\S*\.startup" | sed "s/\.startup//" )" || SPINEs=""
+    ls "$LABPATH" | grep "^spine.*\.startup" | sed "s/\.startup//" || echo  -e "${NC}no spines"
+    SPINEs="$( ls "$LABPATH" | grep "^spine.*\.startup" | sed "s/\.startup//" )" || SPINEs=""
 
     echo -e "${NC}\nToFs found:${BLUE}"
-    ls "$LABPATH" | grep "tof\S*\.startup" | sed "s/\.startup//" || echo -e "${NC}no tofs"
-    TOFs="$( ls "$LABPATH" | grep "tof\S*\.startup" | sed "s/\.startup//" )" || TOFs=""
+    ls "$LABPATH" | grep "^tof.*\.startup" | sed "s/\.startup//" || echo -e "${NC}no tofs"
+    TOFs="$( ls "$LABPATH" | grep "^tof.*\.startup" | sed "s/\.startup//" )" || TOFs=""
 
     echo -e "${NC}\nAttempting to create directories...\n"
 
