@@ -266,7 +266,7 @@ add_collision_domains() {
 
     check="$( grep -o "$1\[[0-9]\{1,\}" "$LABPATH/lab.conf" || echo "" )" 
     if [ -z "$check" ] ; then
-        echo "##$1[$eth]=\"\"" >> "$LABPATH/lab.conf"
+        echo -e "\n##$1[$eth]=\"\"" >> "$LABPATH/lab.conf"
     fi
 
     for i in $( seq 1 "$( echo "$2" | wc -l )" )
@@ -415,11 +415,12 @@ configure_images() {
         while :
         do
             echo "${BLUE}Images: 'frr', 'base'. Leave blank to use default 'frr'${NC}"
-            image=$( grep "$1\[image" "$LABPATH/lab.conf" | sed -r 's|^.*kathara/([a-z]*)\"|\1|' )
+            image=$( grep "$1\[image" "$LABPATH/lab.conf" | sed -r 's|^.*kathara/([a-z]*)\"|\1|' || echo "" )
             echo "[${CYAN}$1${NC}]> Current image: ${PRL}$image${NC}"
             printf "[${CYAN}$1${NC}]> Choose image: " ; read image
             if [ -z "$image" ] ; then
-                change_image $1 "$image"
+                change_image $1 "frr"
+                break
             fi
 
             if ! [ "$image" = 'frr' ] && ! [ "$image" = 'base' ] ; then
@@ -438,7 +439,12 @@ enable_ecmp() {
         if grep -q "$1\[sysctl" "$LABPATH/lab.conf" ; then
             sed -r -i "s/[#]{1,}($1\[sysctl.*)/\1/" "$LABPATH/lab.conf"
         else
-            sed -r -i "s|([#]{0,2}$1\[image.*$)|\1\n$1\[sysctl\]\=\"net\.ipv4\.fib\_multipath\_hash\_policy\=1\"\n|" "$LABPATH/lab.conf"
+            sed -r -i "s|([#]{0,2}$1\[image.*$)|\1\n$1\[sysctl\]\=\"net\.ipv4\.fib\_multipath\_hash\_policy\=1\"|" "$LABPATH/lab.conf"
+        fi
+        if grep -q "$1\[ipv6" "$LABPATH/lab.conf" ; then
+            sed -r -i "s/[#]{1,}($1\[ipv6\]\=)/\1\"True\"/" "$LABPATH/lab.conf"
+        else
+            sed -r -i "s|([#]{0,2}$1\[sysctl.*$)|\1\n$1\[ipv6\]\=\"True\"|" "$LABPATH/lab.conf"
         fi
     fi
 }
