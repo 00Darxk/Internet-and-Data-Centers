@@ -1,9 +1,11 @@
-# Aggiungi un indirizzo ad un interfaccia
-ip address add {indirizzo}/{netmask} dev eth0
-# Inserisci un default gateway nella tabella di instradamento kernel (statica)
-
 # Si modifica la MTU dell'interfaccia connessa al server
 ip link set dev eth0 mtu 1450
+
+# Aggiungi un indirizzo ad un interfaccia
+ip address add {indirizzo}/{netmask} dev eth0
+# Può essere necessario inserire un default gateway nella tabella di instradamento kernel (statica)
+##ip route add default via {indirizzo-gw} dev eth0
+
 
 # Avvia il servizio apache2 (web server)
 ##systemctl start apache2

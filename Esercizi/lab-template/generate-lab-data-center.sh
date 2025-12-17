@@ -236,9 +236,14 @@ configure_startup() {
             fi
             
             printf "[${CYAN}$cur${NC}]> Select address (${lan}${NC}/${mask}): " | sed -r "s/(${pref})/\1${BLUE}/" ; read ADR
+            printf "[${CYAN}$cur${NC}]> Select default gateway address, or leave blank (${lan}${NC}/${mask}): " | sed -r "s/(${pref})/\1${BLUE}/" ; read gw
 
             sed -i "s/{indirizzo}/${pref}${ADR}/" "$cur_path"
             sed -i "s/{netmask}/${mask}/" "$cur_path"
+            if ! [ -z "$gw" ] ; then
+                sed -i "s/{indirizzo-gw}/${pref}${gw}/" "$cur_path"
+                sed -i -r "s/^[#]{2}(.*${pref}${gw}[^#]*$)/\1/" "$cur_path"
+            fi
 
             printf "[${CYAN}$cur${NC}]> Enable apache2 web server? [y/N]: " ; read APA
             if [ "$APA" = "y" ] || [ "$APA" = "Y" ]; then
