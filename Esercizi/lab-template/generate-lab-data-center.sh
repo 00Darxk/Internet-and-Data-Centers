@@ -333,14 +333,14 @@ configure_collision_domains() {
             
             if [ -z "$eth_i" -a -z "$eth_j" ] ; then
                 break
-            elif [[ "$eth_i" -gt "$eth_j" ]] || [ -z "$eth_j" ] ; then
+            elif [[ "$eth_i" -lt "$eth_j" ]] || [ -z "$eth_j" ] ; then
                 missing=( ${missing[@]/"eth$eth_i"} )
                 missing+=( "eth"$eth_i )
                 eth_i=${RED}"eth"$eth_i${NC}
                 eth_j=""
                 domain=""
                 let "i=i+1"
-            elif [[ "$eth_i" -lt "$eth_j" ]] || [ -z "$eth_i" ]; then
+            elif [[ "$eth_j" -lt "$eth_i" ]] || [ -z "$eth_i" ]; then
                 missing=( ${missing[@]/"eth$eth_j"} )
                 eth_i=${YEL}""
                 eth_j="eth"$eth_j
