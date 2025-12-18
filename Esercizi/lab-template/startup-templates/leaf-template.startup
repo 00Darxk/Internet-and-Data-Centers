@@ -13,17 +13,17 @@ ip link set br100 addrgenmode none
 # Si aggiunge ogni i-esima VTEP ({vtep-vni-i}) al bridge (br100) come slave
 ##ip link set dev {vtep-vni-i} master br100 addrgenmode none
 ##ip link set {vtep-vni-i} type bridge_slave neigh_suppress on learning off
-# Si aggiunge le interfacce connesse ai server (eth0) e (eth1) come slave al bridge
-ip link set dev eth0 master br100 addrgenmode none
-ip link set dev eth1 master br100 addrgenmode none
+# Si aggiunge le interfacce connesse ai server (eth2) e (eth3) come slave al bridge
+ip link set dev eth2 master br100 addrgenmode none
+ip link set dev eth3 master br100 addrgenmode none
 
 
 # Si configura la VLAN sul bridge, associando ogni i-esima VNI ({vtep-vni-i}) alla sua i-esima VLAN corrispondente ({vlan-id-i})
 ip link set br100 type bridge vlan_filtering 1
-# Si etichettano i pacchetti con la VLAN solamente sull'interfaccia tra il bridge ed i server (eth0) e (eth1), non tra il bridge e le VTEP
+# Si etichettano i pacchetti con la VLAN solamente sull'interfaccia tra il bridge ed i server (eth2) e (eth3), non tra il bridge e le VTEP
 ##bridge vlan add vid {vlan-id-i} dev {vtep-vni-i} pvid untagged
-##bridge vlan add vid {vlan-id-i} dev eth0
-##bridge vlan add vid {vlan-id-i} dev eth1
+##bridge vlan add vid {vlan-id-i} dev eth2
+##bridge vlan add vid {vlan-id-i} dev eth3
 
 # Si attivano le interfacce, nell'ordine corretto (VTEP>bridge), per ogni i-esima VTEP
 ##ip link set up dev {vtep-vni-i}

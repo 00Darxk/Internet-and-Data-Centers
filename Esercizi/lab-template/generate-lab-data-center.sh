@@ -23,7 +23,9 @@ if ! [ -z "${2++}" ]; then
 fi
 
 create_startups() {
-    echo -e "${CYAN}Hostnames syntax: leaf... (leaf), spine... (spine), tof... (tof), s... (server), c... (container)"
+    echo -e "${BLUE}NAMEs SYNTAX: "
+    echo -e "Leaves, spines, and tofs are 'leaf...', 'spine...' and 'tof...'" 
+    echo -e "Servers and containers are 's...' and 'c...'" 
     echo -e "${RED}Entering hostname will overwrite existing config(s)${NC}"
     while :
     do
@@ -248,10 +250,10 @@ configure_startup() {
             printf "[${CYAN}$cur${NC}]> Enable apache2 web server? [y/N]: " ; read APA
             if [ "$APA" = "y" ] || [ "$APA" = "Y" ]; then
                 sed -r -i "s/^##(.*(apache2).*)/\1/" "$cur_path" 
-                printf "[${CYAN}$cur${NC}]> Enter identifier: " ; read WEB
+                printf "[${CYAN}$cur${NC}]> Enter index.html body (eg: ${BLUE}hello i'm a server${NC}): " ; read -r WEB
                 mkdir "$LABPATH/$cur" > /dev/null 2>&1 && echo -e "${CYAN}Directory '$LABPATH/$cur' created${NC}" || echo -e "${CYAN}Directory '$LABPATH/$cur' already exists${NC}"
                 cp -r "$LAB_TEMPLATE/web-server-template/var" "$LABPATH/$cur"
-                sed -i "s/{HOSTNAME}/${WEB}/" "$LABPATH/$cur/var/www/html/index.html"
+                sed -i "s/{body}/${WEB}/" "$LABPATH/$cur/var/www/html/index.html"
                 printf "[${CYAN}$cur${NC}]> Test web-server? [y/N] " ; read WEB
                 if [ "$WEB" = "y" ] || [ "$WEB" = "Y" ]; then
                     links "$LABPATH/$cur/var/www/html/index.html" > /dev/null 2>&1 || echo -e "${RED}'links' not working or 'index.html' not present${NC}"
@@ -271,7 +273,7 @@ add_collision_domains() {
 
     check="$( grep -o "$1\[[0-9]\{1,\}" "$LABPATH/lab.conf" || echo "" )" 
     if [ -z "$check" ] ; then
-        echo -e "\n##$1[$eth]=\"\"" >> "$LABPATH/lab.conf"
+        ( echo "" ; echo "##$1[$eth]=\"\"" ) >> "$LABPATH/lab.conf"
     fi
 
     for i in $( seq 1 "$( echo "$2" | wc -l )" )
@@ -419,12 +421,12 @@ configure_images() {
     else
         while :
         do
-            echo "${BLUE}Images: 'frr', 'base'. Leave blank to use default 'frr'${NC}"
+            echo "${BLUE}Images: 'frr', 'base'. Leave blank to use default 'base'${NC}"
             image=$( grep "$1\[image" "$LABPATH/lab.conf" | sed -r 's|^.*kathara/([a-z]*)\"|\1|' || echo "" )
             echo "[${CYAN}$1${NC}]> Current image: ${PRL}$image${NC}"
             printf "[${CYAN}$1${NC}]> Choose image: " ; read image
             if [ -z "$image" ] ; then
-                change_image $1 "frr"
+                change_image $1 "base"
                 break
             fi
 
@@ -516,7 +518,7 @@ configure_bgp() {
             echo "${BLUE}The router ID usually uses the same prefixes as leaves' loopback${NC}"
             printf "[${CYAN}$cur${NC}]> Enter ASN (yyyyy) and router ID (x.x.x.x): " ; read -r ASN ID
         fi
-        echo "[${CYAN}$cur${NC}]> ASN=$ASN Router-ID=$ID"
+        echo "[${CYAN}$cur${NC}]> ASN=${BLUE}$ASN${NC} Router-ID=${PRL}$ID${NC}"
         cp -r "$LAB_TEMPLATE/$( echo ${cur:0:5} )-template/etc" "$LABPATH/$cur" > /dev/null 2>&1 ||
         cp -r "$LAB_TEMPLATE/$( echo ${cur:0:4} )-template/etc" "$LABPATH/$cur" > /dev/null 2>&1 ||
         cp -r "$LAB_TEMPLATE/$( echo ${cur:0:3} )-template/etc" "$LABPATH/$cur" > /dev/null 2>&1 || 
@@ -583,7 +585,7 @@ main() {
     create_directories "$SPINEs"
     create_directories "$TOFs"
     
-    printf "\n${RED}THIS WILL OVERWRITE EXISTING CONFIG(S), CONTINUE?${NC} [Y/n] " ; read cont
+    printf "\n${RED}This will overwrite existing frr.conf(s). Continue?${NC} [Y/n] " ; read cont
     if  ! [ "$cont" = "y" ] && ! [ "$cont" = "Y" ] && ! [ -z "$cont" ]; then
         exit 0
     fi
