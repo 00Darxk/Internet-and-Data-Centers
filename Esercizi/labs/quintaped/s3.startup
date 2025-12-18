@@ -12,7 +12,6 @@ ip link set dev eth1 master br100
 # Si configura il bridge (br100) per VLAN
 ip link set dev br100 type bridge vlan_filtering 1
 # Si abilita il tag VLAN solo sull'interfaccia connessa alla leaf (eth0), si disabilita sulle i-esime (i != 0) interfacce ({eth-i}) connesse ai propri container. Questo per ogni j-esima VLAN ({vlan-id-j})
-bridge vlan add vid 10 dev eth1 pvid untagged
 
 bridge vlan add vid 20 dev eth1 pvid untagged
 

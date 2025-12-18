@@ -186,16 +186,25 @@ configure_startup() {
 
             for i in "${!ETHs[@]}"; do
                 eth=${ETHs[$i]}
+
+                echo -e "Virtual networks available:"
+                for i in "${!VLANs[@]}"; do
+                    echo -e "[$i]: VNI=${BLUE}${VXLANs[$i]}${NC}, VLAN ID=${CYAN}${VLANs[$i]}${NC}, LAN=${PRL}${LANs[$i]}/${MASKs[$i]}${NC}"
+                done
+                printf "[${CYAN}$cur${NC}]> Select virtual LAN for tenant on ${BLUE}$eth${NC}: " ; read j
+
+                vni=${VLANs[$j]}
+
                 if [[ -z "${eth}" ]]; then
                     continue
                 fi
                 # un-commenta tutte le righe segnate con ##
                 sed -r -i '/\{vlan-id-j\}/! s/^##(.*\{eth-i\}.*)/\1/' "$cur_path" 
                 # duplica tutte le righe da completare, segnando la copia con ##
-                sed -r -i "s/(^[^#].*\{eth-i\}.*)/\1\n##\1/" "$cur_path"
+                sed -r -i "s/(^[^#].*$vni[^\n]*\{eth-i\}.*)/\1\n##\1/" "$cur_path"
 
                 # sostituisce nelle variabili eth-i
-                sed -r -i "s/(^[^#\n]*)(\{eth-i\})/\1${eth}/" "$cur_path"
+                sed -r -i "s/(^[^#\n]*$vni dev )(\{eth-i\})/\1${eth}/" "$cur_path"
             done
             # elimina tutte le righe segnate con ##
             sed -r -i '/\(\{eth-i\}\)/! s/^(.*\{eth-i\}.*)//' "$cur_path" 
