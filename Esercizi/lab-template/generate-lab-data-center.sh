@@ -26,7 +26,7 @@ create_startups() {
     echo -e "${BLUE}NAMEs SYNTAX: "
     echo -e "Leaves, spines, and tofs are 'leaf...', 'spine...' and 'tof...'" 
     echo -e "Servers and containers are 's...' and 'c...'" 
-    echo -e "${RED}Entering hostname will overwrite existing config(s)${NC}"
+    echo -e "${RED}Entering hostname will overwrite existing startup(s)${NC}"
     while :
     do
         read -p "Enter hostname ('q' to quit): " HOSTNAME
@@ -182,29 +182,38 @@ configure_startup() {
                 sed -r -i "s/(^[^#\n]*)(\{vlan-id-j\})/\1${vlan}/" "$cur_path"
             done
             # elimina tutte le righe segnate con ##
-            sed -r -i '/\{eth-i\}/! s/^##(.*\{vlan-id-j\}.*)//' "$cur_path" 
+            sed -r -i 's/^##(.*\{vlan-id-j\}.*)//' "$cur_path" 
 
             for i in "${!ETHs[@]}"; do
                 eth=${ETHs[$i]}
 
-                echo -e "Virtual networks available:"
-                for i in "${!VLANs[@]}"; do
-                    echo -e "[$i]: VNI=${BLUE}${VXLANs[$i]}${NC}, VLAN ID=${CYAN}${VLANs[$i]}${NC}, LAN=${PRL}${LANs[$i]}/${MASKs[$i]}${NC}"
+                while :
+                do
+                    echo -e "Virtual networks available:"
+                    for i in "${!VLANs[@]}"; do
+                        echo -e "[$i]: VNI=${BLUE}${VXLANs[$i]}${NC}, VLAN ID=${CYAN}${VLANs[$i]}${NC}, LAN=${PRL}${LANs[$i]}/${MASKs[$i]}${NC}"
+                    done
+                    printf "[${CYAN}$cur${NC}]> Select virtual LAN for tenant on ${BLUE}$eth${NC}: " ; read j
+                    if [[ "$j" -gt $((${#ETHs[@]} - 1)) ]] || [[ "$j" -lt "0" ]] || [ -z "$j" ]; then
+                        echo "${RED}Invalid virtual LAN${NC}"
+                    else
+                        break
+                    fi
                 done
-                printf "[${CYAN}$cur${NC}]> Select virtual LAN for tenant on ${BLUE}$eth${NC}: " ; read j
-
                 vni=${VLANs[$j]}
 
                 if [[ -z "${eth}" ]]; then
                     continue
                 fi
                 # un-commenta tutte le righe segnate con ##
-                sed -r -i '/\{vlan-id-j\}/! s/^##(.*\{eth-i\}.*)/\1/' "$cur_path" 
+                sed -r -i 's/^##(.*\{eth-i\}.*)/\1/' "$cur_path" 
                 # duplica tutte le righe da completare, segnando la copia con ##
-                sed -r -i "s/(^[^#].*$vni[^\n]*\{eth-i\}.*)/\1\n##\1/" "$cur_path"
+                sed -r -i "s/(^[^#].*[^\n]*\{eth-i\}.*)/\1\n##\1/" "$cur_path"
 
                 # sostituisce nelle variabili eth-i
                 sed -r -i "s/(^[^#\n]*$vni dev )(\{eth-i\})/\1${eth}/" "$cur_path"
+                sed -r -i "/vid/! s/(^[^#\n]*)(\{eth-i\})/\1${eth}/" "$cur_path"
+                sed -r -i 's/^[^#\n]*\{eth-i\}.*$//' "$cur_path"
             done
             # elimina tutte le righe segnate con ##
             sed -r -i '/\(\{eth-i\}\)/! s/^(.*\{eth-i\}.*)//' "$cur_path" 
