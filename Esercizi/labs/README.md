@@ -17,3 +17,4 @@
  - [stonehenge](stonehenge/stonehenge.pdf)
  - [twin-pan-balance](https://github.com/xReniar/Esami_IDC/blob/master/2017-11-24-twin-pan-balance/2017-11-24-twin-pan-balance.pdf)
  - [two-sandwiches](https://github.com/KatharaFramework/Kathara-Labs/tree/main/exam-labs/2021-07-02-two-sandwiches/two-sandwiches.pdf)
+ - [vsix](./vsix/vsix.pdf)
