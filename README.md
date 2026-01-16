@@ -2,7 +2,7 @@
 Appunti tratti dal corso di Internet and Data Centers, Anno Accademico 2025/26, Dipartimento di Ingegneria Civile, Informatica e delle Tecnologie Aeronautiche.  
 
 ## Contenuti:
- - [Esercizi](Esercizi/): [soluzioni](Esercizi/labs) di esercizi, esami o esoneri. Le traccie dei singoli esercizi sono o nella directory del lab o nel [README](Esercizi/labs/README.md). Ed un [template](Esercizi/lab-template/) generico per un lab; 
+ - [Esercizi](Esercizi/): [soluzioni](Esercizi/labs) di esercizi, esami o esoneri. Le traccie dei singoli esercizi sono o nella directory del lab o nel [README](Esercizi/labs/README.md); [template](Esercizi/lab-template/) e script di configurazione per vari tipi di lab; 
  - [Appunti](Internet-and-Data-Centers.pdf) delle lezioni, tenute l'anno accademico 2025/26 dal professore Maurizio Patrignani e Lorenzo Ariemma;
 
 ## Contenuti del Corso
@@ -74,10 +74,13 @@ Appunti tratti dal corso di Internet and Data Centers, Anno Accademico 2025/26, 
 
 
 ## Materiale Aggiuntivo
- - [Appunti](https://github.com/00Darxk/Reti-di-Calcolatori) del corso di Reti di Calcolatori 2024/25;
+ - [Appunti di Reti di Calcolatori](https://github.com/00Darxk/Reti-di-Calcolatori) relativi al corso dell'Anno Accademico 2024/25;
+ - [Gara per il Polo Strategico Nazionale](https://www.difesaservizi.it/gare/pubblicazione-gara-per-il-polo-strategico-nazionale);
  - [asrank](https://asrank.caida.org/asns) sito per classificare autonomous system;
+ - [asrank](https://asrank.caida.org/asns) sito per rankare autonomous system;
  - [RIPEstat](https://stat.ripe.net/) tool per le statistiche BGP di RIPE;
  - [BGP Looking Glass](https://www.bgplookingglass.com/) database di looking glass per vari AS;
+    - [Hurrican Electric Looking Glass](https://lg.he.net/)
  - [*Kathará*](https://github.com/KatharaFramework/Kathara), emulatore di reti, utilizzato durante il corso, esoneri ed esame;
  - [*Kathará* Labs](https://github.com/KatharaFramework/Kathara-Labs), repository contenente lab ufficiali di *Kathará*, tutorial, esoneri ed esami passati;
  - [net-vis](https://github.com/Friscobuffo/net-vis-localhost) visualizzatore di reti per lab *Kathará*;

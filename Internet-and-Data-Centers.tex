@@ -83,110 +83,90 @@ Università degli Studi ``Roma Tre"}}
 
 \section{Introduzione: ISPs ed IXPs}
 
-%% yapping 
-
-Gli \textit{Internet Service Provider} ISP o \textit{Autonomous System} sono gestori autonomi della rete che hanno una responsabilità su un certo territorio. Su queste reti indipendenti viaggiano i pacchetti, gli ISP sono infatti responsabili di inoltrare i pacchetti che passano al loro interno per raggiungere la destinazione. 
-In totale sono presenti circa 170000 ISP al mondo, alcuni di questi sono pubblicizzate e pubbliche per offrire servizi ad utenti comuni, altri offrono servizi a grandi compagni o altri ISP. 
-Questi ISP formano una gerarchia, non dichiarata, che si può inferire, non essendo questi ISP governati da una struttura o organizzazione sovrastante. Alcuni di questi ISP sono privati e non si mostrano, per cui è possibile solamente inferire la gerarchia considerando questi ISP privati. Ogni ISP si cura solamente dei suoi interessi specifici, attraverso i loro clienti, permettono di connettersi ad un prezzo economico con altri servizi o utenti nel loro territorio. Questi ISP pagano altri ISP più grandi per raggiungere obiettivi sempre più remoti, in questo modo si può determinare una gerarchia che parte dagli ISP più piccoli ai più grandi. 
+Gli \textit{Internet Service Provider}, ISP, o \textit{Autonomous System}, AS, sono gestori autonomi della rete che hanno una responsabilità su un certo territorio. Su queste reti indipendenti viaggia il traffico, gli ISP sono infatti responsabili di inoltrare i pacchetti che passano al loro interno per raggiungere la destinazione. 
+In totale sono presenti circa 120000 ISP al mondo, alcuni di questi sono pubblicizzati e pubblici per offrire servizi ad utenti comuni, altri offrono servizi a grandi compagnie private o altri ISP. 
+Questi ISP formano una gerarchia, non dichiarata, che si può inferire, non essendo governati da una struttura o organizzazione sovrastante. Alcuni di questi ISP sono privati e non si mostrano, per cui si può solo supporre la loro posizione in questa gerarchia. Ogni ISP si cura solamente dei suoi interessi specifici, attraverso i loro clienti, permettendo loro di connettersi ad un prezzo economico con altri servizi o utenti nel loro territorio. Questi ISP pagano altri ISP più grandi per raggiungere destinazioni sempre più remote, in questo modo si può determinare una gerarchia che parte dagli ISP più piccoli, non fornitori di altri ISP, fino ai più grandi, che offrono solo servizi ad altri ISP, stando alla radice della gerarchia. 
 
 Queste regioni geografiche che identificano i territori di un certo ISP non sono separate, ma sono fortemente sovrapposte, è solamente una divisione logica e parzialmente può essere interpretata come una suddivisione geografica. 
 
-Questi ISP comunicano tra di loro attraverso una connessione privata di rete \textit{Private Network Interconnects} PNI, queste possono essere dei cavi fisici di proprietà degli ISP oppure possono essere affittati, che collegano due router tra questi due ISP. Il costo per questa PNI viene pagato in base ad accordi privati tra i vari ISP ed in base al traffico. Questo è un rapporto commerciale a varie livelli, ci può essere un cliente che paga per utilizzare i servizi di un altro ISP, oppure bilaterale o peer-to-peer, dove i due ISP si scambiano pacchetti destinati all'altro ISP, ed pagano entrambi insieme il costo del PNI. 
-
-Generalmente si paga sul picco di traffico giornaliero. 
+Questi ISP comunicano tra di loro attraverso una connessione privata di rete \textit{Private Network Interconnects}, PNI, queste possono essere dei cavi fisici di proprietà degli ISP oppure possono essere affittati, che collegano due router tra questi due ISP. Il costo per questa PNI viene pagato in base ad accordi privati tra i vari ISP ed in base al traffico. Questo è un rapporto commerciale a vari livelli, ci può essere un cliente che paga per utilizzare i servizi di un altro ISP, oppure bilaterale o peer-to-peer, dove i due ISP si scambiano pacchetti destinati all'altro ISP, ed entrambi pagano insieme il costo della connessione. In genere si paga in base al picco di traffico giornaliero. 
 
 
-Questo processo tuttavia non è più efficiente, con il concetto di economia di scala, invece di stendere fili singoli tra tutti gli ISP, si creano di punti di scambio comuni dove tutti i provider portano una loro macchina ed un filo che la collega alla loro rete, a questo punto per comunicare con altri ISP si crea una connessione logica con uno degli ISP presenti nel punto di scambio. Questo si chiama \textit{Internet eXchange Points} IXP. Questi sono governati da associazioni che mettono a servizio dei propri consorziati questi punti di scambio in modo sicuro. 
-Quando si offre un servizio si cominciano ad offrirne di ulteriori, quindi oltre alla comunicazione offrono servizi di housing, di computing, etc. formando i tradizionali \textit{Data Centers}. 
-In questi punti di scambio ci sono interconnessioni di diverso tipo, commerciali, peer-to-peer, gratuiti, ma sempre offerti nello stesso punto di scambio. 
-Al mondo sono presenti circa un migliaio di questi IXP, in Europa il più grande è ad Amsterdam: AMS-IX. 
+Questo processo tuttavia non è più efficiente, con il concetto di economia di scala, invece di stendere fili singoli tra tutti gli ISP, si creano di punti di scambio comuni dove tutti i provider portano una loro macchina ed un filo che la collega alla loro rete, a questo punto per comunicare con altri ISP si crea una connessione logica con uno degli ISP presenti nel punto di scambio. Questi punti di scambio si chiamano \textit{Internet eXchange Points} IXP. Questi sono governati da associazioni che mettono a servizio dei propri consorziati punti di scambio in modo sicuro. 
+Quando si offre un servizio, eventualmente, si cominciano ad offrirne di ulteriori, quindi oltre alla comunicazione offrono servizi di housing, di computing, etc. formando i tradizionali \textit{Data Centers}. 
+In questi punti di scambio ci sono interconnessioni di diverso tipo, commerciali, peer-to-peer, gratuite, ma sempre offerti nello stesso punto di scambio. 
+Al mondo sono presenti circa un migliaio di questi IXP, in Europa il più grande è ad Amsterdam, AMS-IX. 
 
-La rete di reti non è più una rete di macchine connesse tra di loro, ma coagula considerando questi punti di scambio comuni dove sono presenti delle macchine. Un \textit{Data Center} è uno spazio dedicato contenente computer, risorse di massa e sistemi di telecomunicazione. Questi si trovano generalmente in scantinati, ed i più grandi in zone dove l'energia costa poco o è facilmente procurable, oppure in zone dove la temperatura è pressoché bassa, per diminuire il costo di raffreddamento. In questi data center si brucia una quantità molto elevata di energia. 
-Per l'importanza di questi data center, sono costantemente sorvegliati e protetti. Ogni macchina ha una procedura di recupero e sono pubbliche e quindi si assume che chi è in grado di avvicinarsi ad un macchina può effettuare queste procedure di recovery ed entrare in possesso della macchina. Quindi la sicurezza deve essere anche fisica per impedire alle persone di avvicinarsi a questi macchinari. 
+La rete di reti non è più una rete di macchine connesse tra di loro, ma coagula considerando questi punti di scambio comuni dove sono presenti delle macchine. Un \textit{Data Center} è uno spazio dedicato contenente computer, risorse di massa e sistemi di telecomunicazione. Questi si trovano generalmente in scantinati, ed i più grandi in zone a basso costo energetico o dov'è facilmente procurable, oppure in zone dove la temperatura è pressoché bassa, per diminuire il costo di raffreddamento. In questi data center si utilizza una quantità molto elevata di energia. 
+Per la loro importanza, sono costantemente sorvegliati e protetti. Ogni macchina ha una procedura di recupero pubblica, si assume che chi è in grado di avvicinarsi ad un macchina può effettuare queste procedure di recovery ed entrarne in possesso. Quindi la sicurezza deve essere anche fisica per impedire alle persone di avvicinarsi a questi macchinari. 
 
-C'è una differenza tra l'\textit{hosting} e l'\textit{housing}, nel primo l'hardware è posseduto dal data center, mentre nel secondo l'hardware non è fornito dal data center me viene procurato dal cliente. 
-Altri centri invece hanno un solo cliente che è il proprietario, questi generalmente vengono realizzati solo dai più grandi come Google, Microsoft, etc. 
+C'è una differenza tra l'\textit{hosting} e l'\textit{housing}, nel primo l'hardware è posseduto dal data center, mentre nel secondo l'hardware non è fornito dal data center me viene procurato dai clienti. 
+Altri data center invece hanno un solo cliente che ne è il proprietario, questi generalmente vengono realizzati solo dai più grandi come Google, Microsoft, etc. 
 
 
-Questa tendenza è nata negli ultimi decenni, quando oltre ad offrire connettività gli ISP cominciarono ad offrire hosting ed housing, creando propri data center. La connettività è ormai diventata un bene di consumo a basso costo, quasi dato per scontato. 
+Questa tendenza è nata negli ultimi decenni, quando oltre ad offrire connettività gli ISP cominciarono ad offrire hosting ed housing, creando dei propri data center. La connettività è ormai diventata un bene di consumo a basso costo, quasi dato per scontato. 
 Questi data center possono essere interni ad una singola rete o condivisi tra varie reti. 
 
 Dentro un IXP si può facilmente inserire un data center, avendo già la struttura e l'organizzazione per ospitarli, unendo i router e macchine dei vari ISP a risorse di calcolo offerte dal data center. 
 
-%% !! Cloud
+\subsection{Il Cloud}
 
-La definizione di \textit{cloud} fornita dal NIST, \textit{National Institute of Standard and Technology}, è caratterizzata dalla possibilità di scalare su richiesta, un accesso a banda capiente, la possibilità di attivare risorse su richiesta, risposta rapida e misurazione accurata. 
+La definizione di \textit{cloud} fornita dal NIST, \textit{National Institute of Standard and Technology}, è caratterizzata dalla possibilità di scalare su richiesta, un accesso a banda capiente, la possibilità di attivare risorse su richiesta, avere una risposta rapida e misurazione accurata. 
 
-I servizi offerti da piattaforme cloud sono IaaS, \textit{Infrastructure as a Service}, macchine virtuali, risorse di massa, firewall, tutti realizzati virtualmente; PaaS \textit{Platform as a Service}, la gestione di macchine virtuali database, risorse; Saas \textit{Software as a Service}, il software che viene eseguito su queste macchine virtuali può essere comprato o affittato direttamente da queste piattaforme cloud. 
-Altri servizi specializzati possono offrire calcolo massivi. Alcuni servizi di cloud sono reti pubbliche, altri possono essere privati o ibridi. 
-I leader del settore sono AWS, \textit{Amazon Web Services}, Microsoft Azure e Google Cloud. Questi cloud possono popolare diversi data center, AWS si trova su 25 regioni, in questo caso macro-regioni geografiche. Microsoft si trova su più di 60 regioni mentre Google principalmente in America del Nord. 
-
-
-Quando si compra un servizio su una piattaforma cloud, questo è sparo non necessariamente su uno stesso data center, poiché per trasferire una macchina virtuale è estremamente facile. Le risorse acquistate su piattaforme cloud sono distribuite ed in base alla necessità del gestore possono essere trasferite facilmente. Questo vale sia per macchine virtuali che per la memoria di massa. 
-
-In Europa è stato creato un sistema federato di ISP europei, GAIA-X, per realizzare hub nazionali indipendenti dall'hardware per garantire servizi specificando un modello con garanzia di controllo sulla locazione delle macchine e la strada che percorrono i dati. 
+I servizi offerti da piattaforme cloud possono essere IaaS, \textit{Infrastructure as a Service}, macchine virtuali, risorse di massa, firewall, tutti realizzati virtualmente; PaaS \textit{Platform as a Service}, la gestione di macchine virtuali database, risorse; Saas \textit{Software as a Service}, dato che il software che viene eseguito su queste macchine virtuali può essere comprato o affittato direttamente da queste piattaforme cloud. 
+Altri servizi specializzati possono offrire potenza di calcolo massiva, soprattutto nell'ambito dell'intelligenza artificiale e nel loro addestramento. Alcuni servizi di cloud sono reti pubbliche, altri possono essere privati o ibridi. 
+I leader del settore sono AWS, \textit{Amazon Web Services}, Microsoft Azure e Google Cloud. Questi cloud possono popolare diversi data center, AWS si trova su 25 macro-regioni geografiche. Microsoft si trova su più di 60 regioni mentre Google principalmente in America del Nord. 
 
 
+Quando si compra un servizio su una piattaforma cloud, questo è spesso non necessariamente su uno stesso data center, poiché trasferire una macchina virtuale è estremamente facile. Le risorse acquistate su piattaforme cloud sono distribuite ed in base alla necessità del gestore possono essere trasferite. Questo vale sia per macchine virtuali che per la memoria di massa. 
 
-In Italia l'Agenzia per la Cybersicurezza Nazionale ha fondato un cloud marketplace per offrire alla pubblica amministrazione di acquistare risorse cloud da parte di provider qualificati. La CONSIP ha un servizio di supporto per i servizi cloud dedicati alla pubblica amministrazione. 
+In Europa è stato creato un sistema federato di ISP europei, GAIA-X, per realizzare hub nazionali indipendenti dall'hardware garantendo servizi, specificando un modello con garanzia di controllo sulla locazione delle macchine e la strada che percorrono i dati. Offrendo la possibilità ai loro clienti di mantenere i dati all'interno della propria nazione, per aderire ad eventuali normative, o esigenze specifiche. 
+
+
+
+In Italia l'Agenzia per la Cybersicurezza Nazionale ha fondato un cloud marketplace, che offre alla pubblica amministrazione la possibilità di acquistare risorse cloud da parte di provider qualificati. La CONSIP ha un servizio di supporto per i servizi cloud dedicati alla pubblica amministrazione. 
 Inoltre c'è un programma per portare ed abilitare la pubblica amministrazione all'uso dei servizi cloud. 
-Questo è previsto dal PNRR, nel primo obiettivo, attraverso una migrazione ad un cloud nazionale PSN, oppure ad un provider certificato. Anche la stessa migrazione ad un altro cloud viene trattato come un servizio senza dover necessariamente conoscere il suo funzionamento tecnico. 
+Questo è previsto dal PNRR, nel primo obiettivo, attraverso una migrazione ad un cloud nazionale, il PSN, oppure ad un provider certificato. Anche la stessa migrazione ad un altro cloud viene trattato come un servizio senza dover necessariamente conoscere il suo funzionamento tecnico. 
 
-\subsection{PSN: Polo Strategico Nazionale}
+\subsection{Polo Strategico Nazionale: PSN}
 
-%% TODO smt
+Il Polo Strategico Nazionale o PSN, è un progetto con l'obiettivo di creare un grande data center nazionale che fornisca vari servizi cloud. 
 
+I principali servizi offerti dal PSN sono housing ed hosting; cloud IaaS Private e Shared; può offrire cloud pubblica gestita dalla PSN garantendone la sicurezza, utilizzando sistemi offerti da produttori certificati, si può realizzare un sistema ibrido con elementi interni alla rete. 
 
-Questo progetto ha l'obiettivo di creare un grande data center nazionale che fornisca vari servizi cloud. 
-
-I principali servizi offerti dal PSN sono housing ed hosting, cloud IaaS Private e Shared, può offrire cloud pubblica gestita dalla PSN garantendone la sicurezza, utilizzando sistemi offerti da produttori certificati, si può realizzare un sistema ibrido con elementi interni alla rete. 
-
-I public cloud esistenti che parteciperebbero a questo progetto sono Azure, Google Cloud ed Oracle. 
-
-%% cringe
+Questi servizi sono in parte realizzati da infrastrutture proprie del PSN ed in parte da cloud pubblici esistenti, Azure, Google Cloud ed Oracle. 
 
 Sulla rete privata del PSN, sul suo hardware, vengono offerti servizi IaaS dedicati e condivisi, CaaS e \textit{Disaster Recovery} (DR) e PaaS, fornendo elementi applicativi e middleware come servizio. 
 
-Servizi di Cloud ibridi vengono gestiti nel territorio nazionale dal PSN, utilizzando un'infrastruttura ibrida utilizzando cloud pubblici di partner commerciali e privati sulla rete del PSN, installati sull'infrastruttura locale. Questo come il Public Cloud PSN Managed ed il Secure Public Cloud garantiscono la presenza dei dati sul territorio nazionale. Per il resto dei servizi cloud, i dati sono localizzati presso il \textit{Cloud Service Provider} (CSP) e non garantisce la \textit{data sovereignty}
+Servizi di cloud ibridi vengono gestiti nel territorio nazionale dal PSN, utilizzando un'infrastruttura ibrida, cloud pubblici di partner commerciali e privati sulla rete del PSN, installati sull'infrastruttura locale. Questo come il \textit{Public Cloud PSN Managed} ed il \textit{Secure Public Cloud} garantiscono la presenza dei dati sul territorio nazionale. Per il resto dei servizi cloud, i dati sono localizzati presso il \textit{Cloud Service Provider} (CSP) e non garantisce la \textit{data sovereignty}. 
 
 L'infrastruttura del PSN è un data center a doppia regione, interconnessa via \textit{Virtual Data Center Network} (VDCN), simulando una stessa LAN, duplicando i dati tra le due regioni. 
 
 
-Servizi PaaS messi a disposizione da parte del PSN su una piattaforma per erogare elementi applicativi e middleware, astraendo l'infrastruttura sottostante. Questi servizi sono \textit{Database as a Service} (DaaS), verifica dell'identità e gestione degli accessi, big data e servizi AI. 
-
+Servizi PaaS sono messi a disposizione da parte del PSN su una piattaforma per erogare elementi applicativi e middleware, astraendo l'infrastruttura sottostante. Questi servizi sono \textit{Database as a Service} (DaaS), verifica dell'identità e gestione degli accessi, big data e servizi AI. 
 Analogamente fornisce applicazioni basate su container con servizi CaaS. 
 
 
-L'accesso a questi servizi avviene solamente tramite la rete TIM, uno dei consorzianti che ha vinto il contratto, questa implementa dei sistemi di sicurezza per garantire che eventuali attacchi non riescano a penetrare la rete interna del PSN, utilizzando dei tunnel per inviare il flusso di dati all'infrastruttura del PSN. %% ??
+L'accesso a questi servizi avviene solamente tramite la rete TIM, uno dei consorzianti che ha vinto il contratto, questa implementa dei sistemi di sicurezza per garantire che eventuali attacchi non riescano a penetrare la rete interna del PSN, utilizzando tunnel per il traffico verso l'infrastruttura del PSN. 
+
+I quattro data centers sono collegati su due regioni, tra queste regioni il traffico viene gestito con tunnel end-to-end come il protocollo \textit{Multi Protocol Label Switching} MPLS (\ref{sec:mpls}), sul backbone IP di TIM. 
 
 
-% Il public cloud PSN managed, sviluppato in partnership con Oracle e Google Clout, viene gestito internamente dal PSN, 
+Tra data center della stessa regione le VLAN sono trasportate con VXLAN, \textit{Virtual eXtensive LAN}, queste utilizzano espedienti tecnologici per duplicare infrastrutture fisiche utilizzando dei tag per dividere i pacchetti destinati alle varie copie.  
+Il protocollo VXLAN permette di connettere reti diverse condividendo pacchetti di livello due tra le reti, trattandola come una singola LAN, trasparente dal punto di vista delle macchine interne. 
 
-%% ?? idk
-
-
-
-I quattro data centers sono collegati su due regioni, tra queste regioni il traffico viene gestito tramite il protocollo \textit{Multi Protocol Label Switching} MPLS, sul backbone IP di TIM. %% descrizione MPLS
-
-Tra DC della stessa regione le VLAN sono trasportate con VXLAN, \textit{Virtual eXtensive LAN}, queste utilizzano espedienti tecnologici per duplicare infrastrutture fisiche utilizzando dei tag per dividere i pacchetti destinati alle varie copie.  
-Il protocollo VXLAN permette di connettere reti diverse condividendo pacchetti di livello due tra le reti, trattandola come una singola LAN, trasparente dal punto di vista delle macchine nelle varie LAN. 
-
-\subsection{SPC: Sistema Pubblico di Connettività}
+\subsection{Sistema Pubblico di Connettività: SPC}
 
 Questo è un bando multi-fornitore, il vincitore del bando ha preso la parte più grande del mercato della pubblica amministrazione, mentre i restanti fornitori hanno ottenuto il rimanente. 
 
-
-%% cringe af
-
-Questa rappresenta una rete di grandi dimensioni dedicata a connettere le sedi di ogni singola Pubblica Amministrazione tra di loro ed all'internet. 
+Il Sistema Pubblico di Connettività rappresenta una rete di grandi dimensioni dedicata a connettere le sedi di ogni singola Pubblica Amministrazione tra di loro ed all'Internet. 
 Offre diversi servizi di trasporto wired e wireless, su rete elettrica, ottica o da parte di dati satellitari. 
 
-Per questi servizi viene definito un \textit{Service Level Agreement} (SLA). 
-Ad ogni servizio il fornitore assegna una misura di qualità, il jitter è la distanza tra i vari pacchetti, se è pari a zero questi arrivano tutti allineati. Se la misura della qualità dovesse scendere al di sotto di terminate soglie, sono previsti rimborsi, chiamati ``penali'' all'amministrazione. 
+Per questi servizi viene definito un \textit{Service Level Agreement} (SLA), ad ogni servizio il fornitore assegna una misura di qualità. Può essere espressa in termini di metriche come il jitter, la distanza tra i vari pacchetti, se è pari a zero questi arrivano tutti allineati. Se la misura della qualità dovesse scendere al di sotto di terminate soglie, sono previsti rimborsi, chiamati ``penali'' all'amministrazione. 
 Gli SLA contemplano anche guasti o anomalie. 
-Vari ISP realizzano questo SPC, a ciascuno è assegnato un gruppo di PA, l'accesso ad internet è gestito dai singoli fornitori, in base all'esito dell'asta multi-fornitore. 
+Vari ISP realizzano questo SPC, a ciascuno è assegnato un gruppo di PA, Pubbliche Amministrazioni, l'accesso ad internet è gestito dai singoli fornitori, in base all'esito dell'asta multi-fornitore. 
 
-Gli ISP realizzano le reti delle PA usando MPLS, per comunicare tra di loro su una rete QXN, \textit{Qualified Exchange Network}, attualmente collocato presso gli IXP di Roma (Namex) e Milano (MIX).  
+Gli ISP realizzano le reti delle PA usando MPLS, per comunicare tra di loro su una rete QXN, \textit{Qualified eXchange Network}, attualmente collocato presso gli IXP di Roma (Namex) e Milano (MIX).  
 
 \clearpage
 
@@ -1377,6 +1357,7 @@ Lo strumento chiamato \textit{looking glass}, portali web pubblicati da certi AS
 Questi sono convenienti per AS grandi, poiché BGP è una comunità. 
 
 \subsection{MPLS VPN}
+\label{sec:mpls}
 
 Il \textit{Multo-Protocol Label Switching} è una tecnologia usata dai data centers, che risponde ad esigenze di diversi attori. 
 
