@@ -235,6 +235,10 @@ La configurazione manuale delle macchine è una configurazione statica, questa �
 Invece per topologie magliate è opportuno utilizzare un algoritmo dinamico, poiché al taglio di un link o allo spegnimento di un nodo, bisogna ridistribuire il carico e riorganizzare la rete in modo veloce, senza compromettere l'operabilità delle altre macchine. 
 
 %% TODO immagine rapporto tra routing statico e dinamico
+\begin{figure}[H]%
+    \centering%
+    \includegraphics[width=3cm]{example-image}%
+\end{figure}
 
 Uno di questi algoritmi statici è il \textit{flooding} che consiste nell'inoltra ogni pacchetto a tutte le interfacce connesse al router. 
 
@@ -327,6 +331,10 @@ Se un componete ha inviato la rotta al vicino, e questo gliela rimanda, non dovr
 Il valore ottimale di infinito per ogni rete dipende dalla sua topologia, e dal modo in cui l'eco viene propagato. Bisogna determinare il costo del cammino più lungo possibile nella rete, ed al massimo prende tutti i router presenti. Non tutte le reti ammettono un cammino che prede tutte le reti. 
 
 %% TODO img add propagazione count fo infinity
+\begin{figure}[H]%
+    \centering%
+    \includegraphics[width=3cm]{example-image}%
+\end{figure}
 
 Quando il costo di un cammino supera il valore di infinito nella tabella di instradamento, viene rimossa e non più condivisa. Restituisce pacchetti ICMP \textit{destination unreachable} se si prova ad accedere alla rotta. 
 
@@ -427,6 +435,10 @@ Questo protocollo assegna ogni interfacce ad un'unica area. Un router può esser
 
 
 %% TODO add img aree e suddivisione router
+\begin{figure}[H]%
+    \centering%
+    \includegraphics[width=3cm]{example-image}%
+\end{figure}
 
 Ai router di frontiera vengono iniettate rotte, come se fossero locali, dentro al protocollo OSPF, ed inietta sulla sua rete locale queste rotte prendendosi la responsabilità di inoltrarli eventuali messaggi alle altre aree. 
 %% TODO add protocollo IS-IS
@@ -577,26 +589,26 @@ Questo algoritmo rende la rete un albero e mantiene ridondanze ed è in grado di
 Questo albero ha una radice che viene chiamato \textit{root bridge}, alla fine della configurazione delle porte vengono messe in \textit{blocking}. L'amministratore della rete può configurare minimamente secondo alcune necessità. 
 Questo algoritmo è robusto, efficace, efficiente ed è realizzato per garantire un basso costo di banda. Viene descritto nello standard IEEE 802.1D. 
 
-Si usano dei pacchetti chiamati \textit{Bridge PDU} o BPDU, sono tra i rarissimi pacchetti che non usano lo standard ethernet 2.0, ma IEEE 802.3, dentro questi pacchetti non è neanche presente il codice per indirizzare il protocollo IP successivo. Sono pacchetti devo sono state rimosse tutti i superflui. 
+Si usano dei pacchetti chiamati \textit{Bridge PDU} o BPDU, sono tra i rarissimi pacchetti che non usano lo standard ethernet 2.0, ma IEEE 802.3, dentro questi pacchetti non è neanche presente il codice per indirizzare il protocollo IP successivo. Sono pacchetti devo sono state rimosse tutti i dati superflui. 
 
-Questo protocollo essere veloce, flessibile ai cambiamenti della topologia e di facile uso. 
+Questo protocollo è veloce, flessibile ai cambiamenti della topologia e di facile uso. 
 
-Lo standard chiama LAN il dominio dove vengono collegati gli switch, un insieme di domini di collisione. 
-Si assume che ognuna LAN possa contenere un numero arbitrario di macchine. 
+Lo standard indica con LAN il dominio dove vengono collegati gli switch, un insieme di domini di collisione. 
+Si assume che ogni LAN possa contenere un numero arbitrario di macchine. 
 
-L'algoritmo parte da uno scenario con queste LAN e quando ci sono dei cicli li aprono, senza chiudere nessuna LAN. Ogni bridge ha un identificatore, gli spareggi si fanno sull'id più basso. Anche le porte hanno un identificatore, analogamente più basso meglio è. 
-Hanno un valore di costo per ogni LAN, definito dalla velocità della LAN. Per cui lo standard viene aggiornato per aggiornare questa tabella dei costi quando vengono rilasciate nuove tecnologie da prestazioni più elevate. Se questi costi vengono messi a zero, l'algoritmo non necessariamente converge. 
+L'algoritmo parte da uno scenario con queste LAN e quando ci sono dei cicli li aprono disattivando alcune porte, senza chiudere nessuna LAN. Ogni bridge ha un identificatore, gli spareggi si calcolano sull'id più basso. Anche le porte hanno un identificatore, analogamente più basso meglio è. 
+Si associa un valore di costo ad ogni LAN, definito dalla velocità della LAN. Lo standard viene aggiornato per aggiornare questa tabella dei costi quando vengono rilasciate nuove tecnologie a prestazioni più elevate. Se questi costi vengono messi a zero, l'algoritmo non necessariamente converge. 
 
-Le macchine devono essere raggiungibili da qualsiasi altra macchina senza che nessuna LAN viene isolata. 
+Le macchine devono essere raggiungibili da qualsiasi altra macchina senza che nessuna LAN venga isolata. 
 Si vuole creare un albero di cammino a costo minimo, ma questo non è vero per ogni cammino individuato. Possono esserci cammini a costo minore per due specifiche macchine, ma che sono stati bloccati. 
 
 L'id del bridge, \textit{bridge-id}, è rappresentato da due byte che indicano la priorità, di default si trova a metà dell'intervallo possibile \texttt{80:00}, i restanti sono corrispondenti all'indirizzo MAC della prima porta del bridge. Il valore di priorità si può modificare per rendere alcuni bridge più probabili ad essere scelti come radice. 
 
 L'id della porta, \textit{port-id}, è costituito dalla concatenazione di varie parti, un byte di priorità, spesso il valore di default è \texttt{80}, ed un byte corrispondente al numero della porta sul bridge, dato un contatore delle porte sul bridge. 
 
-Il costo di una LAN è gestito da una specie di distance vector. Non si contano gli hop, ma la somma dei costi, ogni tecnologia ha un costo inversamente proporzionale alla sua velocità. Su ogni porta viene specificato questo costo, in ingresso. 
+Il costo di una LAN è gestito da una specie di distance vector. Non si contano gli hop, ma la somma dei costi, ogni tecnologia ha un costo inversamente proporzionale alla sua velocità. Su ogni porta viene specificato in ingresso questo costo. 
 
-Questo algoritmo è diviso in fasi, che possono essere realizzate in un singolo pacchetto. Nella prima fase viene eletto un bridge da radice, si identifica per ogni bridge una porta radice, la più conveniente da lasciare accesa. Si determinano le porte designate per ogni LAN, una porta di un bridge viene scelta come quella che connetterà la LAN all'albero. 
+Questo algoritmo è diviso in fasi, che possono essere eseguite in un singolo pacchetto. Nella prima fase viene eletto un bridge radice, si identifica per ogni bridge una porta verso il bridge radice, la più conveniente da lasciare accesa. Si determinano le porte designate per ogni LAN, una porta di un bridge viene scelta come quella che connetterà la LAN all'albero. 
 Vengono poi bloccate tutte le porte ridondanti nell'ultima fase, tutte quelle inutilizzate dall'albero, non designate e non radici. 
 
 Sono previsti due tipi di BPDU, di configurazione, che contiene le informazioni necessarie per l'algoritmo dell'albero ricoprente e pacchetti di notifica del cambiamento della topologia, che non contengono nessun dato. 
@@ -605,46 +617,51 @@ I pacchetti LLC hanno un indirizzo di sorgente e destinazione pari a \texttt{0x4
 I campi importanti sono l'identificatore della radice dell'albero ricoprente, tutti riportano qual è la radice. La distanza dalla radice, l'identificatore del bridge mittente e l'identificatore della porta mittente. 
 
 %% TODO add img campi
+\begin{figure}[H]%
+    \centering%
+    \includegraphics[width=3cm]{example-image}%
+\end{figure}
 
-Nella prima fase si deve capire qual è il bridge da radice, all'inizio ogni bridge si crede la radice ed invia come primo parametro il suo stesso id, ed invia questi pacchetti. Nel tempo quando un bridge legge un pacchetto con un campo radice con un id minore, si accorge di non essere la radice e propaga questa informazione nei suoi pacchetti. In questo modo la rete converge ad uno stesso bridge radice. 
+\begin{enumerate}
+    \item Nella prima fase si deve capire qual è il bridge da radice, all'inizio ogni bridge si crede la radice ed invia come primo parametro il suo stesso id, ed invia questi pacchetti. Nel tempo quando un bridge legge un pacchetto con un campo radice con un id minore, si accorge di non essere la radice e propaga questa informazione nei suoi seguenti pacchetti. In questo modo la rete converge ad uno stesso bridge radice. 
 
-Inoltre per configurare il costo dalla radice, all'inizio viene posta a zero, poiché si crede la radice, se arriva un pacchetto con campo radice minore, utilizza il costo di questo pacchetto incrementato con il costo attribuito alla porta ricevente. 
+    Inoltre per configurare il costo dalla radice, all'inizio viene posta a zero, poiché ogni bridge si crede esso stesso la radice, se arriva un pacchetto con campo radice minore, utilizza il costo di questo pacchetto incrementato con il costo attribuito alla porta ricevente. 
 
-Questi pacchetti vengono inoltrati modificando i campi di uno stesso pacchetto, modificando se necessario il campo radice, aggiornando il costo, e sostituendo l'id dello bridge e della porta mittente. 
+    Questi pacchetti vengono inoltrati modificando i campi di uno stesso pacchetto, modificando se necessario il campo radice, aggiornando il costo, e sostituendo l'id dello bridge e della porta mittente. 
 
-Questo algoritmo è perfettamente deterministico, sono presenti criteri di spareggio affinché sia convergente ad uno bridge radice specifico. 
-Quando arrivano due pacchetti da due bridge diversi a parità di radice, si sceglie quello a costo minore, altrimenti si sceglie il pacchetto inviato dallo bridge con id più basso. 
-In caso questi vengano mandati dallo stesso pacchetto, inoltra il pacchetto con id di porta più basso. 
+    Questo algoritmo è perfettamente deterministico, sono presenti criteri di spareggio affinché sia convergente ad uno bridge radice specifico. 
+    Quando arrivano due pacchetti da due bridge diversi a parità di radice, si sceglie quello a costo minore, altrimenti si sceglie il pacchetto inviato dallo bridge con id più basso. 
+    In caso questi vengano mandati dallo stesso pacchetto, inoltra il pacchetto con id di porta più basso. 
 
-Alla fine di questi spareggi c'è sicuramente un bridge radice, e le porte dei bridge che ricevono questo pacchetto configurazione diventano le root port dello bridge. 
-
-
-Nella terza fase bisogna identificare le LAN, uno dei bridge su ogni LAN deve mantenere una porta aperta che viene chiamata designated port. 
-Questa è quella che invia i pacchetti di configurazione con costo più basso, a parità di questo, il bridge di id più basso, altrimenti la porta ad id più basso. 
-
-Nell'ultima fase tutte le porte root e designated vengono messe in stato di forwarding, mentre tutte le altre vengono messe in blocco. 
-Tuttavia si continuano a mandare BPDU anche dalle porte bloccate. Per questo la suddivisione in fasi non è propriamente corretta.  
-
+    Alla fine di questi spareggi c'è sicuramente un bridge radice, e le porte dei bridge che ricevono questo pacchetto configurazione diventano le root port dello bridge. 
+    \item Nella seconda fase bisogna scegliere le porte designate per ogni LAN connessa ad un bridge. Per ogni LAN connessa si scansionano le porte connesse e si elegge la porta con id più basso a porta designata. 
+    \item Nella terza fase bisogna identificare le LAN, uno dei bridge su ogni LAN deve mantenere una porta aperta che viene chiamata designated port. 
+    Questa è quella che invia i pacchetti di configurazione con costo più basso, a parità di questo, il bridge di id più basso, altrimenti la porta ad id più basso. 
+    \item Nell'ultima fase tutte le porte root e designated vengono messe in stato di forwarding, mentre tutte le altre vengono messe in blocco. 
+    Tuttavia si continuano a mandare BPDU anche dalle porte bloccate. Per questo la suddivisione in fasi non è propriamente corretta.  
+\end{enumerate}
 
 Nel momento in cui un bridge rileva un cambio di topologia genera dei pacchetti di topology change che raggiungono la radice e vengono propagati a tutti gli altri bridge nella rete. 
+
+In questi pacchetti sono contenuti a flag del cambiamento di topologia e l'acknowledgement di questo cambiamento. L'identificatore del root bridge, il costo del cammino fino alla radice, dinamico ad ogni hop, l'id del mittente e della rotta mittente. 
+Inoltre, sono presenti metriche temporali, il tempo stimato da quando è stato emesso questo BPDU, il tempo in cui bisogna scartare la BPDU, il tempo tra due BPDU successive, il tempo da attendere per effettuare le transizioni delle porte \textit{listening-learning-forwarding}. 
+
 Questi pacchetti vengono inviati fino a quando la radice non invia un pacchetto che conferma di aver ottenuto questa informazione. 
 A questo punto tutti i bridge abbassano i valori di timer del protocollo in risposta temporanea all'instabilità della rete. 
 
-%% TODO 
+\subsection{Virtual LAN: VLAN}
 
-\subsection{VLAN}
-
-Spesso nelle LAN di organizzazioni si pone il problema di separare area di dominio diverso tra di loro, per non interferire a vicenda e diminuire il rumore sulla rete. Questo poiché molti protocolli inviano pacchetti di broadcast, che in caso di molte macchine sulla rete possono sprecare molta banda inviando pacchetti broadcast, come ARP e DHCP request. Inoltre ogni pacchetto broadcast deve ricevuto deve essere analizzato dalla scheda di rete della macchina, provocando un interrupt, questo può essere un problema se si intasa la rete di pacchetti broadcast, soprattutto in applicazioni time-sensitive come nei data center. 
+Spesso nelle LAN di organizzazioni si pone il problema di separare area di dominio diverso tra di loro, per non interferire a vicenda e diminuire il rumore sulla rete. Questo poiché molti protocolli inviano pacchetti di broadcast, che possono sprecare molta banda inviando pacchetti a tutte le altre macchine, come ARP e DHCP request. Inoltre, ogni pacchetto broadcast ricevuto deve essere analizzato dalla scheda di rete della macchina, provocando un interrupt, questo può essere un problema se si intasa la rete di pacchetti broadcast, soprattutto in applicazioni time-sensitive come nei data center. 
 Quando su una rete con switch il traffico raggiunge il 20\% di utilizzo, non si può più utilizzare correttamente, mentre il traffico broadcast rimane invariato. 
 
 Normalmente per permettere l'accesso alla rete ad un dipendente, questo viene collegato da un punto di accesso ad uno switch tramite un permutatore. Ma in questo modo si uniscono dipartimenti, o società diverse tra di loro, con possibili criteri di sicurezza diversi. Infatti, tutte le macchine su una stessa LAN sono contrattabili da tutte le altre, e quando un router si trova in stato transitorio, ovvero invia il traffico in broadcast, si può osservare tutto il traffico della rete. 
 
 
 Utilizzando la virtualizzazione all'interno di una LAN fisica, si può partizionare la rete a piacimento, senza modificare la topologia sottostante, in modo flessibile e semplice, invece di acquistare nuovi switch per separare LAN fisiche. Si può utilizzare un solo switch per creare diverse VLAN, \textit{Virtual LAN}, definite dallo standard IEEE 802.1Q. 
-Queste VLAN definiscono una topologia logica indipendente, che viva sulla topologia fisica delle rete, realizzate sullo stesso switch. L'idea principale consiste nel tenere completamente separato il traffico di VLAN diverse. 
+Queste VLAN definiscono una topologia logica indipendente, che vive sulla topologia fisica delle rete, realizzate sullo stesso switch. L'idea principale consiste nel tenere completamente separato il traffico di VLAN diverse. 
 
-All'interno di uno switch l'amministratore di rete definisce queste entità software chiamate VLAN, possono essere impostate semplicemente in base alla porta usata, ma non è un approccio flessibile. Una situazione più complessa permette di definire la VLAN a cui appartiene un pacchetto dalla porta di appartenenza, ed il suo contenuto, come l'indirizzo MAC, indirizzo o header IP, ecc. Queste diverse regole vengono fornite dal costruttore. 
-I pacchetti indirizzati ad una VLAN vengono inoltrati solamente a quella VLAN, quindi queste entità si comportano come un filtro, all'interno dello switch. 
+All'interno di uno switch l'amministratore di rete definisce queste entità software chiamate VLAN, possono essere impostate semplicemente in base alla porta usata, ma non è un approccio flessibile. Una situazione più complessa permette di definire la VLAN a cui appartiene un pacchetto dalla porta di appartenenza, ed il suo contenuto, come l'indirizzo MAC, indirizzo o header IP, ecc. Queste diverse regole vengono fornite dal costruttore per lo specifico switch. 
+I pacchetti indirizzati ad una VLAN vengono inoltrati solamente a quella VLAN, quindi queste entità si comportano come un filtro all'interno dello switch. 
 
 
 
@@ -655,8 +672,8 @@ Per assegnare un pacchetto ad una VLAN, questo deve arrivare su un certo insieme
 I pacchetti che sono stati assegnati ad una VLAN, invece, possono uscire solamente attraverso un altro insieme di porte chiamate \textit{egress port}. 
 Questi due insiemi di porte possono sovrapporsi parzialmente o totalmente. 
 
-Ad ogni VLAN è associato un identificatore, VLAN ID, nell'intervallo 1-4094, che la identifica. La default ha un ID pari ad uno. 
-Inoltre, si può spesso attribuire un nome alfanumerico, più facile da ricordare, il nome non viene condiviso da una macchina all'altra, mentre in VLAN distribuite su più switch, il loro ID potrebbe essere distribuito. L'idea di collegare VLAN diverse, su uno stesso switch, consiste nell'usare un router che comunica a queste su porte diverse dello stesso switch. Il router deve assegnare i prefissi corretti a queste VLAN, quindi potrebbero essere consapevoli della presenza delle VLAN. 
+Ad ogni VLAN è associato un identificatore, VLAN ID, nell'intervallo $[1,4094]$, che la identifica. La default ha un ID pari ad uno. 
+Inoltre, si può spesso attribuire un nome alfanumerico, più facile da ricordare, il nome non viene condiviso da una macchina all'altra, mentre in VLAN distribuite su più switch, il loro ID potrebbe essere distribuito. L'idea di collegare VLAN diverse, su uno stesso switch, consiste nell'usare un router che comunica a queste su porte diverse dello stesso switch. Il router deve assegnare i prefissi corretti a queste VLAN, quindi potrebbe essere consapevoli della presenza delle VLAN. 
 
 Ci potrebbe essere una singola interfaccia, ed un router VLAN aware, grazie a delle tecniche o informazioni nel pacchetto, è in grado di determinare a quale VLAN appartiene per instradare correttamente il traffico. 
 
@@ -666,40 +683,42 @@ Nel momento che uno switch, in presenza di VLAN, riceve un pacchetto, ne determi
 Gli switch determinano a quale VLAN assegnare un pacchetto, in base al loro filtering database. Questa tabella assomiglia ad una tabella di instradamento, e può essere configurata secondo due alternative, in base allo switch. Uno switch può operare in modalità IVL, \textit{Independent VLAN Learning}, dove ogni VLAN ha un suo filtering database dedicato, e la modalità SVL, \textit{Shared VLAN Learning}, dove è presente un singolo database comune, condiviso tra tutte le VLAN. Alcuni switch possono operare solamente in modalità SVL. 
 
 Quando un pacchetto viene cercato nel filtering database, se non si trova il suo destinatario, allora viene inviato in broadcast a tutte le egress port della VLAN di appartenenza. 
-Se invece si trova la porta da cui ritrasmettere prima controlla che la porta individuata sia stat configurata come egress port per la specifica VLAN, altrimenti scarta il pacchetto. 
+Se invece si trova la porta da cui ritrasmettere prima controlla che la porta individuata sia configurata come egress port per la specifica VLAN, altrimenti scarta il pacchetto. 
 
-Quando una porta è sia ingress che egress per una VLAN, si parla di VLAN simmetriche, in generale l'insieme delle egress porta potrebbe essere diverso da quelle delle ingress port. In generale si parla di VLAN asimmetriche, dove l'insieme delle egress port può essere diverso da quelle di ingress. 
+Quando una porta è sia ingress che egress per una VLAN, si parla di VLAN simmetriche, in generale l'insieme delle egress port potrebbe essere diverso da quelle delle ingress port. In generale si parla di VLAN asimmetriche, dove l'insieme delle egress port può essere diverso da quelle di ingress. 
 
-Le connessioni virtuali possono essere asimmetriche, ovvero una porta può essere una porga di ingress o egress per un'altra VLAN. In questo modo si possono configurare le connessioni tra varie VLAN, impostando correttamente le porte di ingress ed egress. 
+Le connessioni virtuali possono essere asimmetriche, ovvero una porta può essere una porta di ingress per una VLAN o di egress per un'altra VLAN. In questo modo si possono configurare le connessioni tra varie VLAN, impostando correttamente le porte di ingress ed egress. 
 In presenza di VLAN asimmetriche, è conveniente usare il router in modalità SVL, altrimenti se non venisse trovata la porta corrispondente di egress per la VLAN destinazione, il pacchetto verrebbe mandato in broadcast, degradando le prestazioni. Usando un singolo filtering database per le varie VLAN si può identificare la porta di egress corretta appartenente alla VLAN di destinazione. 
 
 
 
 Avendo rete con più switch, bisogna provare a supportare le VLAN anche in questa configurazione. Si vorrebbe che ad ogni router si possa attaccare una VLAN, e che queste comunichino solamente tra di loro, o secondo certe policy. 
-Non è possibile connettere due porte dedicate ad una stessa VLAN tra due router, poiché se si attaccasse un cavo per ogni VLAN, il bridge disattiva autonomamente tutti i link tranne uno, e quindi questo metodo non è utilizzabile. Il protocollo 802.1D parte prima della comunicazione, quindi non è possibile impedire disattivare tutti gli altri link superflui. 
+Non è possibile connettere due porte dedicate ad una stessa VLAN tra due router, poiché se si attaccasse un cavo per ogni VLAN, il bridge disattiva autonomamente tutti i link tranne uno. Il protocollo 802.1D parte prima della comunicazione, quindi non è possibile impedire disattivare tutti gli altri link superflui. 
 
-Questo si risolve nel protocollo IEEE 802.1Q, che prevede che tra due switch possa essere dichiarato un \textit{trunk 1Q}, una somma di regole o policy, che può essere definita a mano, per definire in che modo possano transitare i pacchetti tra varie VLAN, definendo ingress ed egress port corrispondenti. 
+Questo si risolve nel protocollo IEEE 802.1Q, che prevede che tra due switch possa essere dichiarato un \textit{trunk 1Q}, una somma di regole o policy, che possono essere definite a mano, per descrivere in che modo possano transitare i pacchetti tra varie VLAN, definendo ingress ed egress port corrispondenti. 
 
 Per riconoscere se un certo pacchetto appartiene ad una certa VLAN, viene etichettato, inserendo un nuovo campo nell'header di livello due, chiamato tag, o etichetta. In base al tag il pacchetto viene estratto e consegnato alla VLAN corretta. Se il tag è vuoto è possibile configurare la porta per scartare il pacchetto, analogamente si può configurare di scartare se è presente un tag. 
 
 Per ogni porta di uno switch, si può definire a quale VLAN corrisponde, e configurare se deve etichettare i pacchetti in uscita come appartenenti a quella VLAN. 
 In ricezione quando riceve un pacchetto, in base al tag può essere attribuito a quella VLAN oppure utilizzando le regole definite per quella porta. 
 
-Una porta quindi può essere \textit{access}, ricevendo ed inviando solo pacchetti non etichettati, \textit{trunk} ricevendo ed inviando solo pacchetti etichettati, oppure ibrida. 
+Una porta può essere \textit{access}, ricevendo ed inviando solo pacchetti non etichettati, \textit{trunk} ricevendo ed inviando solo pacchetti etichettati, oppure ibrida. 
 
-La specifica viene definita nello standard IEEE 802.3ac, inserendo un campo di due byte, length e type, per ethernet 802.e assume il valore \texttt{81-00}, è seguito da due byte di tag. Usando quattro byte, la lunghezza massima del pacchetto passa da 1518 a 1522. 
+La specifica viene definita nello standard IEEE 802.3ac, inserendo un campo di due byte, length e type, per ethernet 802.3 assume il valore \texttt{81-00}, è seguito da due byte di tag. Usando quattro byte, la lunghezza massima del pacchetto passa da 1522 a 1518. 
 Per distinguere questi pacchetti in ethernet 2.0 e IEEE 802.3, si guarda ai byte corrispondenti al campo type o size. Questo campo in ethernet 2.0 specifica il tipo del pacchetto, e viene inserito qua il valore \texttt{81-00}, per indicare che è stato aggiunto un tag di due byte di seguito. Altrimenti lo switch lo legge e determina se si tratta di un campo type o size, per distinguerlo da IEEE 802.3. 
 %% TODO add img distinguere eth2.0/+802.3ac/802.3+802.2/+802.3ac
-Se uno switch non è VLAN aware, smista il traffico guardando la destinazione e la sorgente, quindi neanche lo legge il tag, basando l'istradamento solo sull'indirizzo destinazione e sorgente, rendendolo retrocompatibile. 
+\begin{figure}[H]%
+    \centering%
+    \includegraphics[width=3cm]{example-image}%
+\end{figure}
+Se uno switch non è VLAN aware, smista il traffico guardando la destinazione e la sorgente, quindi neanche lo legge il tag, basando l'istradamento solo sull'indirizzo destinazione e sorgente, rendendolo retro-compatibile. 
 Le macchine ci mettono molto poco ad essere VLAN aware. 
 
 Lo standard ha introdotto l'idea di \textit{double tagging} usando due etichette consecutive, molto usato dagli ISP. Questi sovrappongono due tag, uno per identificare il pacchetto in base al cliente, C-TAG, e la seconda etichetta per associare il pacchetto ad un servizio, S-TAG. 
 
-
 \subsection{Evoluzione dello Spanning Tree Protocol}
 
-Avendo delle VLAN, si è notato come parte prima il protocollo di spanning tree, quindi non è possibile collegare le diverse VLAN con link fisici tra due stessi switch. 
-Questo problema non è risolubile. 
+Avendo delle VLAN, si è notato come parte prima il protocollo di spanning tree, quindi non è possibile collegare le diverse VLAN con link fisici tra due stessi switch. Questo problema non è risolubile. 
 
 
 Lo spanning tree ha avuto molte evoluzioni, alcune variazioni sono configurare per la velocità, in caso di esigenze particolari, come in ambito militare. Nel 2002 si è introdotto l'ultimo spanning tree protocol, chiamato \textit{Multiple Spanning Tree Protocol}. Inoltre, Cisco introduce degli algoritmi di spanning tree proprietari per le VLAN, il problema consiste nel realizzare uno spanning tree diverso per le varie VLAN, prima che queste entrino in configurazione. 
@@ -717,27 +736,27 @@ L'amministratore di rete deve configurare correttamente queste varie istanze all
 
 In realtà nel comportamento normale dello switch, non c'è una modifica sostanziale dello spanning tree. Modificando i parametri di priorità tra i vari switch per le varie porte configurate con le VLAN si possono calcolare istanze diverse dello spanning tree. 
 
-Il traffico etichettato da una certa VLAN esce da una porta se questa è aperta, rispetto allo spanning tree associato a quella VLAN. La porta deve essere configurata per permettere l'uscita di pacchetti provenienti da VLAN. 
+Il traffico etichettato da una certa VLAN esce da una porta se questa è aperta, rispetto allo spanning tree associato a quella VLAN ed è una egress port. 
 
 Utilizzando VLAN e spanning tree multiplo, si può lasciare attivo un numero considerevole di link, avendo un sistema di distribuzione del traffico migliore, sostenendo comunque la tolleranza ai guasti, ricalcolando dinamicamente solamente gli alberi la cui topologia è modificata. 
 
 Si può inserire un router, VLAN aware, che può inoltrare il traffico in maniera omogenea o eterogenea in base alla VLAN a cui è destinato. 
 
-Lo spanning tree viene associato a valle ad una singola VLAN, mentre durante il calcolo non dipende dal colore della stessa VLAN. 
+Lo spanning tree viene associato a valle ad una singola VLAN, mentre durante il calcolo non dipende dalla topologia della stessa VLAN. 
 
 Lo standard \textit{Multi-Spanning Tree Protocol} permette di usare questo concetto anche in LAN molto grandi, suddividendo la LAN in regioni, avendo per ogni regione un'istanza di spanning tree indipendente rispetto alle regioni vicine. Un ulteriore spanning tree a livello più alto le collega tra di loro. 
 
-\subsection{Software Defined Network}
+\subsection{Software Defined Network: SDN}
 
 Questo approccio centralizzato è ritornato di moda recentemente. 
 Questa tipologia di algoritmi dinamici di instradamento prevede un routing controllato da un centro che elabora le informazioni disponibili, e decide l'instradamento nella rete. 
 Questi algoritmi sono utili in reti piccole, e non è affidabile in reti di grande dimensione, con traffico intenso intorno al nodo di controllo. 
 
 A causa di questi problemi è stato sempre scarsamente adottato. 
-Si è creata una fondazione ONF nel 2011 dedicata alla promozione e adozione di SDN. 
+Si è creata la fondazione ONF nel 2011 dedicata alla promozione e adozione di SDN. 
 
 La definizione di SDN è riportata nella RFC 7426, è un approccio programmabile di reti che supporta la separazione dei piani di controllo e di inoltro attraverso interfacce standardizzate. 
-QUestaQUesta computazione viene realizzata su di una macchina centralizzata. 
+Questa computazione viene realizzata su di una macchina centralizzata. 
 
 Le prime idee risalgono al 2004. 
 
@@ -757,20 +776,18 @@ L'ONF è un'organizzazione che promuove standard aperti, chiamati \textit{OpenFl
 Molti produttori, ISP e OTT, grosse reti di telefonia che offrono anche servizi di altro tipo, fanno parte di ONF. 
 Cisco ha la sua implementazione di OpenFlow, chiamata Cisco ONE, \textit{Open Network Environment}. 
 
-
 Altre attività di standardizzazione sono IETF, ITU-T, IEEE. 
-%% ??
 
-Le applicazioni potenziali sono molteplici, si possono realizzare applicazioni in virtualizzazione  di middleware. Oppure routing ottimizzato per certe tipologie di traffico. 
-Si possono realizzare servizi specific per certe applicazioni. 
+Le applicazioni potenziali sono molteplici, si possono realizzare applicazioni di virtualizzazione, di middleware. Oppure routing ottimizzato per certe tipologie di traffico. 
+Si possono realizzare servizi specifici per certe applicazioni. 
 
-Il controller parla fisicamente con un API che chiamano southbound diretto verso gli elementi della rete, un'altra comunicazione chiamata northbound è orientata verso applicazioni di rete per determinare i requisiti dei vari servizi proposti. 
+Il controller parla fisicamente con un API chiamato \textit{southbound} diretto verso gli elementi della rete, e \textit{northbound} orientato verso applicazioni di rete per determinare i requisiti dei vari servizi proposti. 
 
 Questo protocollo si basa sul concetto di flusso, i pacchetti vengono classificati ed attribuiti ad un flusso, definito sulla base di diversi criteri, la porta, l'indirizzo MAC o IP o altre informazioni contenute all'interno del pacchetto. 
 
-Lo switch inoltra il traffico seguente entry in una tabella di flussi. SDN separa il control plane dal data plane. Il controller esegue il software, anche algoritmicamente complesso su un hardware general purpose. 
+Lo switch inoltra il traffico secondo regole in una tabella di flussi. SDN separa il control plane dal data plane. Il controller esegue il software, anche algoritmicamente complesso su un hardware general purpose. 
 
-Le macchine per l'instradamento si comportano sia come router che come switch, in bae al loro comportamento, quando utilizzano l'indirizzo MAC si comportano come switch, quando inoltrano pacchetti si comportano come router, vengono chiamati \textit{datapath} per identificarli. 
+Le macchine per l'instradamento si comportano sia come router che come switch, in base al loro comportamento, quando utilizzano l'indirizzo MAC si comportano come switch, quando inoltrano pacchetti si comportano come router, vengono chiamati \textit{datapath} per identificarli. 
 
 La comunicazione tra il controller ed i datapath avviene tramite lo standard OpenFlow. 
 La tabella dei flussi aiuta a smistare il traffico di questo switch. 
@@ -778,137 +795,395 @@ Nel momento in cui uno switch riceve il primo pacchetto di un flusso, può effet
 
 Lo switch si occupa solo dell'inoltro dei pacchetti secondo queste istruzioni, si occupa del data plane, mentre il controller si occupa del control plane. 
 
-%% TODO flussi di traffico 
-Ogni switch ha uno o più tabella di flussi usate per inoltrare i pacchetti, una tabella è composta da una flow entry, una tripla di \texttt{match}, \texttt{action} e \texttt{stats}. Il primo controlla il pacchetto e determina se esiste un entry corrispondente in base a vari indirizzi o dati contenuti nel pacchetto. L'azione da svolgere per quel pacchetto può essere di inoltrare ad una data porta, oppure inviarlo al controller, oppure operare come uno switch o un router. Queste azioni sono molte e rendono questo protocollo molto versatile. 
+Ogni switch ha uno o più tabella di flussi usate per inoltrare i pacchetti, una tabella è composta da una flow entry, una tripla di \texttt{match}, \texttt{action} e \texttt{stats}. Il primo controlla il pacchetto e determina se esiste un entry corrispondente in base a vari campi o dati contenuti nel pacchetto. L'azione da svolgere, \texttt{action} per quel pacchetto può essere di inoltrare ad una data porta, oppure inviarlo al controller, oppure operare come uno switch o un router. Queste azioni sono molte e rendono questo protocollo molto versatile. 
 
 
-Queste entry possono essere distribute con due tempi di timeout, \textit{idle} e \textit{hard}. Se c'è un flusso che non si presenta per un certo periodo questo viene cancellato in tempo idle. Mentre l'hard timeout è indipendente, impone di scartare il flusso dopo che è passato. 
+Queste entry possono essere distribute con due tempi di timeout, \textit{idle} e \textit{hard}. Se c'è un flusso che non si presenta, viene cancellato dopo che scade il timer idle. Mentre l'hard timeout è non dipende dal traffico corrente, impone di scartare il flusso dopo che è passato l'intervallo di tempo indicato. 
+
 
 Il controller è un'entità software che deve conoscere l'intera rete in modo dinamico, producendo flow entries ed inviandole alle macchine. 
+\subsubsection{Messaggi OpenFlow}
+
 I tipi di messaggi principali sono \textit{PacketIn}, \textit{PacketOut} e \textit{FlowMod}. 
 
 Il pacchetto PacketIn viene inviato al controller quando uno switch non riesce ad effettuare match sulla sua tabella di flussi. 
-Questo può essere inoltrato per intero al controller, che può guardarlo completamente, oppure più semplicemente prende l'header, di default i primi 128 byte. 
+Questo può inoltrato per intero al controller il pacchetto in questione, che può guardarlo completamente, oppure più semplicemente prende l'header del pacchetto, di default i primi 128 byte. 
 In questo caso il controller riceve anche l'id del buffer nel quale il pacchetto viene memorizzato in attesa della risposta. 
 
-Il messaggio PacketOut può contenere un pacchetto modificato, usato dal controller per istruire allo switch l'invio di un singolo pacchetto. Non necessariamente sono inviati in risposta ad un PacketIn. Quando sono in risposta indicano ad uno switch il flusso da usare, altrimenti l'azione è specificata dall'id del buffer nel quale lo switch ha dichiarato di conservare il pacchetto. 
-Se non è in risposta ad un PacketIn, allora contiene un pacchetto ad-hoc creato dal controller, può essere usato per ricostruire la topologia. 
+Il messaggio PacketOut può contenere un pacchetto modificato, se è in risposta ad un PacketIn viene usato dal controller per istruire allo switch l'invio di un singolo pacchetto. Quando sono in risposta indicano ad uno switch il flusso da usare, contiene oltre all'azione, l'intero pacchetto oppure l'id del buffer nel quale lo switch ha dichiarato di conservare il pacchetto. 
+Se non è in risposta ad un PacketIn, allora contiene un pacchetto ad-hoc creato dal controller, può essere usato per ricostruire la topologia della rete. 
 
-Il messaggio FlowMod invia una flow entry, può essere in risposta ad un datapath. PUò avere una priorità, quindi le tabelle di flussi potrebbero essere ordinate per priorità creando una gerarchia, per ordinare meglio il traffico. Per un certo periodo c'è stat una grande ricerca per inserire le flow entry e creare una tabella più piccola con meno flow entry per avere più prestazioni. %% non sono cosa ho scritto. 
-
-Se la regola è già presente, allora la nuova regola sovrascrive la vecchia. 
-Con questo pacchetto si possono modificare, rimuovere flow entries, oppure notificare al controller l'istante di eventuale rimozione, o può richiedere una verifica. 
+Il messaggio FlowMod, \textit{Flow Modification} invia una flow entry, può essere in risposta ad un datapath, per installare, modificare o rimuovere una regola in uno switch. Può avere una priorità, quindi le tabelle di flussi potrebbero essere ordinate per priorità creando una gerarchia, scegliendo la regola a priorità più alta. In caso sia uguale potrebbe essere sovrascritta, come per Open vSwitch.
 
 
-Il controller deve avere una mappa della rete, per farlo utilizza dei pacchetti appartenenti al \textit{Link Layer Discovery Protocol} (LLDP), questi appartengono al livello 2 link state, non hanno bisogno di pacchetti IP, questo protocollo già esistente, mantiene questi pacchetti all'interno della rete. Questi sono spediti periodicamente per esplorare la rete. 
-Il controller fa handshake con tutti gli switch, e questi dichiarano al controller l'elenco delle loro interfacce. 
-Usando un FlowMod manda a tutti gli switch una regola che li istruisce su come trattare i pacchetti LLDP, tutti questi pacchetti ricevuti da uno switch devono essere rimandati dentro ad un PacketInt
-Dopo aver ricevuto questi pacchetti, il controller invia a ciascun switch, e per ciascun sua porta, un pacchetto LLDP, in un messaggio di tipo PacketOut, specificando nell'action che il pacchetto LLDP deve essere inviato sulla specifica porta. Uno switch diverso che riceve il pacchetto LLDP, inviato da uno altro switch su una certa porta, lo spedisce al controller in un pacchetto PacketIn. 
-Questi pacchetti non possono passare attraverso eventuali switch o link, poiché essendo al livello 2 rimangono nel link. 
-In questo modo il controller determina che una certa porta di uno switch è connessa ad una certa porta di un altro switch. Ottiene per ogni link una risposta simmetrica per identificare la topologia. Nei pacchetti PacketIn viene specificata la porta di ricezione. 
+Con questo pacchetto si possono modificare, rimuovere flow entries, oppure notificare al controller l'istante dell'eventuale rimozione, o può richiederne una verifica logica. 
 
-%% TODO add img sta cosa sus
+\subsubsection{Topologia}
 
-In base a quanto detto finora ogni rete ha un solo controller, ma ci sono soluzioni distribuiti con controller organizzati in maniera gerarchica, per gestire il traffico in maniera distribuita, dove ogni controller controlla un numero limitato di switch, a cui delega di distribuire regole ad altri switch. 
+Il controller deve avere una mappa della rete, per farlo utilizza dei pacchetti appartenenti al \textit{Link Layer Discovery Protocol} (LLDP), questi appartengono al livello 2 link state, non hanno bisogno di pacchetti IP. II pacchetti vengono mantenuti all'interno della rete, sono spediti periodicamente per esplorarla. 
+Il controller effettua un handshake con tutti gli switch, e questi dichiarano al controller l'elenco delle loro interfacce. 
 
-Anche negli switch ci sono limitazioni, non hanno un buffer illimitato, né tabelle abbastanza grandi. È comunque presente una rete sottostante con i loro protocolli di instradamento, su queste è possibile costruire una rete SDN. 
+Usando un FlowMod manda a tutti gli switch una regola che li istruisce su come trattare i pacchetti LLDP seguenti, può indicare che tutti i pacchetti LLDP ricevuti devono essere rimandati dentro ad un messaggio PacketIn.
 
-%% TODO discussioni finali, qualità, ecc. 
+Dopo aver ricevuto questi pacchetti, il controller invia a ciascun switch, e per ciascun sua porta, un pacchetto LLDP, in un messaggio di tipo PacketOut, specificando nell'action che il pacchetto LLDP deve essere inviato sulla porta specificata. 
+Lo switch connesso alla porta su cui è stato inviato questo LLDP, lo spedisce al controller in un pacchetto PacketIn, seguendo la regola inserita inizialmente, specificando la porta da cui è stato ricevuto. 
+Questi pacchetti non possono passare attraverso ulteriori switch o link, poiché essendo al livello 2 rimangono nel link. 
 
-Questo garantisce grande libertà per la gestione di una rete. 
+In questo modo il controller determina che una certa porta di uno switch è connessa ad una certa porta di un altro switch. Ottiene per ogni link una risposta simmetrica per verificare la topologia. 
 
-\subsection{Network Address Translation}
+%% TODO add img interazione controller e switch per rappresentare topologia. 
+\begin{figure}[H]%
+    \centering%
+    \includegraphics[width=3cm]{example-image}%
+\end{figure}
 
-Lo spazio di indirizzamento IPv4 è limitato, con 32 bit di indirizzi si hanno $2^{32}$ indirizzi diversi, circa quattro miliardi. 
+In base a quanto detto finora ogni rete ha un solo controller, questo ne limita la scalabilità e e l'affidabilità, rappresenta un \textit{single point of failure}. 
+Esistono soluzioni distribuite con controller organizzati gerarchicamente, per gestire il traffico in maniera distribuita, dove ogni controller gestisce un numero limitato di switch, oppure è collegato ad un insieme di switch a cui delega di distribuire regole ad altri switch. 
+
+Problemi di scalabilità possono derivare dalla dimensione delle tabelle dei flussi negli switch. 
+Per un certo periodo c'è stata una grande ricerca per determinare come inserire le flow entry in modo efficiente e creare una tabella il più piccola possibile, basandosi su criteri come la priorità delle regole, per cercare di risolvere questo problema. 
+
+Aggiungere altri controller aumenta l'affidabilità del sistema, poiché solo i controller conoscono la topologia della rete, tuttavia per aggiungere controller ridondanti bisogna garantire che questi siano sincronizzati tra di loro. 
+
+In caso di un guasto un controller deve poter accorgersi del guasto su un link o apparato, determinare la nuova topologia ed installare nuove versioni regole sugli switch affetti. Questo potrebbe non competere con tecnologie consolidate come OSPF. 
+
+
+Anche negli switch ci sono limitazioni, non hanno un buffer illimitato, né tabelle abbastanza grandi. Su una rete SDN è comunque presente una rete sottostante con i loro protocolli di instradamento, su cui viene costruita la SDN, questo garantisce grande libertà per la gestione di una rete. 
+
+\subsection{Esaurimento Indirizzi IPv4}
+
+Lo spazio di indirizzamento IPv4 è limitato, con 32 bit di indirizzi si hanno $2^{32}$ indirizzi diversi, circa quattro miliardi, non è sufficiente per la crescita esponenziale degli apparati di rete, e la loro necessità di connettersi. 
 Questo spazio non è allocato nel modo più efficiente, poiché gli indirizzi sono raggruppati in LAN, i cui indirizzi possono essere solamente potenze di due. 
-Inoltre per molto tempo si erano esclusivamente con classi, A B e C, con 8, 16 e 24 bit di prefisso. 
+Inoltre per molto tempo si usavano esclusivamente con classi, A B e C, con 8, 16 e 24 bit di prefisso. 
 
-Per risolvere questo esaurimento si sono sviluppate varie soluzioni. Il primo è l'indirizzamento per barre e non per classi, in modo da frazionare delle reti in subnet, chiamato CIDR, \textit{Classless Inter-Domain Routing}. Un'altra soluzione semplice è la diminuzione dell'assegnazione di indirizzi. 
-Ci sono state delle campagne di renumbering su grosse organizzazioni che avevano \texttt{/8}, alcuni organizzazioni con barre anche abbastanza grandi non si sono mai esposte verso la rete. 
-Si può utilizzare diffusamente l'indirizzamento privato, con blocchi di indirizzi privati non validi in internet e non instradati, ma validi per la LAN. 
-Un'altra soluzione è il DHCP, \textit{Dynamic Host Configuration Protocol}, che assegna dinamicamente indirizzi privati o pubblici per uso temporaneo. 
-Il NAT, \textit{Network Address Translation} è un meccanismo per la condivisione di indirizzi pubblici da parte di diverse macchine che hanno indirizzi privati. Non si possono instradare direttamente i pacchetti per una destinazione remota, quindi devono essere tradotti gli indirizzi mittenti per poter ritornare al router di inoltro, che sostituisce nuovamente l'indirizzo privato. 
-Si può moltiplicare ancora con il PAT, \textit{Port Address Translation}, che opera a livello di porte. 
-La soluzione definitiva è il passaggio a IPv6, con uno spazio di indirizzamento di 64 bit. 
+Per risolvere questo esaurimento si sono sviluppate varie soluzioni. 
+\begin{itemize}
+    \item La prima è l'indirizzamento per barre e non per classi, in modo da frazionare delle reti in subnet, chiamato CIDR, \textit{Classless Inter-Domain Routing}. 
+    \item Un'altra soluzione semplice è la diminuzione dell'assegnazione di indirizzi. 
+    \item Ci sono state delle campagne di renumbering su grosse organizzazioni che avevano grandi prefissi \texttt{/8}, infatti, alcuni organizzazioni con prefissi anche abbastanza grandi non si sono mai esposte verso la rete. 
+    \item Si può utilizzare diffusamente l'indirizzamento privato, con blocchi di indirizzi privati non validi in internet e non instradati, ma validi per la LAN. 
+    \item Un'altra soluzione è il DHCP, \textit{Dynamic Host Configuration Protocol}, che assegna dinamicamente indirizzi privati o pubblici per uso temporaneo. 
+    \item Il NAT, \textit{Network Address Translation} è un meccanismo per la condivisione di indirizzi pubblici da parte di diverse macchine che hanno indirizzi privati diversi. Non si possono instradare direttamente i pacchetti per una destinazione remota, devono essere tradotti gli indirizzi mittenti per poter ritornare al router di inoltro, che sostituisce nuovamente l'indirizzo privato. 
+    \item Si può moltiplicare la potenza del NAT, considerando anche le porte dello specifico router con il PAT, \textit{Port Address Translation}, che opera a livello di porte. 
+    \item La soluzione definitiva è il passaggio a IPv6, con uno spazio di indirizzamento di 64 bit. 
+\end{itemize}
 
 Un altro problema che si è dovuto affrontare è l'esaurimento delle memorie dei router, queste sono molto più costose di memorie dedicate ad applicazioni general purpose. 
-Soprattutto grazie a CIDR si sono moltiplicate le entry abbordo delle macchine, e quindi questo problema è peggiorato ulteriormente. 
+Soprattutto grazie a CIDR si sono moltiplicate le entry abbordo delle macchine, e questo problema è peggiorato ulteriormente. 
 
-%% TODO add cronologia morte di ipv4
+Questo problema venne descritto per la prima vota nell'RFC 1338, nel 1992, anche se avrebbe avuto impatto solo decenni dopo, si cominciarono a cercare alternative, il CIDR venne proposto come soluzione già dall'anno successivo, negli anni seguenti venne affiancato dal NAT e dall'introduzione di IPv6. All'inizio del 2011 lo IANA ha assegnato l'ultimo blocco di prefissi \texttt{/8}, da allora lo spazio di indirizzamento disponibili sta diminuendo velocemente. 
 
-\subsubsection{CIDR}
+\subsubsection{Classless Inter-Domain Routing: CIDR}
 
-CIDR consiste nell'adozione della notazione barra per la suddivisione di reti in sottoreti. 
-Rende possibili il subnetting, ed ulteriori frazionamenti ricorsivi su una stessa LAN. Inoltre è stato utilizzato per delle campagne di supernetting per riunire insieme diverse LAN IPv4 che condividono lo stesso instradamento, riducendo la dimensione delle tabelle di instradamento dei router. 
-Queste operazioni hanno effetti opposti sulle dimensioni delle tabelle di instradamento sulla rete. 
-
+Il CIDR consiste nell'adozione della notazione barra per la suddivisione di reti in sottoreti. 
+Rende possibili il subnetting, ed ulteriori frazionamenti ricorsivi su una stessa LAN. Inoltre, è stato utilizzato per delle campagne di supernetting per riunire insieme diverse LAN IPv4 che condividono lo stesso instradamento, riducendo la dimensione delle tabelle dei router. 
+Le operazioni di subnetting hanno effetti opposti sulle dimensioni delle tabelle di instradamento sulla rete. 
 
 \subsubsection{Private Address Allocation}
 
-Definiti nell'RFC 1918, alcuni indirizzi sono dedicati ad utilizzo privato, non indirizzabili nell'internet. Nessun pacchetto può avere questi pacchetti come indirizzo di destinazione, ma può essere presente come indirizzo sorgente. Perché se dentro una LAN si ha uno schema di indirizzamento privato, quando arriva ad una macchina intermedia se avviene un qualche errore deve mandare un pacchetto ICMP a quell'interfaccia ed avranno un indirizzo privato come sorgente. Se questo intermediario è nella LAN, avrà un indirizzo privato come campo destinazione. 
+Definiti nell'RFC 1918, alcuni indirizzi sono dedicati ad utilizzo privato, non indirizzabili nell'internet. Nessun pacchetto può avere questi pacchetti come indirizzo di destinazione, ma può essere presente come indirizzo sorgente. Perché se dentro una LAN si ha uno schema di indirizzamento privato, se avviene un qualche errore su una macchina intermedia, deve poter mandare un pacchetto ICMP a quell'interfaccia avendo un indirizzo privato come sorgente. Se questo intermediario è nella LAN, avrà un indirizzo privato come campo destinazione. 
 
-Questi sono sottratti agli indirizzi globalmente unici di internet. Questi possono essere utilizzati anche senza essere connessi alla rete, riutilizzando la pila protocollare TCP/IP in un ambiente chiuso, sfruttando le sue capacità. 
+Questi sono sottratti agli indirizzi globalmente unici di internet. Possono essere utilizzati anche senza essere connessi alla rete, riutilizzando la pila protocollare TCP/IP in un ambiente chiuso, sfruttando le sue capacità. 
 Gli indirizzi IP configurati in queste reti sono indirizzi privati, univoci solo all'interno della rete. 
 
-Gli indirizzi privati sono 10.0.0.0/8, da 10.0.0.0 a 10.255.255.255, equivalente ad una classe A. 
-RFC 1918 consiglia di utilizzare due numeri casuali per l'indirizzo 10.0.0.0/8 al posto dei due zeri centrale per evitare conflitti in caso due reti vengano unite in futuro. 
-172.16.0.0/12, da 172.12.0.0 a 172.31.255.255, equivalente a 16 reti di classe B. 
-Infine 192.168.0.0/16, da 192.168.0.0 a 192.168.255.255, equivalenti a 256 reti di classe C. 
+Gli indirizzi privati sono:
+\begin{itemize}
+    \item 10.0.0.0/8, da 10.0.0.0 a 10.255.255.255, equivalente ad una classe A. 
+    RFC 1918 consiglia di utilizzare due numeri casuali, $x$ e $y$, per questo tipo di indirizzo: 10.$x$.$y$.0/8, al posto dei due zeri centrali per evitare conflitti in caso due reti vengano unite in futuro. 
+    \item 172.16.0.0/12, da 172.12.0.0 a 172.31.255.255, equivalente a 16 reti di classe B. 
+    \item Infine 192.168.0.0/16, da 192.168.0.0 a 192.168.255.255, equivalenti a 256 reti di classe C. 
+\end{itemize}
 
-\subsubsection{NAT}
+\subsubsection{Network Address Translation: NAT}
 
-Utilizzando questi indirizzi privati per comunicare sulla rete è necessario convertirli in indirizzi validi in internet. 
+Non è possibile comunicare sulla rete usando indirizzi privati, è necessario convertirli in indirizzi globalmente univoci, questo viene realizzato dal NAT. 
 
-Il NAT ha uno scopo più ampio, di collegare due interfacce su due \textit{realm} diversi. Un realm è una rete dove gli indirizzi IP hanno un significato univoco. In queste reti non ci sono ambiguità sui numeri IP. Internet è un realm. 
+Il NAT ha uno scopo più ampio, non solo di convertire indirizzi privati in indirizzi pubblici, ma di collegare due interfacce su due \textit{realm} diversi. Un realm è una rete dove gli indirizzi IP hanno un significato univoco. In queste reti non ci sono ambiguità sui numeri IP. Poiché in Internet gli indirizzi IPv4 sono univoci, rappresenta un realm.  
 
 Diversi realm possono avere indirizzi sovrapposti, ogni rete che utilizza indirizzi privati è un realm a sé stante. 
-Il pacchetto in transito deve essere convertito per essere compatibile tra i due realm. I router realizzano una comunicazione trasparente dal punto di vista degli ES. 
-I realm attraversati potrebbero essere molteplici. 
-La macchina che fa NAT possiede un blocco di indirizzi IP, anche annunciati se parla BGP. 
-I pacchetti diretti ad un indirizzo pubblico in questo blocco viene mandato a questo router. 
+Il pacchetto in transito deve essere convertito per essere compatibile tra i due realm. Questa sostituzione è completamente trasparente dal punto di vista degli ES. 
+I realm attraversati potrebbero essere molteplici, potenzialmente applicando NAT varie volte. 
+La macchina che applica NAT possiede un blocco di indirizzi IP univoci sui realm dove comunica, possibilmente annunciati in Internet se parla BGP. 
+I pacchetti diretti ad un indirizzo pubblico in questo blocco vengono mandato a questo router. 
 
-Data un ES nella LAN gestite da un router NAT, con un indirizzo privato $x$. In condizioni normali il pacchetto attraverserebbe il router senza modifiche, ma per poter accedere alla rete bisogna sostituire l'indirizzo privato dal pacchetto. Allora il NAT sceglie tra uno dei suoi indirizzi pubblici $y$ e lo sostituisce a $x$, salvando su una tabella di traduzione, \textit{NAT table}, quest'associazione $x:y$. Dopo aver modificato il pacchetto lo inoltra sulla rete. Al ritorno del pacchetto questo viene tradotto nuovamente, sostituendo nel campo del destinatario $y$ con $x$, l'indirizzo privato. 
-Quest'associazione dopo aver terminato la conversazione può essere gestita secondo varie discipline. In alcuni NAT si usano gli stessi indirizzi pubblici per una macchina privata, oppure per ogni connessione di macchine private, oppure lo assegna per un certo periodo di tempo. Ci sono molte politiche di gestione, ma rimane comunque alla base quest'associazione tra un indirizzo pubblico ed uno privato. 
+Si considera un ES nella LAN gestite da un router NAT, con un indirizzo privato $x$ in un realm, che vuole comunicare con un apparato su un realm differente. In condizioni normali il pacchetto attraverserebbe il router senza modifiche, ma per poter accedere all'altro realm bisogna sostituire l'indirizzo privato dal pacchetto. Allora il NAT sceglie tra uno dei suoi indirizzi pubblici $y$ e lo sostituisce a $x$, salvando l'associazione su una tabella di traduzione, \textit{NAT table}, $x:y$. Dopo aver modificato il pacchetto lo inoltra sulla rete di destinazione. Al ritorno del pacchetto questo viene tradotto nuovamente, sostituendo nel campo del destinatario $y$ con $x$, l'indirizzo privato. 
 
-Questo può consentire di migrare da un provider ad un altro, invece di effettuare renumbering si può inserire un NAT. 
+Dopo aver terminato la conversazione l'associazione può essere gestita secondo varie discipline. In alcuni NAT si usano gli stessi indirizzi pubblici per una stessa macchina privata, oppure per ogni connessione di macchine private, oppure li assegnano per un certo periodo di tempo ad una data macchina. Ci sono molte politiche di gestione, ma rimane comunque alla base l'associazione tra un indirizzo univoci su due realm. 
 
-Il router gestisce la corrispondenza o \textit{binding} tra gli indirizzi dei due realm tramite una tabella di traduzione. QUesto binding può essere statico, dove la tabella viene  configurata manualmente, oppure dinamicamente, in cui la tabella cambia nel tempo a seconda del traffico, e gli indirizzi pubblici vengono assegnati alle macchine che ne hanno bisogno. 
+Questo può consentire di migrare da un provider ad un altro senza effettuare renumbering, inserendo un NAT. 
 
-In una rte locale gli apparecchi sono classificati in base a diverse esigenze di connettività, in base questi criteri si individuano macchine che non richiederanno mai NAT, alcune macchine che lo richiederanno solamente come client, ed altre macchine che lo richiedono completamente, queste possono offrire servizi raggiungibili dall'esterno. 
+Il router gestisce la corrispondenza o \textit{binding} tra gli indirizzi dei due realm tramite una tabella di traduzione. Questo binding può essere statico, dove la tabella viene configurata manualmente, oppure dinamicamente, in cui la tabella cambia nel tempo a seconda del traffico, e gli indirizzi pubblici vengono assegnati alle macchine che ne hanno bisogno. 
 
-Bisogna modificare sia il pacchetto IP che TCP. 
-Bisogna modificare l'indirizzo destinazione e mittente, ed anche l'header checksum. Anche se la maggior parte dei router non controlla questo campo, poiché vuole aumentare la velocità a cui può inoltrare i pacchetti, e quindi sospendono il controllo del checksum. Anche se non è controllato, deve essere ricalcolato.    
-Mentre nel pacchetto TCP bisogna ricalcolare il checksum, poiché viene calcolato anche sui campo campi del pacchetto IP. 
+In una rete locale gli apparecchi sono classificati in base a diverse esigenze di connettività, in base a questi criteri si individuano macchine che non richiederanno mai NAT, alcune macchine che lo richiederanno solamente come client, ed altre macchine che lo richiedono completamente, queste possono offrire servizi raggiungibili dall'esterno. 
 
-\subsubsection{PAT}
+Per rendere quest'operazione invisibile agli AS bisogna modificare sia il pacchetto IP sia, in caso, il pacchetto TCP. 
+Bisogna modificare l'indirizzo destinazione e mittente, ed anche l'header checksum. Anche se la maggior parte dei router non controlla questo campo, poiché è tempo ``sprecato'', molti router, infatti, sospendono il controllo del checksum. Anche se non è controllato, deve essere ricalcolato. 
+Mentre nel pacchetto TCP bisogna ricalcolare il checksum, poiché viene calcolato anche sui campi del pacchetto IP. 
 
-Poiché bisogna avere un numero elevato di indirizzi pubblici per effettuare il NAT, spesso si preferisce il PAT, chiamato anche \textit{IP Masquerading} o \textit{Network Address and Prot Translation} (NAPT). 
+\subsubsection{Porta Address Translation: PAT}
+
+Poiché bisogna avere un numero elevato di indirizzi pubblici per effettuare il NAT, spesso si preferisce il PAT, chiamato anche \textit{IP Masquerading} o \textit{Network Address and Port Translation} (NAPT). 
 Questo consente a molte macchine con indirizzamento privato di utilizzare lo stesso indirizzo pubblico, si può diminuire il numero di indirizzi pubblici assegnati ad un unico router, fino ad un singolo indirizzo pubblico. 
-È il sistema operativo ad assegnare una porta, quando realizza una socket, si può influire su questa scelta, ma dal lato client non si ha alcun interesse per questo. 
-In questo modo però si cancella la porta effettiva utilizzata del router. Quando si usa più di un indirizzo IP pubblico si parla anche di multi-PAT. Effettuando la traduzione l'indirizzo pubblico è necessariamente l'unico indirizzo pubblico disponibile. Sulla tabella NAT quindi vengono specificate le porte. A questo punto non si hanno più problemi di scalabilità. 
-Nel pacchetto TCP bisogna modificare le porte di ingresso ed uscita e ricalcolare la checksum. 
+È il sistema operativo ad assegnare una porta, quando realizza una socket, per una determinata connessione. Si può influire su questa scelta, ma non è di interesse dal lato client usare una specifica porta, per cui è possibile modificare questa porta in modo arbitrario senza intralciare le connessioni. 
 
-Queste due tecniche NAT e PAT sono ampiamente utilizzate, ma violano il principio end-to-end, definito nell'RFC 1958, che afferma che lo stato di una connessione deve essere gestito solamente dagli ES, e non può essere condiviso con le macchine intermedie. Il livello di trasporto si assume faccia comunicare due macchine, in modo trasparente rispetto ai livelli sottostanti. 
-Questo ha effetti sulla connettività end-to-end. 
+Effettuando la traduzione l'indirizzo pubblico è necessariamente l'unico indirizzo pubblico disponibile, nel pacchetto IP si inserisce l'indirizzo IP del router. 
+Nel pacchetto TCP bisogna modificare le porte di ingresso ed uscita e ricalcolare la checksum. Usando il PAT si cancella la porta effettiva utilizzata del client, ma la connessione ne è indipendente. 
 
-I protocolli che menzionano gli indirizzi IP non funzionano correttamente come FTP, per ricostruire la connessione bisognerebbe ricalcolare tutti i campi ed i sequence number che dipendono dal cambio delle porte ed indirizzi IP. Inoltre la sostituzione degli indirizzi devono essere coerenti in ogni frammento. 
-I DNS devono rispondere in due modi diversi per le macchine interne ed esterne, per le prime i nomi privati devono corrispondere agli indirizzi privati mentre quelli pubblici ad indirizzi pubblici. 
-La necessità di ricalcolare vari campi riduce notevolmente le prestazioni di router con NAT e PAT abilitato. 
+Quando si usa più di un indirizzo IP pubblico si parla anche di multi-PAT. Sulla tabella PAT quindi vengono specificate solo le porte. A questo punto non si hanno più problemi di scalabilità. 
+
+Queste due tecniche NAT e PAT sono ampiamente utilizzate, ma pongono altri tipi di problemi. 
+\begin{itemize}
+    \item Violano il principio end-to-end, definito nell'RFC 1958, che afferma che lo stato di una connessione deve essere gestito solamente dagli ES, e non può essere condiviso con le macchine intermedie. Il livello di trasporto si assume faccia comunicare due macchine, in modo trasparente rispetto ai livelli sottostanti. Questo ha effetti sulla connettività end-to-end, poiché le informazioni sulle porte e indirizzi IP sono memorizzati in tabelle degli apparati intermedi che effettuano NAT o PAT. 
+    \item I protocolli che menzionano gli indirizzi IP non funzionano correttamente, come FTP, per ricostruire la connessione bisognerebbe ricalcolare tutti i campi ed i sequence number che dipendono dal cambio delle porte ed indirizzi IP. 
+    \item In caso di frammentazione la sostituzione degli indirizzi devono essere coerenti in ogni frammento. 
+    \item I DNS devono rispondere in due modi diversi per le macchine interne ed esterne, per le prime i nomi privati devono corrispondere agli indirizzi privati mentre quelli pubblici ad indirizzi pubblici. 
+    \item La necessità di ricalcolare vari campi riduce notevolmente le prestazioni di router con NAT e PAT abilitato. 
+\end{itemize}
 
 \subsubsection{DHCP}
 
-Il protocollo DHCP assegna dinamicamente ed autonomamente gli ES di una rete. È un'alternativa alla configurazione manuale, distribuendo indirizzi pubblici o privati di un insieme di macchine. 
+Il protocollo DHCP assegna dinamicamente ed autonomamente configurazioni di rete agli ES di una rete. È un'alternativa alla configurazione manuale, distribuendo indirizzi pubblici o privati di un insieme di macchine. 
 Può essere utilizzato per configurare utenti temporaneamente attivi sulla rete. 
-Le configurazioni distribuite dal DHCP contengono almeno l'indirizzo IP e l netmask, e gli indirizzi del default gateway e del server DNS. Queste sono le informazioni che consentono ad un host di afferire ad internet. 
+Le configurazioni distribuite da DHCP contengono almeno l'indirizzo IP e la netmask, e gli indirizzi del default gateway e del server DNS. Queste sono le informazioni che consentono ad un host di accedere ad internet. 
 
-Un server DHCP ha una serie di indirizzi pubblici o privati, molto spesso sono fissi, il server risponde solo ad alcune macchine in base al loro indirizzo MAC, abilitato dall'amministratore. 
+Un server DHCP ha una serie di indirizzi pubblici o privati, molto spesso statici, il server risponde solo ad alcune macchine in base al loro indirizzo MAC, configurato dall'amministratore. 
 L'assegnazione di una configurazione è temporanea, per un prefissato intervallo di tempo breve. 
 
-Questo protocollo è diviso in quattro fasi. Il protocollo prevede un DHCP DISCOVER, un client manda in broadcast in cui annuncia che non ha una configurazione, il server, o i server, DHCP sulla LAN offrono una possibile configurazione con un DHCP OFFER. Il client in base a queste configurazioni accetta esplicitamente una di queste configurazioni con un pacchetto DHCP REQUEST. Il server conferma l'assegnazione temporanea con un DHCP ACK. 
+Questo protocollo è diviso in quattro fasi. 
+\begin{enumerate}
+    \item Il protocollo prevede un DHCP DISCOVER, un client manda un broadcast in cui annuncia che non ha una configurazione. 
+    Viene effettuata una discovery all'avvio di una macchina, quando scade un'assegnazione o quando richiesto dall'amministratore. In mancanza di una risposta viene iterata ogni cinque minuti. Questo pacchetto DHCP viaggia su UDP. 
+    \item Il server, o i server, DHCP sulla LAN offrono una possibile configurazione con un DHCP OFFER. 
+    Più server possono rispondere contemporaneamente allo stesso client, che sceglie una delle possibili configurazioni. Le richieste essendo broadcast non attraversano i router, ma un router potrebbe essere configurato come proxy DHCP che inoltra la richiesta ad uno specifico DHCP remoto. 
+    \item Il client in base a queste configurazioni accetta esplicitamente una di queste configurazioni con un pacchetto DHCP REQUEST. 
+    \item Il server conferma l'assegnazione temporanea con un DHCP ACK. 
+\end{enumerate}
 
-Viene effettuata una discovery all'avvio di una macchina, quando scade un'assegnazione o quando richiesto dall'amministratore. In mancanza di una risposta viene iterata ogni cinque minuti. Il pacchetto DHCP viaggia su UDP. 
+\clearpage
 
-Più server possono rispondere contemporaneamente allo stesso client, che sceglie una delle possibili configurazioni. Le richieste essendo broadcast non attraversano i router, ma un router potrebbe essere configurato come proxy DHCP ed inoltra la richiesta ad uno specifico DHCP remoto. 
+\section{IPv6}
+
+Lo scopo di IPv6 implementa strategie per sostituire il protocollo ARP. 
+
+L'indirizzo è composto da 128 bit, ed ha meccanismi per accorciare la scrittura, utilizzando indirizzi molto corti principalmente per macchine importanti. 
+
+L'header IPv4 contiene campi rimossi da IPv6, alcuni non sono mai stati utilizzati, come i campi relativi alla frammentazione. Potrebbero esistere tecnologie che prevedono una dimensione massima dei pacchetti più piccola. In questi casi il router deve spezzare un pacchetto in frammenti, questi campi rimossi si usano appunto per determinare se un frammento appartiene allo stesso pacchetto. 
+Questi frammenti vengono ricomposti a destinazione, aumentando il carico per la macchina destinazione. 
+Se viene specificato che un pacchetto non può essere frammentato ed un router sul tragitto individua una strettoia, questo viene scartato e viene inviato un pacchetto ICMP. 
+
+
+La scheda di rete di una macchina condivide le MTU dei singoli livello protocollari a quelli superiori. È stato rimosso il campo checksum, che andava ricalcolato ed in teoria controllato ad ogni hop. Questo non viene quasi mai controllato dai router per aumentare l'efficienza. 
+
+In IPv6 mancano le opzioni, campi dinamici, per rendere la struttura del pacchetto stabile. 
+Ogni pacchetto ha un'etichetta, diversa per ogni pacchetto, in modo da effettuare un'instradamento veloce dalla cache. 
+
+%% TODO descrizione campi ipv6
+
+
+Il campo next header permette di specificare degli \textit{extension header} che contengono anch'essi il campo next header, quindi è possibile realizzare una catena di header, simile alle opzioni in IPv4. 
+
+L'extension header rappresenta un nuovo metodo per implementare le opzioni, questi extension header possono essere di routing, o di codifica, o header di livelli superiori. 
+% catena di margherite
+Ci sono alcuni header che se sono presenti devono essere letti necessariamente. Un IS guarda gli header fino a quando lo riguardano, sono ordinati in modo da avere opzioni diverse, dedicate. 
+
+%% TODO vari extension header
+
+Gli indirizzi IPv6 vengono rappresentati in notazione esadecimale, in un URL gli indirizzi IPv6 sono inclusi tra parentesi quadre. 
+Scompare l'indirizzo di broadcast, che causava per IPv4 un interrupt a tutte le macchine che lo ricevono, indipendentemente dal fatto che sia effettivamente indirizzato loro o meno. 
+
+In una configurazione DHCP, la macchina registra sulla sua scheda di rete gli indirizzi MAC del server DHCP in un insieme per realizzare un insieme di indirizzi multicast. 
+Via software si può dire ad un scheda di rete di raccogliere altre tipi di pacchetti. 
+Utilizzando uno sniffer, questo raccoglie tutti i pacchetti come se fossero direttamente inviati alla macchina. 
+Dal numero IPv6 si può estrarre l'indirizzo MAC, per aggiungerlo alla lista di indirizzi anycast.  
+
+
+C'è una forte presenza di macchine con uno stesso numero, queste macchine anycast sono macchine che offrono servizi, e la richiesta viene soddisfatta dalla macchina più vicina. 
+
+Gli indirizzi IPv6 possono essere privati per vari livelli di privatezza. È molto più frazionato rispetto ad IPv4. 
+
+%% TODO indirizzi
+
+
+Ci sono indirizzi che contengono dentro indirizzi IPv4 nascosti, usati in alcuni tipi di transizioni IPv4-Ipv6, ora deprecati. Mentre nelle reti IPv4 c'è un'alta frammentazione e subnetting applicando il CIDR, in IPv6 la lunghezza del prefisso è fissa e diversa dal'identificativo dell'host. C'è comunque la notazione barra per aggregarle a criteri di routing, ma negli indirizzi è sempre presente un prefisso di 64 bit, e quindi hanno una netmask stabile. 
+
+
+La parte di prefisso è utile ad identificare la subnet, mentre l'identificativo dell'host può essere specificato manualmente oppure automaticamente. Aggiungendo q questo indirizzo prefissi diversi si ottengono indirizzi differenti per la stessa macchina. 
+Quando la macchina trasmette sceglie uno di questi indirizzi da utilizzare per la trasmissione. 
+
+
+
+%% TODO smt
+
+Per link si intende una rete fisica come esempio una LAN, un collegamento punto-unto o anche una rete geografica comune. 
+Nodi sullo stesso link sono detti neighbor, o vicini. Per site invece si intende un insieme di link gestiti da un unica organizzazione. Questi hanno un loro prefisso \textit{link local unicast} ed analogamente \textit{site local unicast}, utilizzabili dentro la LAN. 
+Mentre i prefissi \textit{global unicast} vengono assegnati dalla IANA alle organizzazioni continentali e regionali, ed in seguito vengono assegnati pi facilmente ai singoli IPS, e successivamente utenti. 
+
+La distribuzione degli indirizzi verso il basso è automatica, e potrebbe essere possibile sostituire gli indirizzi in modo trasparente. 
+Si potrebbero assegnare tutti gli indirizzi che iniziano per una certa sequenza in una zona geografica limitata Tutti questi pacchetti vengono instradati osservando una barra molto corta. 
+Quindi questi prefissi sono suddivisi, i primi 32 bit di prefisso sono assegnati per un ISP, mentre blocchi più grandi a RIR. Successive suddivisioni in barra 48 vengono affidate alle singole organizzazioni, da 48 a 64 è possibile fare subnetting sul site dell'organizzazione per realizzare link. 
+
+
+Invece di avere indirizzi broadcast si utilizzano indirizzi multicast. 
+Indirizzi multicast cominciano sempre con \texttt{FF}, questo è seguito da una flag, per indicare se si tratta di un indirizzo permanente o temporaneo. I seguenti quattro bit individuano uno scope specifico che può andare da nodo, a link, site, fino a globale. I seguenti 112 bit identificano il group ID; un gruppo multicast valido su uno scope. 
+
+Indirizzi multicast importanti sono dati da \texttt{FF02::1:FFxx:xxxx}, questi indirizzi sono chiamati \textit{solicited-node}. Si crea un gruppo multicast per ogni indirizzo che non è multicast. 
+
+Questo indirizzo solicited node viene usato per sostituire il protocollo ARP e ICMPv4. 
+
+\subsection{ICMPv6}
+
+Pacchetti ICMPv6 riprendono le funzionalità di ICMPv4, ed assumono nuove funzionalità e responsabilità gestite da protocolli ARP e IGMP su IPv4. 
+Il pacchetto ICMPv6 presenta una specie di header dove viene specifico il tipo ed i sottotipo, degli header precedenti, seguito dai dati di ICMP. 
+
+Il primo bit del campo type distingue tra due classi di messaggio, di segnalazione di errore o di messaggi informativi. 
+
+
+I pacchetti IPv6 non vengono frammentati, quindi bisogna garantire che non vengano scartati durante il percorso, si vuole determinare l'MTU pià piccola da considerare collo di bottiglia per ridurre la dimensione del pacchetto IP. 
+La procedura di \textit{Path MTU Discovery} è basata su messaggi ICMPv6 per segnalare pacchetti troppo grandi. 
+
+Prima di interpretare il livello quattro deve l'indirizzo del livello tre, convertendo con un DNS il dominio ad indirizzo IP. 
+In IPv4 il processo si ferma e lancia un processo di discovery di livello due per individuare l'indirizzo MAC del destinatario, con un'ARP. Questo può esistere sulla rete, e quindi raggiungile direttamente, altrimenti si deve inviare al router di default. 
+
+Questo processo di neighbor discovery in IPv6 viene effettuato tramite ICMPv6. Questi pacchetti si occupano della risoluzione degli indirizzi. Sostituendo ARP request e reply con neighbor solicitation e advertisement, utilizzando gli indirizzi multicast all'interno di un link. I messaggi non possono uscire dal link. 
+
+
+Il messaggio ICMPv6 redirect è simile alla controparte IPv4. Questa informa il router che è presente un router migliore sul link per raggiungere lla destinazione, oppure che la destinazione si trova sullo stesso link. 
+
+
+Indirizzi solicited node multicast vengono calcolati a partire dal prefisso \texttt{FF02}, seguito da 72 bit di zero, seguito da \texttt{01FF}, seguito dagli ultimi 24 bit dell'indirizzo. La probabilità che due macchine abbiano questo stesso indirizzo multicast è molto bassa, poiché gli ultimi tre byte corrispondenti sono quelli dell'indirizzo MAC assegnati dal costruttore, quindi è improbabile siano uguali. Ogni interfaccia viene iscritta ai gruppi multicast corrispondenti a tutti gli indirizzi assegnati da essa. 
+L'uso degli ultimi 24 bit dell'indirizzo IPv6 diminuisce una riduzione delle collisioni, poiché dipendono dall'indirizzo MAC. L'indirizzo destinatario a livello due si può ottenere dall'ID del gruppo a cui è iscritta la macchina. 
+
+Chi deve risolvere l'indirizzo IPv6 in un indirizzo di livello MAC, invece di mandare un pacchetto broadcast, si calcola l'indirizzo multicast IPv6, da cui si ottiene l'indirizzo MAC di livello due per inviare il pacchetto sull'indirizzo multicast. 
+Rispondendo a questo messaggio inviando all'indirizzo specifico, un pacchetto di neighbor advertisement con il suo indirizzo IPv6 specifico nella porzione dati del pacchetto. 
+
+
+In IPv6 c'è una cache che sostituisce l'ARP cache, una sorta di mappa che tiene conto della mutua raggiungibilità dei nodi vicini. Per i nodi vicini controlla che siano raggiungibili da neighbor solicitation, per i nodi remoti controlla che siano raggiungibili attraverso il router next-hop. 
+Questo algoritmo permette di individuare rapidamente cambiamenti di indirizzi fisici o guasti nella rete; chiamato \textit{Neighbor Unreachability Detection} (NUD). 
+
+Un'altra funzionalità interessante di IPv6 è l'autoconfigurazione degli indirizzi. 
+Permette ai singoli di nodi di generare un indirizzo IPv6 stabile in modo stateless, senza utilizzare server DHCP. 
+La macchina può prendere l'indirizzo dell'interfaccia, mentre come prefisso di rete utilizza indirizzi link-local. In questo modo può comunicare con il router per ottenere un prefisso da utilizzare sulla rete. 
+Il server DNS deve essere necessariamente specificato a mano, oppure tramite protocolli diversi. 
+
+
+Il meccanismo di router advertisement è un algoritmo dove i router inviano periodicamente su ogni link dei pacchetti di questo tipo, dove si identificano e specificano se siano disponibili agli host per diversi servizi. 
+Specificano il loro indirizzo di livello due e indirizzo IPv6 link-local, indicano se sono disponili come default router. Specificano altri parametri come TTL, MTU, ed inoltrano una lista di prefissi utilizzabili sulla rete, assegnati al link, oppure globalmente unici. 
+
+Quando un router comunica un prefisso, gli altri 64 bit si possono ottenere dall'indirizzo MAC, per comunicare con il resto del mondo. 
+
+Questi router advertisement vengono inviati ad intervalli regolari, c'è anche la possibilità di richiedere queste informazioni, tramite una router solicitation, inviato all'indirizzo multicast del link, quindi a tutti i router del link. 
+Questa è una richiesta per un router advertisement, inviato in unicast a questo indirizzo. 
+
+Ci sono meccanismi di riconoscimento di indirizzi duplicati, a bordo della macchina si controlla se un'altra nodo ha già lo stesso indirizzo, specificando come indirizzo sorgente l'\textit{unspecified address}, \texttt{::}. 
+Se non riceve alcuna risposta, adotta quell'indirizzo. 
+
+
+Si può generare un indirizzo link local di ciascuna interfaccia, in modo da poter comunicare sulla rete locale. 
+
+%% TODO smt
+
+I prefissi contenuti in un router advertisement sono associati ad un tempo di vita, un timer oltre il quale quel prefisso è da non considerarsi più valido, e non può essere riassegnato all'interfaccia. 
+Questi tempi associati agli indirizzi sono \textit{valid lifetime} e \textit{preferred lifetime}, il primo è il tempo per cui un indirizzo può essere associato all'interfaccia, ed il secondo è il tempo per cui l'indirizzo può essere utilizzato per nuove connessioni. 
+
+Questo permette il renumbering automatico degli host, tramite nuove router solicitation, e configurazioni automatiche. 
+
+Gli indirizzi e gli altri parametri di configurazione come i server DNS possono essere configurati manualmente. 
+È possibile effettuare una configurazione interamente manuale, con DHCPv6, su specifica dell'autoconfigurazione stateless. 
+
+Le specifiche stateful nella stateless riguardano due flag dedicate nel router advertisement. Queste sono \textit{managed address configuration}, che indica se l'host deve ottenere indirizzi da parte di DHCPv6, mentre un secondo campo indica se deve utilizzare quest'ultimo per ottenere altre informazioni di configurazione. Se è il primo è settato, lo anche questo. 
+
+%% TODO smt
+
+
+Il router assegna tanti indirizzi, poiché ne riceve tanti dall'esterno e poiché una stessa macchina potrebbe avere più provider, ed ogni provider inietta su routing diverso. 
+Quando si decide di parlare con un interlocutore remote, è possibile entrambi abbiano un indirizzo globalmente unico, ma questo potrebbe avere diversi indirizzi IPv6 diversi. Questa scelta impatta le prestazioni, influisce sulla rotta attraverso cui avviene la comunicazione. 
+La scelta migliore può cambiare nel tempo, inoltre un provider potrebbe avere dei problemi e quindi bisognerebbe cambiare provide e quindi rotta, attraverso un altro insieme di indirizzi IPv6. La scelta degli indirizzi di comunicazione è una parte critica. 
+
+Ci sono diverse scelte, tipicamente si preferisce IPv6, anche se è possibile andare ad IPv4, in base alla condizione del destinatario. 
+
+Su IPv4, si provano gli indirizzi di destinazione uno per volta per valutare quale sia più appropriato. 
+
+
+
+Il multihoming si basa su BGP, se si vuole comunicare tra due provide diversi, attraverso BGP. Se le due zone sono separate e sono stati assegnati più indirizzi, BGP è costretto ad inoltrare tutti questi indirizzi. Se questo router connesso all'altro provide è dello stesso provide che assegna gli indirizzi, deve inoltrare solamente questa subnet dove si trova la macchina. 
+
+Gli effetti di questo fenomeno sono l'aumento esponenziale delle tabelle di instradamento a causa della frammentazione delle reti, e quindi dell'inoltro di queste nuove rotte. 
+
+In IPv6 avendo due indirizzi diversi, si ha un insieme di indirizzi, e si sceglie quale di questi utilizzare, così mitigando questo problema. 
+
+Se non si parla BGP non si ha possibilità alternativa, tutte le connessioni che usano questo link potrebbero andare in fault. Inoltre, non si ha bilanciamento. 
+
+Un approccio proposto per risolvere questo è avere una scelta dinamica dell'indirizzo IP, sia per identificare la macchina sia per identificare il provider attraverso cui la si raggiunge. Separando queste due funzioni si separa il locator, la posizione del nodo nella topologia della rete, dall'identifier, per indirizzare il nodo agli strati superiori. 
+
+
+Si utilizza un ID per i livello superiori, per identificare il nodo e comunicare con nodi esterni. 
+Questi indirizzi usati sono solamente identificativi, appartengono effettivamente ad un'interfaccia del destinatario, ma rappresenta solamente un ID della macchina, che può essere per ogni nodo o per ogni processo all'interno del nodo. 
+
+Il locator è l'indirizzo IP usato per instradare il pacchetto, identifica la posizione del nodo nella rete. 
+L'idea è quella di usare il locator solamente al livello tre nella fase di instradamento, seguito da uno strato \texttt{shim6}, sempre al livello tre, per separare l'indirizzo utilizzato e l'indirizzo rappresentativo delle due macchine nella comunicazione. Gli strati superiori sono convinti di utilizzare questi indirizzi. Questo decide la coppia di indirizzi sorgente e destinazione da utilizzare anche rispetto alla disponibilità e le tempistiche dei pacchetti. 
+Si riesce a cambiare i pacchetti senza far cadere la connessione. 
+
+Lo stesso si può usare con meccanismi sofisticati di SDN. 
+
+%% TODO smt shim6
+
+
+Questa separazione non è stata introdotta nel protocollo quando è stato realizzato, poiché ha un effetto a cascata anche su livelli inferiori. Questo è facile risolvere utilizzando degli identificatori end-to-end, scambiando dei \textit{context tags} shim6 che possono essere utilizzati per identificare un contesto e quindi una comunicazione specifica, potendo cambiare dinamicamente i vari indirizzi. 
+
+\subsection{Transizione}
+
+Il livello di rete ha la caratteristica di essere uniformante, tutte le macchine intermedie devono avere lo stesso protocollo per poter parlare IPv4 o IPv6. 
+Per cui sono necessari meccanici di transizione per realizzare questa transizione da IPv4 a IPv6, poiché è estremamente difficile cambiare protocollo a questo livello. 
+
+IPv6 deve essere compatibile a IPv4 e deve permette il passaggio da IPv4 per la sua adozione. 
+
+Adesso IPv6 è adottato in parallelo rispetto a IPv4, il processo di transizione potrebbe durare decenni. 
+
+Il processo di transizione è diviso in tre fasi
+In un momento IPv6 componeva delle isole separate nell'internet dove si può comunicare con IPv6, dove utilizza prevalentemente i servizi esistenti di IPv4. 
+Nella seconda fase i due protocolli coesistono nella diffusione globale, le varie isole di IPv6 si consolidano ed è possibile comunicare nella maggior parte di internet solamente con IPv6. 
+Nella terza fase l'adozione di IPv6 supera la diffusione di IPv4, che rimane utilizzato su delle isole, e le reti IPv4 si appoggiano sull'infrastruttura IPv6. 
+
+
+Si ha la possibilità di realizzare apparecchiatura dual stack, con due pile protocollari, IPv4 e IPv6. Altri meccanismi utilizzati sono i tunnel, in disuso, configurati manualmente per superare oceani in modo da comunicare solamente su uno stesso protocollo. Altri meccanismi possibili i traduttori di protocollo, come SIIT, NAT64. 
+
+
+Il dual stack è l'approccio più semplice, ma non riduce il fabbisogno degli indirizzi IPv4, rimane il problema di IPv4. Le applicazioni che supportano IPv6 possono utilizzare entrambi i protocolli. 
+Anche se è molto semplice, richiede una doppia gestione dell'infrastruttura. Non integra la rete IPv6 con quella IPv4. 
+
+I client su di un host dual stack tentano di stabilire una connessione IPv6, e sol se non ci riesce stabilisce una connessione IPv4. 
+Il comportamento è descritto da RFC 6555, se il server risponde con un ack ad entrambi i protocolli, resetta una delle due connessioni. 
+
+
+Supponendo di essere in una fase avanzata, con una rete di backbone di IPv6, e parti periferiche con IPv4. Queste due reti non hanno apparecchiature dual stack, per cui bisogna usare dei protocolli di traduzione, che si comportano come un NAT, facendo passare tutto il traffico attraverso il nodo traduttore. 
+
+Lavorando a livello tre ci sono due soluzioni, SIIT e NAT64. Queste mappano indirizzi IPv4 nello spazio IPv6, essendo molto più grande. 
+Ci sono vari modi ufficiali e non ufficiali. In un NAT normale c'è uno stato, e questo ne limita l'utilizzo. 
+
+% dettaglio traduzione ICMP per esempio time exceeded sul nodo di traduzione 
+
+Il primo meccanismo si chiama \textit{Stateless IP/ICMP Translation} (SIIT), generale, che offre la possibilità di comunicare attraverso un traduttore. 
+
+Tutto lo spazio indirizzamento IPv4 è mappato dentro una porzione di IPv6. Gli ultimi 6 byte sono composti da \texttt{::ffff:a.b.c.d}. 
+La macchina traduttrice si occupa di inoltrare questo indirizzo mappato. 
+I nodi ottengono indirizzi IPv4 temporanei che vengono mappati in indirizzi IPv6 IPv4-\textit{translated} del tipo \texttt{::ffff:0:a.b.c.d} e usati come indirizzo sorgente. 
+Il traduttore traduce i pacchetti in transito, con una traduzione stateless, non è necessario salvare informazioni aggiuntive. Inoltre, non è importante la macchina da cui entra o esce, poiché il processo è stateless. 
+Questo richiede modifiche alle implementazioni IPv6, e richiede la presenza di assegnazione dinamica di indirizzi temporanei, questi devono essere inoltrati fuori come se fossero appartenenti alla rete. 
+Richiede di gestire il routing per gli indirizzi IPv4-translated all'interno del site. 
+
+
+Il NAT64 è più elegante, ma richiede uno stato parziale. Si chiama così poiché ricorda il NAT, e fonde le soluzioni del SIIT con il NAT. 
+
+Il nodo traduttore dispone di un pool di indirizzi IPv4 che vengono assegnati ai nodi che lo utilizzano, ed il NAT64 mantiene lo stato delle associazioni. 
+Gli indirizzi IPv4 vengono rappresentando i 32 bit dell'indirizzo ad un prefisso di 96 bit di instradamento verso il traduttore. 
+
+La traduzione dei pacchetti avviene come in SIIT. 
+
+Ci vuole uno speciale DNS chiamato DNS64, che aggiunge delle funzionalità, pensato ad un client IPv6 per connettersi ad un servizio IPv4. 
+
+Il DNS64 server consulta il DNS normale, cercando di capire gli indirizzi della macchina del servizio, poiché potrebbe avere indirizzi IPv6. Se ha solo indirizzi IPv4 nota il problema. Allora restituisce invece l'indirizzo IPv6 corrispondente che codifica la destinazione. 
+
+%% TODO NAT64, rewording
 
 \clearpage
 
@@ -936,7 +1211,7 @@ Inoltre, non è richiesta configurazione aggiuntiva, tutto ciò che viene negozi
 
 %% !! NEXT HOP
 
-In generale il next hop coincide con l'interfaccia di peering del router BGP. QUando la rotta viene annunciata con iBGP, il BGP canonico prevede che la rotta rimane la stessa interfaccia remota. Quando viene annunciata fuori, il next hop diventa di nuovo l'interfaccia di uscita. È un attributo che canonicamente ha sempre l'interfaccia di uscita dell'ultimo AS da cui è uscita. 
+In generale il next hop coincide con l'interfaccia di peering del router BGP. Quando la rotta viene annunciata con iBGP, il BGP canonico prevede che la rotta rimane la stessa interfaccia remota. Quando viene annunciata fuori, il next hop diventa di nuovo l'interfaccia di uscita. È un attributo che canonicamente ha sempre l'interfaccia di uscita dell'ultimo AS da cui è uscita. 
 
 Quando un router deve inserire una rotta BGP nel data plane una rotta verso un IP remoto, non appartenente allo stesso AS. Il next hop è l'indirizzo su cui viene eseguito ARP, ma possiede un next hop remoto, deve quindi determinare a quale interfaccia vicina inviare il pacchetto. 
 Il router esegue un lookup sulla rete dov'è presente l'indirizzo del next hop. Per inserire la rotta sulla tabella di instradamento quindi inserisce il valore di next hop della rotta appena trovata. 
@@ -1135,12 +1410,12 @@ In generale i router dei provider o di backbone si indicano con P, i router di f
 
 Per implementarlo la prima azione da eseguire è assegnare un indirizzo IP di loopback ai PE, garantendo che siano connessi. 
 
-QUesti indirizzi di loopback vengono propagati attraverso un protocollo IGP. Sulla macchina router si definisce un'interfaccia dove si vedono le destinazioni di questo traffico, si passano per questa interfaccia, ed essendo un interfaccia virtuale, di loopback, viene incartato in un altro pacchetto che possiede l'indirizzo destinazione dell'altro estremo del tunnel, ed esce alla fine del tunnel, lo scarta e lo ripassa attraverso la tabella di instradamento e lo passa all'interfaccia. 
+Questi indirizzi di loopback vengono propagati attraverso un protocollo IGP. Sulla macchina router si definisce un'interfaccia dove si vedono le destinazioni di questo traffico, si passano per questa interfaccia, ed essendo un interfaccia virtuale, di loopback, viene incartato in un altro pacchetto che possiede l'indirizzo destinazione dell'altro estremo del tunnel, ed esce alla fine del tunnel, lo scarta e lo ripassa attraverso la tabella di instradamento e lo passa all'interfaccia. 
 
 In questo modo non si hanno problemi di sovrapposizione delle reti. Questo sarebbe difficile da configurare, e bisognerebbe configurare un numero quadratico di tunnel. 
 
 
-La seconda fase consiste nell'usare BGP per annunciare un'opportunità di instradamento. QUesto utilizza una variante di BGP, MP-BGP. 
+La seconda fase consiste nell'usare BGP per annunciare un'opportunità di instradamento. Questo utilizza una variante di BGP, MP-BGP. 
 Ogni iBGP instaura un peering iBGP con tutti gli altri PE nella rete del provider. Queste sono informazioni di instradamento sulle reti del customer. 
 
 
@@ -1178,231 +1453,78 @@ Oltre a specificare il RD, si indica anche il RT, che è una comunità di VPN.
 Questo sistema di amministrazione interno di un AS permette di creare dei tunnel all'interno, cno la massima flessibilità senza che il customer sia a conoscenza di quello che sta avvenendo dentro l'AS, vedendo la connessione come un'effettiva connessione via filo. 
 La configurazione del provider inoltre è relativamente semplice. 
 
-\clearpage
+\subsection{Introduzione a RPKI}
 
-\section{IPv6}
+%% * slide su moodle
 
-Lo scopo di IPv6 implementa strategie per sostituire il protocollo ARP. 
+Il RPKI è un meccanismo abbastanza diffuso per la sicurezza di BGP, poiché è un protocollo non autenticato, dove sono possibili attacchi e situazioni possibili per errori di configurazioni che possono rompere BGP. 
 
-L'indirizzo è composto da 128 bit, ed ha meccanismi per accorciare la scrittura, utilizzando indirizzi molto corti principalmente per macchine importanti. 
+Dato un annuncio BGP, un router BGP potrebbe chiedersi se quell'AS è un suo vicino, inoltre si potrebbe chiedere se è veramente il proprietario di quel prefisso, poiché su BGP non sono presenti controlli ed è possibile annunciare rotte arbitrarie. Non ci sono controlli di default, quindi tutti i router si fidano arbitrariamente. 
 
-L'header IPv4 contiene campi rimossi da IPv6, alcuni non sono mai stati utilizzati, come i campi relativi alla frammentazione. Potrebbero esistere tecnologie che prevedono una dimensione massima dei pacchetti più piccola. In questi casi il router deve spezzare un pacchetto in frammenti, questi campi rimossi si usano appunto per determinare se un frammento appartiene allo stesso pacchetto. 
-Questi frammenti vengono ricomposti a destinazione, aumentando il carico per la macchina destinazione. 
-Se viene specificato che un pacchetto non può essere frammentato ed un router sul tragitto individua una strettoia, questo viene scartato e viene inviato un pacchetto ICMP. 
+Il problema è che BGP assume che tutti dicano la verità, ma in caso di utenti malevoli, è facilmente impersonare altri AS, ed annunciare prefissi arbitrariamente. 
+Non necessariamente questo è un utente malevolo, può essere semplicemente un errore di configurazione. 
+ALcune situazioni possono generare un local hijack, dove solo la parte più locale viene instradata verso un finto prefisso. Oppure si potrebbe annunciare un annuncio più specifico, questi infatti verranno preferiti, causando un global hijack, redirezionando l'intero traffico destinato al prefisso più specifico, diffondendosi in maniera autonoma tra di loro, poiché BGP effettua solo check esatti. 
 
+In questo caso per mitigare l'attacco si potrebbero annunciare due rotte più specifiche per coprire il prefisso annunciato dall'utente malevolo. Questo problema consiste nella propagazione di moltissime rotte aggiuntive, facendo crescere in modo incontrollato la tabella di instradamento. Inoltre, si vorrebbe prevenire questo attacco, quindi risolverlo prima che l'attaccante possa annunciare questa rotta più specifica. C'è sempre un lasso di tempo dove l'attaccante può ottenere qualcosa. 
 
-La scheda di rete di una macchina condivide le MTU dei singoli livello protocollari a quelli superiori. È stato rimosso il campo checksum, che andava ricalcolato ed in teoria controllato ad ogni hop. Questo non viene quasi mai controllato dai router per aumentare l'efficienza. 
 
-In IPv6 mancano le opzioni, campi dinamici, per rendere la struttura del pacchetto stabile. 
-Ogni pacchetto ha un'etichetta, diversa per ogni pacchetto, in modo da effettuare un'instradamento veloce dalla cache. 
+Un altro tipo di global hijack consiste nell'annunciare una rotta inventandosi un AS path, annunciando lo stesso prefisso, in questo caso si contendono la rotta. 
 
-%% TODO descrizione campi ipv6
+Questo succede poiché gli annunci BGP sono annunciati senza alcuna validazione. I router verificano autonomamente che come AS affiorante sia presente il primo AS nell'AS path, questa è una politica di sicurezza già usata da tempo, in modo da garantire che gli AS vicini inoltrino solo rotte dove si sono inseriti. 
+Questo si può disabilitare, in alcuni casi potrebbe essere utile. 
 
+In un IXP questa politica viene disabilitata, poiché l'IXP ha un suo AS, e dovendo connettere due AS diversi, gli annunci passano attraverso il route server interno dell'IXP. Concettualmente è un route reflector, ma è in un altro AS. 
+Non si inserisce nell'AS path poiché il traffico non lo attraversa, non applica il processo decisionale, ma anche non va a modificare gli annunci. 
 
-Il campo next header permette di specificare degli \textit{extension header} che contengono anch'essi il campo next header, quindi è possibile realizzare una catena di header, simile alle opzioni in IPv4. 
 
-L'extension header rappresenta un nuovo metodo per implementare le opzioni, questi extension header possono essere di routing, o di codifica, o header di livelli superiori. 
-% catena di margherite
-Ci sono alcuni header che se sono presenti devono essere letti necessariamente. Un IS guarda gli header fino a quando lo riguardano, sono ordinati in modo da avere opzioni diverse, dedicate. 
+Un attaccante può applicare censura, rubare criptovalute, intercettare il traffico, effettuare blackholing, rubare delle credenziali, inviare spam, anche se sono presenti delle tecniche di cifratura sulle mail. 
 
-%% TODO vari extension header
+Non necessariamente si tratta di attacco, potrebbe essere una configurazione errata a causa di typo, oppure a causa di differenze nei linguaggi usati dai router BGP. Per esempio il prepending nei router della Cisco si configura inserendo l'ASN ed il moltiplicatore, mentre nei router Juniper si inserisce l'ASN tutte le volte necessarie. 
+Per questo è possibile individuare ASN come uno, due o tre, che appartengono a grandi Università americane. 
+Un altro problema può essere causato dai configurazioni errate di filtri. Degli annunci interni se vengono passati esternamente con route leak, oltre a problemi economici è possibile vengano saturati i link. 
 
-Gli indirizzi IPv6 vengono rappresentati in notazione esadecimale, in un URL gli indirizzi IPv6 sono inclusi tra parentesi quadre. 
-Scompare l'indirizzo di broadcast, che causava per IPv4 un interrupt a tutte le macchine che lo ricevono, indipendentemente dal fatto che sia effettivamente indirizzato loro o meno. 
+Modificare il protocollo BGP per realizzare protocolli non è realizzabile, poiché molti di questi router sono vecchi con un tempo di riavvio critico. 
+Per cui si punta a prevenire tutti gli attacchi non intenzionali. 
 
-In una configurazione DHCP, la macchina registra sulla sua scheda di rete gli indirizzi MAC del server DHCP in un insieme per realizzare un insieme di indirizzi multicast. 
-Via software si può dire ad un scheda di rete di raccogliere altre tipi di pacchetti. 
-Utilizzando uno sniffer, questo raccoglie tutti i pacchetti come se fossero direttamente inviati alla macchina. 
-Dal numero IPv6 si può estrarre l'indirizzo MAC, per aggiungerlo alla lista di indirizzi anycast.  
+Gli IRR sono dei registri di internet pubblicamente consultabili dove si indica la proprietà di un prefisso. Ma dato che è pubblico, bisogna comunque verificare le informazioni. Essendo scritte in maniera standard e pubbliche, queste informazioni possono essere utilizzate per creare automaticamente dei filtri BGP per AS, basati su informazioni verificabili. 
 
+Questi IRR non sono usati globalmente, non è presente un'autorità centrale, non necessariamente sono mantenuti ed accurati. Per cui utilizzando dei filtri automatici e stringenti, si blocca la maggior parte di Internet. 
 
-C'è una forte presenza di macchine con uno stesso numero, queste macchine anycast sono macchine che offrono servizi, e la richiesta viene soddisfatta dalla macchina più vicina. 
+Una PKI, \textit{Public Key Infrastructure} è un sistema pubblico di chiavi, un albero di certificazione. Si può generare un certificato firmandolo da solo, ma questo è validato, si valida un certificato firmandolo da un certificato conosciuto, chiedendo ad organizzazioni riconosciute per la certificazione. Così si crea una catena di fiducia. 
 
-Gli indirizzi IPv6 possono essere privati per vari livelli di privatezza. È molto più frazionato rispetto ad IPv4. 
 
-%% TODO indirizzi
+In questo modo si possono validare degli annunci BGP, associando gli ASN agli IP, creando un sistema di certificazione di certificati pubblici che accoppia la nozione che un certo prefisso è proprietà di un certo AS. Questo sta ignorando il problema di validazione di un path, si occupa solo dell'appartenenza di un certo prefisso. 
 
+RPKI aiuta a prevenire tutti quelli incidenti solitamente dovuti a configurazioni errate. RPKI deve fidarsi dei RIR come \textit{Trust Anchor}, le cinque organizzazioni che si dividono lo spazio fisico del globo per assegnare indirizzi IP ai propri AS. I RIR hanno il controllo sull'accuratezza e saranno loro a firmare i certificati per garantire i proprietari di un prefisso. 
 
-Ci sono indirizzi che contengono dentro indirizzi IPv4 nascosti, usati in alcuni tipi di transizioni IPv4-Ipv6, ora deprecati. Mentre nelle reti IPv4 c'è un'alta frammentazione e subnetting applicando il CIDR, in IPv6 la lunghezza del prefisso è fissa e diversa dal'identificativo dell'host. C'è comunque la notazione barra per aggregarle a criteri di routing, ma negli indirizzi è sempre presente un prefisso di 64 bit, e quindi hanno una netmask stabile. 
+Il proprietario di un prefisso non è detto che sia chi annuncia un certo prefisso, questi possono essere affittati. 
 
 
-La parte di prefisso è utile ad identificare la subnet, mentre l'identificativo dell'host può essere specificato manualmente oppure automaticamente. Aggiungendo q questo indirizzo prefissi diversi si ottengono indirizzi differenti per la stessa macchina. 
-Quando la macchina trasmette sceglie uno di questi indirizzi da utilizzare per la trasmissione. 
+RPKI funziona con due oggetti totalmente separati, uno si occupa di certificare ASN e prefissi IP, ed un altro validatore, esterno al protocollo, si occupa di inserire le informazioni relative nelle configurazioni BGP. 
 
+Ogni RIR ha il suo certificato self signed, che firmerà i certificati, potrebbero essere affidati ai LIR, o direttamente agli utenti finali. Il termine ROA indica un certificato verificato da una catena di fiducia fino ad un root certificate. 
 
+Ognuno può firmare certificati per qualcosa di più specifico, i cinque RIR hanno root certificate per tutte le risorse, \texttt{\/0}. L'idea del ROA è che sono firmati dal LIR ed il LIR si prende un pezzo dell'indirizzamento. 
 
-%% TODO smt
+Un singolo ROA può contenere una lista di prefissi al suo interno, potenzialmente potrebbero essere contenuti in un unico ROA, in base a criteri determinati dal LIR. Questi ROA possono essere sovrapposti, contengono informazioni base, la data di inizio e fine validità, una delle condizioni per cui possono essere sovrapponibili. 
 
-Per link si intende una rete fisica come esempio una LAN, un collegamento punto-unto o anche una rete geografica comune. 
-Nodi sullo stesso link sono detti neighbor, o vicini. Per site invece si intende un insieme di link gestiti da un unica organizzazione. Questi hanno un loro prefisso \textit{link local unicast} ed analogamente \textit{site local unicast}, utilizzabili dentro la LAN. 
-Mentre i prefissi \textit{global unicast} vengono assegnati dalla IANA alle organizzazioni continentali e regionali, ed in seguito vengono assegnati pi facilmente ai singoli IPS, e successivamente utenti. 
+Tra le informazioni base sono il prefisso, gli origin AS verificati, e la massima lunghezza del prefisso, per evitare di poter annunciare prefissi più specifici. In questo modo si va a certificare un prefisso. 
 
-La distribuzione degli indirizzi verso il basso è automatica, e potrebbe essere possibile sostituire gli indirizzi in modo trasparente. 
-Si potrebbero assegnare tutti gli indirizzi che iniziano per una certa sequenza in una zona geografica limitata Tutti questi pacchetti vengono instradati osservando una barra molto corta. 
-Quindi questi prefissi sono suddivisi, i primi 32 bit di prefisso sono assegnati per un ISP, mentre blocchi più grandi a RIR. Successive suddivisioni in barra 48 vengono affidate alle singole organizzazioni, da 48 a 64 è possibile fare subnetting sul site dell'organizzazione per realizzare link. 
+L'idea è che esistono protocolli adatti, in modo che il validatore possa leggere le repository RPKI, gli AS dovranno avere un validatore oppure fidarsi di un validatore esterno. Si validano come si valida qualunque certificato, confrontando la firma digitale del ROA, salendo la catena di fiducia controllando se è valida rispetto alla chiave pubblica del LIR che ha certificato il prefisso, analogamente si valida il certificato del LIR, da parte del RIR. 
 
+Una volta che si è verificata la validità, si installano sui router moderni, un protocollo moderno può interagire direttamente con queste repository, altrimenti software specifici li trasformano in route map da inserire direttamente nella configurazione BGP, per router più vecchi. 
 
-Invece di avere indirizzi broadcast si utilizzano indirizzi multicast. 
-Indirizzi multicast cominciano sempre con \texttt{FF}, questo è seguito da una flag, per indicare se si tratta di un indirizzo permanente o temporaneo. I seguenti quattro bit individuano uno scope specifico che può andare da nodo, a link, site, fino a globale. I seguenti 112 bit identificano il group ID; un gruppo multicast valido su uno scope. 
 
-Indirizzi multicast importanti sono dati da \texttt{FF02::1:FFxx:xxxx}, questi indirizzi sono chiamati \textit{solicited-node}. Si crea un gruppo multicast per ogni indirizzo che non è multicast. 
+Per validare un annuncio, si controlla che il prefisso annunciato provenga da uno degli origin AS certificati, e si controlla che non sia più specifico della lunghezza massima presente nel certificato. 
 
-Questo indirizzo solicited node viene usato per sostituire il protocollo ARP e ICMPv4. 
 
-\subsection{ICMPv6}
+Questo sistema si scontra con la legacy degli AS, al giorno d'oggi molti prefissi hanno i ROA, ma pochi AS li verificano. Se arriva un ROA non verificato bisogna scegliere se accettarlo o scartarlo, dato che l'applicazione dei ROA non è uniformata su tutti gli AS. 
 
-Pacchetti ICMPv6 riprendono le funzionalità di ICMPv4, ed assumono nuove funzionalità e responsabilità gestite da protocolli ARP e IGMP su IPv4. 
-Il pacchetto ICMPv6 presenta una specie di header dove viene specifico il tipo ed i sottotipo, degli header precedenti, seguito dai dati di ICMP. 
+Questo è un bilanciamento che si sta spostando nell'Internet, lentamente si filtrano gli indirizzi invalidi. In realtà invece di rifiutarli, si etichettano come una community, abbassando la loro local preference, se è valido si installa comunque, e se è invalido e non ha altro modo di arrivarci, viene installato comunque. 
 
-Il primo bit del campo type distingue tra due classi di messaggio, di segnalazione di errore o di messaggi informativi. 
+RPKI è favorito poiché non ha un costo ragionevole dal punto di vista dell'hardware ed economico, inoltre non modifica il protocollo. Alternative diverse da RPKI per validare il completo AS path esistono da tempo ma non sono utilizzate, poiché è necessario un cambiamento considerevole. 
 
-
-I pacchetti IPv6 non vengono frammentati, quindi bisogna garantire che non vengano scartati durante il percorso, si vuole determinare l'MTU pià piccola da considerare collo di bottiglia per ridurre la dimensione del pacchetto IP. 
-La procedura di \textit{Path MTU Discovery} è basata su messaggi ICMPv6 per segnalare pacchetti troppo grandi. 
-
-Prima di interpretare il livello quattro deve l'indirizzo del livello tre, convertendo con un DNS il dominio ad indirizzo IP. 
-In IPv4 il processo si ferma e lancia un processo di discovery di livello due per individuare l'indirizzo MAC del destinatario, con un'ARP. Questo può esistere sulla rete, e quindi raggiungile direttamente, altrimenti si deve inviare al router di default. 
-
-Questo processo di neighbor discovery in IPv6 viene effettuato tramite ICMPv6. Questi pacchetti si occupano della risoluzione degli indirizzi. Sostituendo ARP request e reply con neighbor solicitation e advertisement, utilizzando gli indirizzi multicast all'interno di un link. I messaggi non possono uscire dal link. 
-
-
-Il messaggio ICMPv6 redirect è simile alla controparte IPv4. QUesta informa il router che è presente un router migliore sul link per raggiungere lla destinazione, oppure che la destinazione si trova sullo stesso link. 
-
-
-Indirizzi solicited node multicast vengono calcolati a partire dal prefisso \texttt{FF02}, seguito da 72 bit di zero, seguito da \texttt{01FF}, seguito dagli ultimi 24 bit dell'indirizzo. La probabilità che due macchine abbiano questo stesso indirizzo multicast è molto bassa, poiché gli ultimi tre byte corrispondenti sono quelli dell'indirizzo MAC assegnati dal costruttore, quindi è improbabile siano uguali. Ogni interfaccia viene iscritta ai gruppi multicast corrispondenti a tutti gli indirizzi assegnati da essa. 
-L'uso degli ultimi 24 bit dell'indirizzo IPv6 diminuisce una riduzione delle collisioni, poiché dipendono dall'indirizzo MAC. L'indirizzo destinatario a livello due si può ottenere dall'ID del gruppo a cui è iscritta la macchina. 
-
-Chi deve risolvere l'indirizzo IPv6 in un indirizzo di livello MAC, invece di mandare un pacchetto broadcast, si calcola l'indirizzo multicast IPv6, da cui si ottiene l'indirizzo MAC di livello due per inviare il pacchetto sull'indirizzo multicast. 
-Rispondendo a questo messaggio inviando all'indirizzo specifico, un pacchetto di neighbor advertisement con il suo indirizzo IPv6 specifico nella porzione dati del pacchetto. 
-
-
-In IPv6 c'è una cache che sostituisce l'ARP cache, una sorta di mappa che tiene conto della mutua raggiungibilità dei nodi vicini. Per i nodi vicini controlla che siano raggiungibili da neighbor solicitation, per i nodi remoti controlla che siano raggiungibili attraverso il router next-hop. 
-Questo algoritmo permette di individuare rapidamente cambiamenti di indirizzi fisici o guasti nella rete; chiamato \textit{Neighbor Unreachability Detection} (NUD). 
-
-Un'altra funzionalità interessante di IPv6 è l'autoconfigurazione degli indirizzi. 
-Permette ai singoli di nodi di generare un indirizzo IPv6 stabile in modo stateless, senza utilizzare server DHCP. 
-La macchina può prendere l'indirizzo dell'interfaccia, mentre come prefisso di rete utilizza indirizzi link-local. In questo modo può comunicare con il router per ottenere un prefisso da utilizzare sulla rete. 
-Il server DNS deve essere necessariamente specificato a mano, oppure tramite protocolli diversi. 
-
-
-Il meccanismo di router advertisement è un algoritmo dove i router inviano periodicamente su ogni link dei pacchetti di questo tipo, dove si identificano e specificano se siano disponibili agli host per diversi servizi. 
-Specificano il loro indirizzo di livello due e indirizzo IPv6 link-local, indicano se sono disponili come default router. Specificano altri parametri come TTL, MTU, ed inoltrano una lista di prefissi utilizzabili sulla rete, assegnati al link, oppure globalmente unici. 
-
-Quando un router comunica un prefisso, gli altri 64 bit si possono ottenere dall'indirizzo MAC, per comunicare con il resto del mondo. 
-
-Questi router advertisement vengono inviati ad intervalli regolari, c'è anche la possibilità di richiedere queste informazioni, tramite una router solicitation, inviato all'indirizzo multicast del link, quindi a tutti i router del link. 
-Questa è una richiesta per un router advertisement, inviato in unicast a questo indirizzo. 
-
-Ci sono meccanismi di riconoscimento di indirizzi duplicati, a bordo della macchina si controlla se un'altra nodo ha già lo stesso indirizzo, specificando come indirizzo sorgente l'\textit{unspecified address}, \texttt{::}. 
-Se non riceve alcuna risposta, adotta quell'indirizzo. 
-
-
-Si può generare un indirizzo link local di ciascuna interfaccia, in modo da poter comunicare sulla rete locale. 
-
-%% TODO smt
-
-I prefissi contenuti in un router advertisement sono associati ad un tempo di vita, un timer oltre il quale quel prefisso è da non considerarsi più valido, e non può essere riassegnato all'interfaccia. 
-Questi tempi associati agli indirizzi sono \textit{valid lifetime} e \textit{preferred lifetime}, il primo è il tempo per cui un indirizzo può essere associato all'interfaccia, ed il secondo è il tempo per cui l'indirizzo può essere utilizzato per nuove connessioni. 
-
-Questo permette il renumbering automatico degli host, tramite nuove router solicitation, e configurazioni automatiche. 
-
-Gli indirizzi e gli altri parametri di configurazione come i server DNS possono essere configurati manualmente. 
-È possibile effettuare una configurazione interamente manuale, con DHCPv6, su specifica dell'autoconfigurazione stateless. 
-
-Le specifiche stateful nella stateless riguardano due flag dedicate nel router advertisement. Queste sono \textit{managed address configuration}, che indica se l'host deve ottenere indirizzi da parte di DHCPv6, mentre un secondo campo indica se deve utilizzare quest'ultimo per ottenere altre informazioni di configurazione. Se è il primo è settato, lo anche questo. 
-
-%% TODO smt
-
-
-Il router assegna tanti indirizzi, poiché ne riceve tanti dall'esterno e poiché una stessa macchina potrebbe avere più provider, ed ogni provider inietta su routing diverso. 
-Quando si decide di parlare con un interlocutore remote, è possibile entrambi abbiano un indirizzo globalmente unico, ma questo potrebbe avere diversi indirizzi IPv6 diversi. Questa scelta impatta le prestazioni, influisce sulla rotta attraverso cui avviene la comunicazione. 
-La scelta migliore può cambiare nel tempo, inoltre un provider potrebbe avere dei problemi e quindi bisognerebbe cambiare provide e quindi rotta, attraverso un altro insieme di indirizzi IPv6. La scelta degli indirizzi di comunicazione è una parte critica. 
-
-Ci sono diverse scelte, tipicamente si preferisce IPv6, anche se è possibile andare ad IPv4, in base alla condizione del destinatario. 
-
-Su IPv4, si provano gli indirizzi di destinazione uno per volta per valutare quale sia più appropriato. 
-
-
-
-Il multihoming si basa su BGP, se si vuole comunicare tra due provide diversi, attraverso BGP. Se le due zone sono separate e sono stati assegnati più indirizzi, BGP è costretto ad inoltrare tutti questi indirizzi. Se questo router connesso all'altro provide è dello stesso provide che assegna gli indirizzi, deve inoltrare solamente questa subnet dove si trova la macchina. 
-
-Gli effetti di questo fenomeno sono l'aumento esponenziale delle tabelle di instradamento a causa della frammentazione delle reti, e quindi dell'inoltro di queste nuove rotte. 
-
-In IPv6 avendo due indirizzi diversi, si ha un insieme di indirizzi, e si sceglie quale di questi utilizzare, così mitigando questo problema. 
-
-Se non si parla BGP non si ha possibilità alternativa, tutte le connessioni che usano questo link potrebbero andare in fault. Inoltre, non si ha bilanciamento. 
-
-Un approccio proposto per risolvere questo è avere una scelta dinamica dell'indirizzo IP, sia per identificare la macchina sia per identificare il provider attraverso cui la si raggiunge. Separando queste due funzioni si separa il locator, la posizione del nodo nella topologia della rete, dall'identifier, per indirizzare il nodo agli strati superiori. 
-
-
-Si utilizza un ID per i livello superiori, per identificare il nodo e comunicare con nodi esterni. 
-Questi indirizzi usati sono solamente identificativi, appartengono effettivamente ad un'interfaccia del destinatario, ma rappresenta solamente un ID della macchina, che può essere per ogni nodo o per ogni processo all'interno del nodo. 
-
-Il locator è l'indirizzo IP usato per instradare il pacchetto, identifica la posizione del nodo nella rete. 
-L'idea è quella di usare il locator solamente al livello tre nella fase di instradamento, seguito da uno strato \texttt{shim6}, sempre al livello tre, per separare l'indirizzo utilizzato e l'indirizzo rappresentativo delle due macchine nella comunicazione. Gli strati superiori sono convinti di utilizzare questi indirizzi. Questo decide la coppia di indirizzi sorgente e destinazione da utilizzare anche rispetto alla disponibilità e le tempistiche dei pacchetti. 
-Si riesce a cambiare i pacchetti senza far cadere la connessione. 
-
-Lo stesso si può usare con meccanismi sofisticati di SDN. 
-
-%% TODO smt shim6
-
-
-Questa separazione non è stata introdotta nel protocollo quando è stato realizzato, poiché ha un effetto a cascata anche su livelli inferiori. Questo è facile risolvere utilizzando degli identificatori end-to-end, scambiando dei \textit{context tags} shim6 che possono essere utilizzati per identificare un contesto e quindi una comunicazione specifica, potendo cambiare dinamicamente i vari indirizzi. 
-
-\subsection{Transizione}
-
-Il livello di rete ha la caratteristica di essere uniformante, tutte le macchine intermedie devono avere lo stesso protocollo per poter parlare IPv4 o IPv6. 
-Per cui sono necessari meccanici di transizione per realizzare questa transizione da IPv4 a IPv6, poiché è estremamente difficile cambiare protocollo a questo livello. 
-
-IPv6 deve essere compatibile a IPv4 e deve permette il passaggio da IPv4 per la sua adozione. 
-
-Adesso IPv6 è adottato in parallelo rispetto a IPv4, il processo di transizione potrebbe durare decenni. 
-
-Il processo di transizione è diviso in tre fasi
-In un momento IPv6 componeva delle isole separate nell'internet dove si può comunicare con IPv6, dove utilizza prevalentemente i servizi esistenti di IPv4. 
-Nella seconda fase i due protocolli coesistono nella diffusione globale, le varie isole di IPv6 si consolidano ed è possibile comunicare nella maggior parte di internet solamente con IPv6. 
-Nella terza fase l'adozione di IPv6 supera la diffusione di IPv4, che rimane utilizzato su delle isole, e le reti IPv4 si appoggiano sull'infrastruttura IPv6. 
-
-
-Si ha la possibilità di realizzare apparecchiatura dual stack, con due pile protocollari, IPv4 e IPv6. Altri meccanismi utilizzati sono i tunnel, in disuso, configurati manualmente per superare oceani in modo da comunicare solamente su uno stesso protocollo. Altri meccanismi possibili i traduttori di protocollo, come SIIT, NAT64. 
-
-
-Il dual stack è l'approccio più semplice, ma non riduce il fabbisogno degli indirizzi IPv4, rimane il problema di IPv4. Le applicazioni che supportano IPv6 possono utilizzare entrambi i protocolli. 
-Anche se è molto semplice, richiede una doppia gestione dell'infrastruttura. Non integra la rete IPv6 con quella IPv4. 
-
-I client su di un host dual stack tentano di stabilire una connessione IPv6, e sol se non ci riesce stabilisce una connessione IPv4. 
-Il comportamento è descritto da RFC 6555, se il server risponde con un ack ad entrambi i protocolli, resetta una delle due connessioni. 
-
-
-Supponendo di essere in una fase avanzata, con una rete di backbone di IPv6, e parti periferiche con IPv4. Queste due reti non hanno apparecchiature dual stack, per cui bisogna usare dei protocolli di traduzione, che si comportano come un NAT, facendo passare tutto il traffico attraverso il nodo traduttore. 
-
-Lavorando a livello tre ci sono due soluzioni, SIIT e NAT64. Queste mappano indirizzi IPv4 nello spazio IPv6, essendo molto più grande. 
-Ci sono vari modi ufficiali e non ufficiali. In un NAT normale c'è uno stato, e questo ne limita l'utilizzo. 
-
-% dettaglio traduzione ICMP per esempio time exceeded sul nodo di traduzione 
-
-Il primo meccanismo si chiama \textit{Stateless IP/ICMP Translation} (SIIT), generale, che offre la possibilità di comunicare attraverso un traduttore. 
-
-Tutto lo spazio indirizzamento IPv4 è mappato dentro una porzione di IPv6. Gli ultimi 6 byte sono composti da \texttt{::ffff:a.b.c.d}. 
-La macchina traduttrice si occupa di inoltrare questo indirizzo mappato. 
-I nodi ottengono indirizzi IPv4 temporanei che vengono mappati in indirizzi IPv6 IPv4-\textit{translated} del tipo \texttt{::ffff:0:a.b.c.d} e usati come indirizzo sorgente. 
-Il traduttore traduce i pacchetti in transito, con una traduzione stateless, non è necessario salvare informazioni aggiuntive. Inoltre, non è importante la macchina da cui entra o esce, poiché il processo è stateless. 
-Questo richiede modifiche alle implementazioni IPv6, e richiede la presenza di assegnazione dinamica di indirizzi temporanei, questi devono essere inoltrati fuori come se fossero appartenenti alla rete. 
-Richiede di gestire il routing per gli indirizzi IPv4-translated all'interno del site. 
-
-
-Il NAT64 è più elegante, ma richiede uno stato parziale. Si chiama così poiché ricorda il NAT, e fonde le soluzioni del SIIT con il NAT. 
-
-Il nodo traduttore dispone di un pool di indirizzi IPv4 che vengono assegnati ai nodi che lo utilizzano, ed il NAT64 mantiene lo stato delle associazioni. 
-Gli indirizzi IPv4 vengono rappresentando i 32 bit dell'indirizzo ad un prefisso di 96 bit di instradamento verso il traduttore. 
-
-La traduzione dei pacchetti avviene come in SIIT. 
-
-Ci vuole uno speciale DNS chiamato DNS64, che aggiunge delle funzionalità, pensato ad un client IPv6 per connettersi ad un servizio IPv4. 
-
-Il DNS64 server consulta il DNS normale, cercando di capire gli indirizzi della macchina del servizio, poiché potrebbe avere indirizzi IPv6. Se ha solo indirizzi IPv4 nota il problema. Allora restituisce invece l'indirizzo IPv6 corrispondente che codifica la destinazione. 
-
-%% TODO NAT64, rewording
+Il principio chiave di RPKI è che non è necessario, si può mantenere la configurazione legacy di BGP oppure implementarlo indipendentemente dagli altri. 
 
 \clearpage
 
@@ -1548,7 +1670,7 @@ Se la banda dell'ultimo link corrisponde a quello del collo di bottiglia, si pot
 
 Se TCP non conosce la topologia della rete, invia pacchetti in base alla sua \texttt{cwnd}. Questi arrivano al router che li mette in coda e li invi in modo continuo. Quando ritorna un ack, al ritorno vengono automaticamente spaziati tra di loro dal tempo del collo di bottiglia. Da questo si può temporizzare il processo senza usare un clock interno. Quindi invia pacchetti subito dopo aver ricevuto un ack, per temporizzarli esattamente come vorrebbe il collo di bottiglia. Temporizzando in maniera ottimale, la coda di uscita dei router è vuota, mentre nella fase iniziale si stressa. 
 
-QUesto è il meccanismo \textit{self-clocking}, che permette alle macchine di auto-regolarsi per trasmettere pacchetti senza intasare la coda dei router. In questo modo non è neanche necessario conoscere la topologia della rete, avendo una temporizzazione esattamente al sul collo di bottiglia. 
+Questo è il meccanismo \textit{self-clocking}, che permette alle macchine di auto-regolarsi per trasmettere pacchetti senza intasare la coda dei router. In questo modo non è neanche necessario conoscere la topologia della rete, avendo una temporizzazione esattamente al sul collo di bottiglia. 
 
 Questa finestra di ack di ritorno non permette di trasmettere continuamente, è troppo corta e comunque ci impone di inviare pacchetti a ``singhiozzo''. Se la finestra è troppo larga, mentre si stanno inviando i pacchetti potrebbe arrivare un ack precedente. 
 
@@ -1567,7 +1689,7 @@ Per determinare il valore migliore per $W$ si può incrementare linearmente ad o
 Ma in questo modo determinare il numero adatto di pacchetti è molto più lungo di quanto necessario. Slow-start ha uno scopo diverso, e per stimare più velocemente questa finestra effettua una ricerca dicotomica, raddoppiando ogni volta la finestra fino a quando non supera la banda massima, potendo facilmente stimare l'ordine di grandezza. Questa è un'esplorazione esponenziale dello spazio delle soluzioni. 
 
 Il meccanismo di \textit{Addictive-Increase Multiplicative-Decrease}, (AIMD) per TCP, vuole migliorare l'andamento a regime basato su fast-recovery e fast-retransmit. 
-QUando la finestra di congestione aumenta, si ha una fase di congestion avoidance, ed aumenta di una quantità costante nel tempo, è un incremento additivo lineare. Ogni volta che la finestra diminuisce, questa viene dimezzata, quindi moltiplicata per $0.5$. 
+Quando la finestra di congestione aumenta, si ha una fase di congestion avoidance, ed aumenta di una quantità costante nel tempo, è un incremento additivo lineare. Ogni volta che la finestra diminuisce, questa viene dimezzata, quindi moltiplicata per $0.5$. 
 Questo comportamento di TCP ha un buon effetto sulla fairness, sull'uguale trattamento con cui la rete tratta diverse connessioni TCP, quando queste si contendono una banda, con AIMD se la dividono equamente. Nessuna delle connessioni ha precedenza, per esempio sul tempo da cui è attiva. 
 
 %% TODO ADD a simple scenario, TCP reno throughput
@@ -2373,6 +2495,10 @@ Tutti questi scenari sono configurati in modo sia determinabile con quale interf
 Si rappresenta ora un laboratorio più grande sommando le varie tecnologie trattate in precedenza. 
 Questo lab è composto da tre AS: AS20, AS100, e AS200, quest'ultimi sono due stub, ovvero non hanno a loro volta customer. 
 %% TODO add img bgp-multi-homed-stub-large
+\begin{figure}[H]%
+    \centering%
+    \includegraphics[width=3cm]{example-image}%
+\end{figure}
 
 Viene usato RIP sia in AS20 che in AS100, bisognerebbe configurare RIP in questi due AS, in AS20 è semplice avendo due router, mentre in AS100 con tre router, RIP ha uno scopo molto più forte. 
 Questi router vengono configurati con RIP e per distribuire le rotte annunciate da BGP, con RIP:
@@ -3060,78 +3186,5 @@ Gli step relativi al debugging è analogo per gli altri lab, bisogna verificare 
 Per le VTEP è più complesso, ed è importante inserire gli indirizzi giusti. Sulle VLAN si può inserire uno sniffer con wireshark, oppure si può usare \texttt{tcpdump}. 
 
 \clearpage
-
-\section{Introduzione a RPKI}
-
-%% * slide su moodle
-
-Il RPKI è un meccanismo abbastanza diffuso per la sicurezza di BGP, poiché è un protocollo non autenticato, dove sono possibili attacchi e situazioni possibili per errori di configurazioni che possono rompere BGP. 
-
-Dato un annuncio BGP, un router BGP potrebbe chiedersi se quell'AS è un suo vicino, inoltre si potrebbe chiedere se è veramente il proprietario di quel prefisso, poiché su BGP non sono presenti controlli ed è possibile annunciare rotte arbitrarie. Non ci sono controlli di default, quindi tutti i router si fidano arbitrariamente. 
-
-Il problema è che BGP assume che tutti dicano la verità, ma in caso di utenti malevoli, è facilmente impersonare altri AS, ed annunciare prefissi arbitrariamente. 
-Non necessariamente questo è un utente malevolo, può essere semplicemente un errore di configurazione. 
-ALcune situazioni possono generare un local hijack, dove solo la parte più locale viene instradata verso un finto prefisso. Oppure si potrebbe annunciare un annuncio più specifico, questi infatti verranno preferiti, causando un global hijack, redirezionando l'intero traffico destinato al prefisso più specifico, diffondendosi in maniera autonoma tra di loro, poiché BGP effettua solo check esatti. 
-
-In questo caso per mitigare l'attacco si potrebbero annunciare due rotte più specifiche per coprire il prefisso annunciato dall'utente malevolo. Questo problema consiste nella propagazione di moltissime rotte aggiuntive, facendo crescere in modo incontrollato la tabella di instradamento. Inoltre, si vorrebbe prevenire questo attacco, quindi risolverlo prima che l'attaccante possa annunciare questa rotta più specifica. C'è sempre un lasso di tempo dove l'attaccante può ottenere qualcosa. 
-
-
-Un altro tipo di global hijack consiste nell'annunciare una rotta inventandosi un AS path, annunciando lo stesso prefisso, in questo caso si contendono la rotta. 
-
-Questo succede poiché gli annunci BGP sono annunciati senza alcuna validazione. I router verificano autonomamente che come AS affiorante sia presente il primo AS nell'AS path, questa è una politica di sicurezza già usata da tempo, in modo da garantire che gli AS vicini inoltrino solo rotte dove si sono inseriti. 
-Questo si può disabilitare, in alcuni casi potrebbe essere utile. 
-
-In un IXP questa politica viene disabilitata, poiché l'IXP ha un suo AS, e dovendo connettere due AS diversi, gli annunci passano attraverso il route server interno dell'IXP. Concettualmente è un route reflector, ma è in un altro AS. 
-Non si inserisce nell'AS path poiché il traffico non lo attraversa, non applica il processo decisionale, ma anche non va a modificare gli annunci. 
-
-
-Un attaccante può applicare censura, rubare criptovalute, intercettare il traffico, effettuare blackholing, rubare delle credenziali, inviare spam, anche se sono presenti delle tecniche di cifratura sulle mail. 
-
-Non necessariamente si tratta di attacco, potrebbe essere una configurazione errata a causa di typo, oppure a causa di differenze nei linguaggi usati dai router BGP. Per esempio il prepending nei router della Cisco si configura inserendo l'ASN ed il moltiplicatore, mentre nei router Juniper si inserisce l'ASN tutte le volte necessarie. 
-Per questo è possibile individuare ASN come uno, due o tre, che appartengono a grandi Università americane. 
-Un altro problema può essere causato dai configurazioni errate di filtri. Degli annunci interni se vengono passati esternamente con route leak, oltre a problemi economici è possibile vengano saturati i link. 
-
-Modificare il protocollo BGP per realizzare protocolli non è realizzabile, poiché molti di questi router sono vecchi con un tempo di riavvio critico. 
-Per cui si punta a prevenire tutti gli attacchi non intenzionali. 
-
-Gli IRR sono dei registri di internet pubblicamente consultabili dove si indica la proprietà di un prefisso. Ma dato che è pubblico, bisogna comunque verificare le informazioni. Essendo scritte in maniera standard e pubbliche, queste informazioni possono essere utilizzate per creare automaticamente dei filtri BGP per AS, basati su informazioni verificabili. 
-
-Questi IRR non sono usati globalmente, non è presente un'autorità centrale, non necessariamente sono mantenuti ed accurati. Per cui utilizzando dei filtri automatici e stringenti, si blocca la maggior parte di Internet. 
-
-Una PKI, \textit{Public Key Infrastructure} è un sistema pubblico di chiavi, un albero di certificazione. Si può generare un certificato firmandolo da solo, ma questo è validato, si valida un certificato firmandolo da un certificato conosciuto, chiedendo ad organizzazioni riconosciute per la certificazione. Così si crea una catena di fiducia. 
-
-
-In questo modo si possono validare degli annunci BGP, associando gli ASN agli IP, creando un sistema di certificazione di certificati pubblici che accoppia la nozione che un certo prefisso è proprietà di un certo AS. Questo sta ignorando il problema di validazione di un path, si occupa solo dell'appartenenza di un certo prefisso. 
-
-RPKI aiuta a prevenire tutti quelli incidenti solitamente dovuti a configurazioni errate. RPKI deve fidarsi dei RIR come \textit{Trust Anchor}, le cinque organizzazioni che si dividono lo spazio fisico del globo per assegnare indirizzi IP ai propri AS. I RIR hanno il controllo sull'accuratezza e saranno loro a firmare i certificati per garantire i proprietari di un prefisso. 
-
-Il proprietario di un prefisso non è detto che sia chi annuncia un certo prefisso, questi possono essere affittati. 
-
-
-RPKI funziona con due oggetti totalmente separati, uno si occupa di certificare ASN e prefissi IP, ed un altro validatore, esterno al protocollo, si occupa di inserire le informazioni relative nelle configurazioni BGP. 
-
-Ogni RIR ha il suo certificato self signed, che firmerà i certificati, potrebbero essere affidati ai LIR, o direttamente agli utenti finali. Il termine ROA indica un certificato verificato da una catena di fiducia fino ad un root certificate. 
-
-Ognuno può firmare certificati per qualcosa di più specifico, i cinque RIR hanno root certificate per tutte le risorse, \texttt{\/0}. L'idea del ROA è che sono firmati dal LIR ed il LIR si prende un pezzo dell'indirizzamento. 
-
-Un singolo ROA può contenere una lista di prefissi al suo interno, potenzialmente potrebbero essere contenuti in un unico ROA, in base a criteri determinati dal LIR. Questi ROA possono essere sovrapposti, contengono informazioni base, la data di inizio e fine validità, una delle condizioni per cui possono essere sovrapponibili. 
-
-Tra le informazioni base sono il prefisso, gli origin AS verificati, e la massima lunghezza del prefisso, per evitare di poter annunciare prefissi più specifici. In questo modo si va a certificare un prefisso. 
-
-L'idea è che esistono protocolli adatti, in modo che il validatore possa leggere le repository RPKI, gli AS dovranno avere un validatore oppure fidarsi di un validatore esterno. Si validano come si valida qualunque certificato, confrontando la firma digitale del ROA, salendo la catena di fiducia controllando se è valida rispetto alla chiave pubblica del LIR che ha certificato il prefisso, analogamente si valida il certificato del LIR, da parte del RIR. 
-
-Una volta che si è verificata la validità, si installano sui router moderni, un protocollo moderno può interagire direttamente con queste repository, altrimenti software specifici li trasformano in route map da inserire direttamente nella configurazione BGP, per router più vecchi. 
-
-
-Per validare un annuncio, si controlla che il prefisso annunciato provenga da uno degli origin AS certificati, e si controlla che non sia più specifico della lunghezza massima presente nel certificato. 
-
-
-Questo sistema si scontra con la legacy degli AS, al giorno d'oggi molti prefissi hanno i ROA, ma pochi AS li verificano. Se arriva un ROA non verificato bisogna scegliere se accettarlo o scartarlo, dato che l'applicazione dei ROA non è uniformata su tutti gli AS. 
-
-Questo è un bilanciamento che si sta spostando nell'Internet, lentamente si filtrano gli indirizzi invalidi. In realtà invece di rifiutarli, si etichettano come una community, abbassando la loro local preference, se è valido si installa comunque, e se è invalido e non ha altro modo di arrivarci, viene installato comunque. 
-
-RPKI è favorito poiché non ha un costo ragionevole dal punto di vista dell'hardware ed economico, inoltre non modifica il protocollo. Alternative diverse da RPKI per validare il completo AS path esistono da tempo ma non sono utilizzate, poiché è necessario un cambiamento considerevole. 
-
-Il principio chiave di RPKI è che non è necessario, si può mantenere la configurazione legacy di BGP oppure implementarlo indipendentemente dagli altri. 
 
 \end{document}

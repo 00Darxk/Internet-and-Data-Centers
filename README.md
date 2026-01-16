@@ -3,7 +3,7 @@ Appunti tratti dal corso di Internet and Data Centers, Anno Accademico 2025/26, 
 
 ## Contenuti:
  - [Esercizi](Esercizi/): [soluzioni](Esercizi/labs) di esercizi, esami o esoneri. Le traccie dei singoli esercizi sono o nella directory del lab o nel [README](Esercizi/labs/README.md). Ed un [template](Esercizi/lab-template/) generico per un lab; 
- - [Appunti](Internet-and-Data-Centers.pdf) delle lezioni, tenute l'anno accademico 2025/26 dal professore Maurizio Patrignani;
+ - [Appunti](Internet-and-Data-Centers.pdf) delle lezioni, tenute l'anno accademico 2025/26 dal professore Maurizio Patrignani e Lorenzo Ariemma;
 
 ## Contenuti del Corso
 
@@ -74,7 +74,8 @@ Appunti tratti dal corso di Internet and Data Centers, Anno Accademico 2025/26, 
 
 
 ## Materiale Aggiuntivo
- - [asrank](https://asrank.caida.org/asns) sito per rankare autonomous system;
+ - [Appunti](https://github.com/00Darxk/Reti-di-Calcolatori) del corso di Reti di Calcolatori 2024/25;
+ - [asrank](https://asrank.caida.org/asns) sito per classificare autonomous system;
  - [RIPEstat](https://stat.ripe.net/) tool per le statistiche BGP di RIPE;
  - [BGP Looking Glass](https://www.bgplookingglass.com/) database di looking glass per vari AS;
  - [*Kathará*](https://github.com/KatharaFramework/Kathara), emulatore di reti, utilizzato durante il corso, esoneri ed esame;
