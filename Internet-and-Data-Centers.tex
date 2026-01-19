@@ -855,227 +855,233 @@ Questo protocollo è diviso in quattro fasi.
 
 \subsection{IPv6}
 
-Lo scopo di IPv6 implementa strategie per sostituire il protocollo ARP. 
+Il protocollo di rete IPv6 mira a sostituire IPv4, con una versione migliore e più efficiente del protocollo di rete livello tre, per aumentarne le prestazioni. Implementa strategie per sostituire il protocollo ARP. Un indirizzo IPv6 è composto da 128 bit, ed ha meccanismi per accorciare la scrittura, utilizzando indirizzi molto corti principalmente per macchine importanti. 
 
-L'indirizzo è composto da 128 bit, ed ha meccanismi per accorciare la scrittura, utilizzando indirizzi molto corti principalmente per macchine importanti. 
-
-L'header IPv4 contiene campi rimossi da IPv6, alcuni non sono mai stati utilizzati, come i campi relativi alla frammentazione. Potrebbero esistere tecnologie che prevedono una dimensione massima dei pacchetti più piccola. In questi casi il router deve spezzare un pacchetto in frammenti, questi campi rimossi si usano appunto per determinare se un frammento appartiene allo stesso pacchetto. 
-Questi frammenti vengono ricomposti a destinazione, aumentando il carico per la macchina destinazione. 
+L'header IPv4 contiene campi rimossi da IPv6, dato che alcuni non sono mai stati utilizzati, come i campi relativi alla frammentazione. 
+Alcune tecnologie possono richiedere una MTU più piccola, e questo richiede che il router frammenti i pacchetti di livello tre, usando questi campi IPv4, rimossi da IPv6, per tenere traccia dei frammenti. 
+Questi frammenti vengono poi ricomposti a destinazione, aumentando il carico per la macchina destinazione. 
 Se viene specificato che un pacchetto non può essere frammentato ed un router sul tragitto individua una strettoia, questo viene scartato e viene inviato un pacchetto ICMP. 
+La scheda di rete di una macchina condivide le MTU dei singoli livello protocollari a quelli superiori. 
 
+È stato rimosso il campo checksum, che andava ricalcolato ed in teoria controllato ad ogni hop. Questo nella patrica non viene quasi mai controllato dai router per aumentare l'efficienza, che dovevano comunque ricalcolarlo perdendo di efficienza. 
 
-La scheda di rete di una macchina condivide le MTU dei singoli livello protocollari a quelli superiori. È stato rimosso il campo checksum, che andava ricalcolato ed in teoria controllato ad ogni hop. Questo non viene quasi mai controllato dai router per aumentare l'efficienza. 
+In IPv6 mancano le opzioni, campi di lunghezza dinamica, per rendere la struttura del pacchetto stabile. Se il pacchetto è privo di \textit{extension header} è sempre di 40 byte, i primi 8 sono l'header, ed i restanti 32 per gli indirizzi sorgente e destinazione. Un pacchetto IPv6 ha i seguenti campi: 
+\begin{itemize}
+    \item Il campo \textit{version} di 4 bit, di valore \texttt{0110} (6) per indicare IPv6
+    \item Il campo \textit{traffic class} di 8 bit, simile al TOS in IPv4, può rappresentare la priorità del pacchetto nel traffico Internet. Può essere usato da ISP per rispettare accordi commerciali tra di loro, assegnando ai pacchetti diverse classi di servizio
+    \item Il campo \textit{flow label}, di 20 bit, di utilizzo ancora poco chiaro. Quest'etichetta ha lo scopo di individuare il flusso a cui il pacchetto appartiene in modo da effettuare un instradamento veloce. Due flussi in IPv6 sono uguali solo se condividono indirizzo e porta destinazione ed anche il valore di questo campo. 
+    \item Il campo \textit{payload length} di 16 bit, specifica la lunghezza dei dati nel pacchetto, in byte, fino ad un massimo di 64 KB. Per pacchetti di dimensioni maggiori si usa l'opzione \textit{jumbo payload}
+    \item Il campo \textit{next header} di 8 bit specifica l'header successivo, se presente. Permette di specificare degli \textit{extension header} che contengono anch'essi il campo next header, quindi è possibile realizzare una catena di header, simile alle opzioni in IPv4. 
+    \item Il campo \textit{hop limit} di 8 bit, è essenzialmente il TTL in IPv4
+    \item I campi \textit{source e destination address} di 16 byte ciascuno, corrispondono agli indirizzi sorgente e destinazione
+\end{itemize}
 
-In IPv6 mancano le opzioni, campi dinamici, per rendere la struttura del pacchetto stabile. 
-Ogni pacchetto ha un'etichetta, diversa per ogni pacchetto, in modo da effettuare un'instradamento veloce dalla cache. 
-
-%% TODO descrizione campi ipv6
-
-
-Il campo next header permette di specificare degli \textit{extension header} che contengono anch'essi il campo next header, quindi è possibile realizzare una catena di header, simile alle opzioni in IPv4. 
+%% TODO add img confronto tra i campi IPv4 e IPv6
+\begin{figure}[H]%
+    \centering%
+    \includegraphics[width=3cm]{example-image}%
+\end{figure}
 
 L'extension header rappresenta un nuovo metodo per implementare le opzioni, questi extension header possono essere di routing, o di codifica, o header di livelli superiori. 
-% catena di margherite
-Ci sono alcuni header che se sono presenti devono essere letti necessariamente. Un IS guarda gli header fino a quando lo riguardano, sono ordinati in modo da avere opzioni diverse, dedicate. 
 
-%% TODO vari extension header
+Ci sono alcuni header che se sono presenti devono essere letti necessariamente. Un IS guarda gli header fino a quando lo riguardano, sono ordinati in modo da avere opzioni diverse, dedicate. 
+\begin{enumerate}
+    \item Header IPv6
+    \item L'header \textit{Hop by Hop} (00) contiene informazioni rilevanti per ogni nodo attraversato dal pacchetto, in questo header è contenuta l'opzione jumbo payload
+    \item L'header \textit{Destination Options} (60) contiene informazioni opzionali, in questa posizione implica che tutti i nodi intermedi specificati nel \textit{Routing} devono leggere queste opzioni
+    \item L'header \textit{Routing} (43) indica una lista di router da attraversare, aumentando le prestazioni rispetto ad IPv4. Ogni router in questa lista aggiorna l'indirizzo destinazione del pacchetto con l'indirizzo IPv6 del prossimo router nella lista  
+    \item L'header \textit{Fragment} (44) viene usato dall'host mittente solo per l'host destinatario, per indicare la frammentazione del pacchetto. Implica che i router intermedi non possono frammentare ulteriormente il pacchetto. IPv6 prevede una MTU minima di 1280 byte, altrimenti bisogna frammentare al livello due. Ogni nodo deve implementare una sua strategia di \textit{MTU Path Discovery}
+    \item L'header \textit{Authentication} (51) offre il supporto nativo di IPv6 per la sicurezza, IPsec, ma non tutte le implementazioni di IPv6 seguono questa convenzione. Quest'header offre un modo per verificare l'autenticità dell'indirizzo mittente e che il pacchetto non sia stato manomesso in transito
+    \item L'header \textit{Encapsulating Security Payload} (50) garantisce che solo il destinatario autorizzato possa leggere il contenuto del pacchetto, cifrando il contenuto di ciò che segue. 
+    \item L'header \textit{Destination Options} (60) in questa posizione, alla fine della catena, contiene opzioni esaminate solo dal nodo di destinazione
+\end{enumerate}
+
 
 Gli indirizzi IPv6 vengono rappresentati in notazione esadecimale, in un URL gli indirizzi IPv6 sono inclusi tra parentesi quadre. 
-Scompare l'indirizzo di broadcast, che causava per IPv4 un interrupt a tutte le macchine che lo ricevono, indipendentemente dal fatto che sia effettivamente indirizzato loro o meno. 
+Scompare l'indirizzo di broadcast, che causava per IPv4 un interrupt a tutte le macchine che lo ricevono.
 
 In una configurazione DHCP, la macchina registra sulla sua scheda di rete gli indirizzi MAC del server DHCP in un insieme per realizzare un insieme di indirizzi multicast. 
-Via software si può dire ad un scheda di rete di raccogliere altre tipi di pacchetti. 
+Via software si può dire ad un scheda di rete di raccogliere altri tipi di pacchetti. 
 Utilizzando uno sniffer, questo raccoglie tutti i pacchetti come se fossero direttamente inviati alla macchina. 
-Dal numero IPv6 si può estrarre l'indirizzo MAC, per aggiungerlo alla lista di indirizzi anycast.  
+Dall'indirizzo IPv6 si può estrarre l'indirizzo MAC, per aggiungerlo alla lista di indirizzi anycast.  
 
 
 C'è una forte presenza di macchine con uno stesso numero, queste macchine anycast sono macchine che offrono servizi, e la richiesta viene soddisfatta dalla macchina più vicina. 
 
-Gli indirizzi IPv6 possono essere privati per vari livelli di privatezza. È molto più frazionato rispetto ad IPv4. 
-
-%% TODO indirizzi
+Gli indirizzi IPv6 possono essere privati per vari livelli di privatezza. È molto più frazionato rispetto ad IPv4, questi si chiamano \textit{Reserved}. Altri tipi di indirizzi sono \textit{Global Unicast}, \textit{Unique Local Unicast}, \textit{Link Local Unicast} e \textit{Multicast}. 
+L'indirizzo \texttt{0:0:0:0:0:0:0:0}, o \texttt{::} indica l'assenza dell'indirizzo, e può essere usato nella richiesta iniziale DHCP, equivalente a \texttt{0.0.0.0} in IPv4. 
 
 
 Ci sono indirizzi che contengono dentro indirizzi IPv4 nascosti, usati in alcuni tipi di transizioni IPv4-Ipv6, ora deprecati. Mentre nelle reti IPv4 c'è un'alta frammentazione e subnetting applicando il CIDR, in IPv6 la lunghezza del prefisso è fissa e diversa dal'identificativo dell'host. C'è comunque la notazione barra per aggregarle a criteri di routing, ma negli indirizzi è sempre presente un prefisso di 64 bit, e quindi hanno una netmask stabile. 
 
 
-La parte di prefisso è utile ad identificare la subnet, mentre l'identificativo dell'host può essere specificato manualmente oppure automaticamente. Aggiungendo q questo indirizzo prefissi diversi si ottengono indirizzi differenti per la stessa macchina. 
+La parte di prefisso è utile ad identificare la subnet, mentre l'identificativo dell'host può essere specificato manualmente oppure automaticamente. Aggiungendo a questo indirizzo prefissi diversi si ottengono indirizzi differenti per la stessa macchina. 
 Quando la macchina trasmette sceglie uno di questi indirizzi da utilizzare per la trasmissione. 
 
+L'identificativo della macchina si può ottenere automaticamente dall'\textit{Interface ID} in formato EUI-64. Questo sfrutta la caratteristica degli indirizzi MAC di essere univoci a livello globale per realizzare identificativi per l'interfaccia altrettanto univoci. Esiste una procedura per passare da EUI-48, l'indirizzo MAC ad EUI-64, l'identificativo di un'interfaccia IPv6, aggiungendo tra i primi 24 bit la stringa \texttt{ff:fe} prima dei seguenti 24, complementando il penultimo bit del primo byte. 
+Tuttavia essendo l'indirizzo MAC statico, anche l'EUI-64 è statico, e potrebbe potenzialmente permettere di tracciare un utente. Quindi per la privacy sono stati introdotti meccanismi per generare alternativamente l'EUI-64, con una stringa casuale di 64 bit. 
 
+Per \textit{link} si intende una rete fisica come esempio una LAN, un collegamento punto-unto o anche una rete geografica comune. 
+Nodi sullo stesso link sono detti neighbor, o vicini. Per \textit{site} invece si intende un insieme di link gestiti da un unica organizzazione. Questi hanno un loro prefisso \textit{link local unicast} ed analogamente \textit{site local unicast}, utilizzabili dentro la LAN. Il prefisso link local è \texttt{fe80::} e site local \texttt{fec0::}. 
+Gli indirizzi IPv6 possono avere un ambito, quindi possono essere validi solo su un link, un site, o globalmente. Non possono essere usati per comunicare con altri nodi al di fuori di questo ambito. 
 
-%% TODO smt
-
-Per link si intende una rete fisica come esempio una LAN, un collegamento punto-unto o anche una rete geografica comune. 
-Nodi sullo stesso link sono detti neighbor, o vicini. Per site invece si intende un insieme di link gestiti da un unica organizzazione. Questi hanno un loro prefisso \textit{link local unicast} ed analogamente \textit{site local unicast}, utilizzabili dentro la LAN. 
-Mentre i prefissi \textit{global unicast} vengono assegnati dalla IANA alle organizzazioni continentali e regionali, ed in seguito vengono assegnati pi facilmente ai singoli IPS, e successivamente utenti. 
+Mentre i prefissi \textit{global unicast} vengono assegnati dalla IANA alle organizzazioni continentali e regionali, ed in seguito vengono assegnati facilmente ai singoli IPS, e successivamente utenti. 
 
 La distribuzione degli indirizzi verso il basso è automatica, e potrebbe essere possibile sostituire gli indirizzi in modo trasparente. 
-Si potrebbero assegnare tutti gli indirizzi che iniziano per una certa sequenza in una zona geografica limitata Tutti questi pacchetti vengono instradati osservando una barra molto corta. 
-Quindi questi prefissi sono suddivisi, i primi 32 bit di prefisso sono assegnati per un ISP, mentre blocchi più grandi a RIR. Successive suddivisioni in barra 48 vengono affidate alle singole organizzazioni, da 48 a 64 è possibile fare subnetting sul site dell'organizzazione per realizzare link. 
+Si potrebbero assegnare tutti gli indirizzi che iniziano per una certa sequenza in una zona geografica limitata. Tutti questi pacchetti vengono instradati osservando una barra molto corta. 
+Quindi questi prefissi vengono suddivisi in questo modo, i primi 32 bit di prefisso sono assegnati per un ISP, mentre blocchi più grandi a RIR. Successive suddivisioni in barra 48 vengono affidate alle singole organizzazioni, da 48 a 64 è possibile fare subnetting sul site dell'organizzazione per realizzare link. 
 
 
-Invece di avere indirizzi broadcast si utilizzano indirizzi multicast. 
-Indirizzi multicast cominciano sempre con \texttt{FF}, questo è seguito da una flag, per indicare se si tratta di un indirizzo permanente o temporaneo. I seguenti quattro bit individuano uno scope specifico che può andare da nodo, a link, site, fino a globale. I seguenti 112 bit identificano il group ID; un gruppo multicast valido su uno scope. 
+Invece di avere indirizzi broadcast si utilizzano indirizzi multicast, cominciano sempre con \texttt{ff}, questo è seguito da una flag di 4 bit, per indicare se si tratta di un indirizzo permanente o temporaneo. I seguenti quattro bit individuano uno scope specifico che può andare da nodo, a link, site, fino a globale. I seguenti 112 bit identificano il group ID, un gruppo multicast valido su un certo ambito a cui un nodo si può iscrivere. 
 
-Indirizzi multicast importanti sono dati da \texttt{FF02::1:FFxx:xxxx}, questi indirizzi sono chiamati \textit{solicited-node}. Si crea un gruppo multicast per ogni indirizzo che non è multicast. 
+Indirizzi multicast importanti sono dati da \texttt{ff02::1:ffxx:xxxx}, questi indirizzi sono chiamati \textit{solicited-node}. Si crea un gruppo multicast per ogni indirizzo che non è multicast. 
 
 Questo indirizzo solicited node viene usato per sostituire il protocollo ARP e ICMPv4. 
+
+Gli indirizzi anycast non sono distinguibili da indirizzi unicast, sono indirizzi unicast assegnati ad un gruppo di interfacce, normalmente di nodi diversi. Bisogna specificare ai nodi che gli è stato assegnato un indirizzo anycast. 
 
 \subsubsection{ICMPv6}
 
 Pacchetti ICMPv6 riprendono le funzionalità di ICMPv4, ed assumono nuove funzionalità e responsabilità gestite da protocolli ARP e IGMP su IPv4. 
 Il pacchetto ICMPv6 presenta una specie di header dove viene specifico il tipo ed i sottotipo, degli header precedenti, seguito dai dati di ICMP. 
 
+Contenuti dentro un pacchetto IPv6, l'header ICMPv6 è indicato dal campo next header di valore 58. L'header ICMP ha tre campi, il tipo, il codice di errore, essenzialmente un sottotipo, e la checksum. 
 Il primo bit del campo type distingue tra due classi di messaggio, di segnalazione di errore o di messaggi informativi. 
 
 
-I pacchetti IPv6 non vengono frammentati, quindi bisogna garantire che non vengano scartati durante il percorso, si vuole determinare l'MTU pià piccola da considerare collo di bottiglia per ridurre la dimensione del pacchetto IP. 
+I pacchetti IPv6 vengono frammentati end-to-end, quindi bisogna garantire che non vengano scartati durante il percorso, non potendo frammentare il pacchetto su un nodo intermedio, si vuole determinare l'MTU pià piccola da considerare collo di bottiglia per ridurre la dimensione del pacchetto IP. 
 La procedura di \textit{Path MTU Discovery} è basata su messaggi ICMPv6 per segnalare pacchetti troppo grandi. 
-
-Prima di interpretare il livello quattro deve l'indirizzo del livello tre, convertendo con un DNS il dominio ad indirizzo IP. 
-In IPv4 il processo si ferma e lancia un processo di discovery di livello due per individuare l'indirizzo MAC del destinatario, con un'ARP. Questo può esistere sulla rete, e quindi raggiungile direttamente, altrimenti si deve inviare al router di default. 
-
-Questo processo di neighbor discovery in IPv6 viene effettuato tramite ICMPv6. Questi pacchetti si occupano della risoluzione degli indirizzi. Sostituendo ARP request e reply con neighbor solicitation e advertisement, utilizzando gli indirizzi multicast all'interno di un link. I messaggi non possono uscire dal link. 
+Inviando pacchetti ICMPv6 progressivamente sul cammino per individuare il collo di bottiglia. 
 
 
-Il messaggio ICMPv6 redirect è simile alla controparte IPv4. Questa informa il router che è presente un router migliore sul link per raggiungere lla destinazione, oppure che la destinazione si trova sullo stesso link. 
-
-
-Indirizzi solicited node multicast vengono calcolati a partire dal prefisso \texttt{FF02}, seguito da 72 bit di zero, seguito da \texttt{01FF}, seguito dagli ultimi 24 bit dell'indirizzo. La probabilità che due macchine abbiano questo stesso indirizzo multicast è molto bassa, poiché gli ultimi tre byte corrispondenti sono quelli dell'indirizzo MAC assegnati dal costruttore, quindi è improbabile siano uguali. Ogni interfaccia viene iscritta ai gruppi multicast corrispondenti a tutti gli indirizzi assegnati da essa. 
-L'uso degli ultimi 24 bit dell'indirizzo IPv6 diminuisce una riduzione delle collisioni, poiché dipendono dall'indirizzo MAC. L'indirizzo destinatario a livello due si può ottenere dall'ID del gruppo a cui è iscritta la macchina. 
+La funzionalità di \textit{Neighbor Discovery} è simile all'ICMP redirect di ICMPv4. 
+Per inviare un pacchetto senza conoscere l'indirizzo, in IPv4 il processo si ferma e lancia un processo di discovery di livello due per individuare l'indirizzo MAC del destinatario, con una richiesta ARP. Questo può esistere sulla rete, e quindi raggiungile direttamente, altrimenti si deve inviare la richiesta al router di default. 
+Questo processo di neighbor discovery in IPv6 viene effettuato tramite ICMPv6. Questi pacchetti si occupano della risoluzione degli indirizzi. Sostituendo ARP request e reply con \textit{neighbor solicitation} e \textit{advertisement}, utilizzando gli indirizzi multicast all'interno di un link. I messaggi quindi non possono uscire dal link dove sono mandati, diminuendo il traffico sulla rete rispetto a broadcast di livello due. 
+Il messaggio ICMPv6 redirect è simile alla controparte IPv4. Questa informa il router che è presente un router migliore sul link per raggiungere la destinazione, oppure che la destinazione si trova sullo stesso link. L'indirizzo solicited node si ottiene aggiungendo gli ultimi 24 bit dell'indirizzo al prefisso \texttt{ff02::1:ff00:0/104}, iscrivendo ogni interfaccia ai gruppi multicast corrispondenti, rappresentati da opportuni gruppi multicast di livello due. 
+La probabilità che due macchine abbiano questo stesso indirizzo multicast è molto bassa, poiché gli ultimi tre byte corrispondenti sono quelli dell'indirizzo MAC assegnati dal costruttore, quindi è improbabile siano uguali. Ogni interfaccia viene iscritta ai gruppi multicast corrispondenti a tutti gli indirizzi assegnati da essa. 
+L'uso degli ultimi 24 bit dell'indirizzo IPv6 permette una riduzione delle collisioni, poiché dipendono dall'indirizzo MAC. L'indirizzo destinatario a livello due si può ottenere dall'ID del gruppo a cui è iscritta la macchina. 
 
 Chi deve risolvere l'indirizzo IPv6 in un indirizzo di livello MAC, invece di mandare un pacchetto broadcast, si calcola l'indirizzo multicast IPv6, da cui si ottiene l'indirizzo MAC di livello due per inviare il pacchetto sull'indirizzo multicast. 
-Rispondendo a questo messaggio inviando all'indirizzo specifico, un pacchetto di neighbor advertisement con il suo indirizzo IPv6 specifico nella porzione dati del pacchetto. 
-
-
+Il ricevente risponde a questo messaggio inviando all'indirizzo mittente, un pacchetto di neighbor advertisement con il suo indirizzo IPv6 specificato nella porzione dati del pacchetto. 
 In IPv6 c'è una cache che sostituisce l'ARP cache, una sorta di mappa che tiene conto della mutua raggiungibilità dei nodi vicini. Per i nodi vicini controlla che siano raggiungibili da neighbor solicitation, per i nodi remoti controlla che siano raggiungibili attraverso il router next-hop. 
-Questo algoritmo permette di individuare rapidamente cambiamenti di indirizzi fisici o guasti nella rete; chiamato \textit{Neighbor Unreachability Detection} (NUD). 
 
-Un'altra funzionalità interessante di IPv6 è l'autoconfigurazione degli indirizzi. 
+
+L'algoritmo di \textit{Neighbor Unreachability Detection} (NUD) permette di individuare rapidamente cambiamenti di indirizzi fisici o guasti nella rete. 
+Un'altra funzionalità interessante di IPv6 è l'auto-configurazione degli indirizzi. 
 Permette ai singoli di nodi di generare un indirizzo IPv6 stabile in modo stateless, senza utilizzare server DHCP. 
-La macchina può prendere l'indirizzo dell'interfaccia, mentre come prefisso di rete utilizza indirizzi link-local. In questo modo può comunicare con il router per ottenere un prefisso da utilizzare sulla rete. 
-Il server DNS deve essere necessariamente specificato a mano, oppure tramite protocolli diversi. 
+La macchina può prendere l'EUI-64 dell'interfaccia come identificatore, mentre come prefisso di rete utilizza prefissi link-local. In questo modo può comunicare con il router per ottenere un prefisso global unicast. 
+Tuttavia, il server DNS deve essere necessariamente specificato a mano, oppure tramite protocolli diversi. 
 
 
-Il meccanismo di router advertisement è un algoritmo dove i router inviano periodicamente su ogni link dei pacchetti di questo tipo, dove si identificano e specificano se siano disponibili agli host per diversi servizi. 
+Il meccanismo di \textit{Router Advertisement} è un algoritmo dove i router inviano periodicamente su ogni link dei pacchetti di questo tipo, dove si identificano e specificano se siano disponibili agli host per diversi servizi. 
 Specificano il loro indirizzo di livello due e indirizzo IPv6 link-local, indicano se sono disponili come default router. Specificano altri parametri come TTL, MTU, ed inoltrano una lista di prefissi utilizzabili sulla rete, assegnati al link, oppure globalmente unici. 
-
 Quando un router comunica un prefisso, gli altri 64 bit si possono ottenere dall'indirizzo MAC, per comunicare con il resto del mondo. 
 
-Questi router advertisement vengono inviati ad intervalli regolari, c'è anche la possibilità di richiedere queste informazioni, tramite una router solicitation, inviato all'indirizzo multicast del link, quindi a tutti i router del link. 
-Questa è una richiesta per un router advertisement, inviato in unicast a questo indirizzo. 
-
+Questi router advertisement vengono inviati ad intervalli regolari, c'è anche la possibilità di richiedere queste informazioni, tramite una \textit{router solicitation}, inviato all'indirizzo multicast del link, quindi a tutti i router del link. 
+Questa è una richiesta per un router advertisement, inviato in unicast all'indirizzo mittente del router solicitation 
 Ci sono meccanismi di riconoscimento di indirizzi duplicati, a bordo della macchina si controlla se un'altra nodo ha già lo stesso indirizzo, specificando come indirizzo sorgente l'\textit{unspecified address}, \texttt{::}. 
 Se non riceve alcuna risposta, adotta quell'indirizzo. 
 
-
-Si può generare un indirizzo link local di ciascuna interfaccia, in modo da poter comunicare sulla rete locale. 
-
-%% TODO smt
-
 I prefissi contenuti in un router advertisement sono associati ad un tempo di vita, un timer oltre il quale quel prefisso è da non considerarsi più valido, e non può essere riassegnato all'interfaccia. 
 Questi tempi associati agli indirizzi sono \textit{valid lifetime} e \textit{preferred lifetime}, il primo è il tempo per cui un indirizzo può essere associato all'interfaccia, ed il secondo è il tempo per cui l'indirizzo può essere utilizzato per nuove connessioni. 
-
 Questo permette il renumbering automatico degli host, tramite nuove router solicitation, e configurazioni automatiche. 
 
 Gli indirizzi e gli altri parametri di configurazione come i server DNS possono essere configurati manualmente. 
-È possibile effettuare una configurazione interamente manuale, con DHCPv6, su specifica dell'autoconfigurazione stateless. 
+È possibile effettuare una configurazione interamente manuale, con DHCPv6, su specifica dell'auto-configurazione stateless. 
 
 Le specifiche stateful nella stateless riguardano due flag dedicate nel router advertisement. Queste sono \textit{managed address configuration}, che indica se l'host deve ottenere indirizzi da parte di DHCPv6, mentre un secondo campo indica se deve utilizzare quest'ultimo per ottenere altre informazioni di configurazione. Se è il primo è settato, lo anche questo. 
 
-%% TODO smt
+\subsubsection{Multihoming}
+
+In generale un nodo IPv6 può avere diversi indirizzi, di diverso ambito, link local, site local o global unicast, avendo almeno un indirizzo link local per interfaccia. 
+Il router assegna tanti indirizzi, poiché ne riceve tanti dall'esterno e poiché una stessa macchina potrebbe avere più provider, ed ogni provider inietta sul router prefissi diversi. 
+Quando si decide di parlare con un interlocutore remoto, è possibile entrambi abbiano un indirizzo globalmente unico, ma più spesso questo potrebbe avere diversi indirizzi IPv6. La scelta su quale indirizzo usare per la comunicazione impatta le prestazioni, influisce sulla rotta attraverso cui avviene la comunicazione. 
+La scelta migliore può cambiare nel tempo, inoltre un provider potrebbe avere dei problemi e quindi bisognerebbe cambiare provide rotta attraverso un altro insieme di indirizzi IPv6. La scelta degli indirizzi di comunicazione è una parte critica nella comunicazione su IPv6. 
 
 
-Il router assegna tanti indirizzi, poiché ne riceve tanti dall'esterno e poiché una stessa macchina potrebbe avere più provider, ed ogni provider inietta su routing diverso. 
-Quando si decide di parlare con un interlocutore remote, è possibile entrambi abbiano un indirizzo globalmente unico, ma questo potrebbe avere diversi indirizzi IPv6 diversi. Questa scelta impatta le prestazioni, influisce sulla rotta attraverso cui avviene la comunicazione. 
-La scelta migliore può cambiare nel tempo, inoltre un provider potrebbe avere dei problemi e quindi bisognerebbe cambiare provide e quindi rotta, attraverso un altro insieme di indirizzi IPv6. La scelta degli indirizzi di comunicazione è una parte critica. 
-
-Ci sono diverse scelte, tipicamente si preferisce IPv6, anche se è possibile andare ad IPv4, in base alla condizione del destinatario. 
-
-Su IPv4, si provano gli indirizzi di destinazione uno per volta per valutare quale sia più appropriato. 
+Ci sono diverse scelte possibili per un ES per gli indirizzi mittente e destinazione di un flusso, il protocollo di scelta viene chiamato \textit{source address selection}. Se si vuole connettere ad un nome di domino, ottiene dal server DNS una lista di possibili indirizzi. Tipicamente preferisce indirizzi IPv6, anche se è possibile andare ad IPv4, in base alla condizione del destinatario. 
+Su IPv4, si provano gli indirizzi di destinazione uno per volta per valutare quale sia più appropriato, applicando una serie di regole. Questa scelta può essere sovrascritta dall'amministratore di sistema o dell'applicazione. 
 
 
 
-Il multihoming si basa su BGP, se si vuole comunicare tra due provide diversi, attraverso BGP. Se le due zone sono separate e sono stati assegnati più indirizzi, BGP è costretto ad inoltrare tutti questi indirizzi. Se questo router connesso all'altro provide è dello stesso provide che assegna gli indirizzi, deve inoltrare solamente questa subnet dove si trova la macchina. 
+Il multihoming si basa su BGP, se si vuole comunicare tra due ISP diversi, attraverso BGP. Se le due zone sono separate e sono stati assegnati più indirizzi, BGP è costretto ad inoltrare tutti questi prefissi, detti \textit{Provider Indipendente} (PI), non aggregabili. Altrimenti se l'AS di peering è una subnet si dice che gli indirizzi sono \textit{Provider Aggregatable} (PA), ed è sufficiente annunciare la subnet. Per ogni indirizzo PI annunciato, si inserisce una entry al routing interdominio. 
 
 Gli effetti di questo fenomeno sono l'aumento esponenziale delle tabelle di instradamento a causa della frammentazione delle reti, e quindi dell'inoltro di queste nuove rotte. 
 
-In IPv6 avendo due indirizzi diversi, si ha un insieme di indirizzi, e si sceglie quale di questi utilizzare, così mitigando questo problema. 
+In IPv6 avendo due indirizzi diversi, si ha un insieme di indirizzi, e si sceglie quale di questi utilizzare, così da mitigare questo problema. 
 
-Se non si parla BGP non si ha possibilità alternativa, tutte le connessioni che usano questo link potrebbero andare in fault. Inoltre, non si ha bilanciamento. 
+Ma se non si parla BGP non si ha possibilità alternativa, tutte le connessioni che usano questo link potrebbero andare in fault. Inoltre, non si ha bilanciamento. 
 
-Un approccio proposto per risolvere questo è avere una scelta dinamica dell'indirizzo IP, sia per identificare la macchina sia per identificare il provider attraverso cui la si raggiunge. Separando queste due funzioni si separa il locator, la posizione del nodo nella topologia della rete, dall'identifier, per indirizzare il nodo agli strati superiori. 
+Un approccio proposto per risolvere questo è avere una scelta dinamica dell'indirizzo IP, sia per identificare la macchina sia per identificare il provider attraverso cui la si raggiunge. Separando queste due funzioni si separa il \textit{locator}, la posizione del nodo nella topologia della rete, dall'\textit{identifier}, per indirizzare il nodo agli strati superiori. 
 
 
-Si utilizza un ID per i livello superiori, per identificare il nodo e comunicare con nodi esterni. 
+Si utilizza un ID per i livello superiori, \textit{Upper-Layer ID} (ULID), per comunicare con protocolli di strato superiore, assegnandone uno per nodo. 
 Questi indirizzi usati sono solamente identificativi, appartengono effettivamente ad un'interfaccia del destinatario, ma rappresenta solamente un ID della macchina, che può essere per ogni nodo o per ogni processo all'interno del nodo. 
+Questi sono effettivamente due indirizzi IPv6. 
 
 Il locator è l'indirizzo IP usato per instradare il pacchetto, identifica la posizione del nodo nella rete. 
-L'idea è quella di usare il locator solamente al livello tre nella fase di instradamento, seguito da uno strato \texttt{shim6}, sempre al livello tre, per separare l'indirizzo utilizzato e l'indirizzo rappresentativo delle due macchine nella comunicazione. Gli strati superiori sono convinti di utilizzare questi indirizzi. Questo decide la coppia di indirizzi sorgente e destinazione da utilizzare anche rispetto alla disponibilità e le tempistiche dei pacchetti. 
-Si riesce a cambiare i pacchetti senza far cadere la connessione. 
+L'idea è quella di usare il locator solamente al livello tre nella fase di instradamento, seguito da uno strato \texttt{shim6}, sempre al livello tre, per separare l'indirizzo utilizzato, locator, e l'indirizzo rappresentativo, ULID, delle due macchine nella comunicazione. Gli strati superiori sono convinti di utilizzare gli indirizzi ULID. Questo decide la coppia di indirizzi sorgente e destinazione da utilizzare anche rispetto alla disponibilità e le tempistiche dei pacchetti. 
+Si riesce a modificare gli indirizzi identificativi dinamicamente, senza tagliare la connessione, accordandosi tra i peer su nuovi indirizzi. 
 
-Lo stesso si può usare con meccanismi sofisticati di SDN. 
+La comunicazione si apre usando ULID, scelto da source address selection, se la connessione è persistente si inizializza shim6, per evitare overhead su connessioni brevi. Se il peer non risponde si continua senza, altrimenti negoziano tramite extension headers i \textit{context tags}, che indica il contesto, il locator e l'ULID attualmente in uso. 
+In caso di problemi i peer tentano gli altri locator, fino a trovare una coppia funzionante, modificando tutti i pacchetti in transito verso il peer, sostituendo dagli ULID ai locator in uso. Inoltre, inserisce nel context tag questi indirizzi per informare il peer la connessione corrispondente al pacchetto. 
+Tutto questo mentre i protocolli superiori continuano a vedere l'indirizzo ULID come quello utilizzato. 
 
-%% TODO smt shim6
-
-
-Questa separazione non è stata introdotta nel protocollo quando è stato realizzato, poiché ha un effetto a cascata anche su livelli inferiori. Questo è facile risolvere utilizzando degli identificatori end-to-end, scambiando dei \textit{context tags} shim6 che possono essere utilizzati per identificare un contesto e quindi una comunicazione specifica, potendo cambiare dinamicamente i vari indirizzi. 
+Questo è un meccanismo simile al NAT, che lavora sugli host, quindi non rompe la convenzione end-to-end. Lo stesso si può usare con meccanismi sofisticati di SDN. 
+Questa separazione non è stata introdotta nel protocollo quando è stato realizzato, poiché ha un effetto a cascata anche su livelli inferiori. Questo è facile risolvere utilizzando degli identificatori end-to-end, i \textit{context tag} shim6 che identificano una connessione. 
 
 \subsubsection{Transizione}
 
 Il livello di rete ha la caratteristica di essere uniformante, tutte le macchine intermedie devono avere lo stesso protocollo per poter parlare IPv4 o IPv6. 
-Per cui sono necessari meccanici di transizione per realizzare questa transizione da IPv4 a IPv6, poiché è estremamente difficile cambiare protocollo a questo livello. 
+Per cui sono necessari meccanici di transizione per passare in maniera definitiva da IPv4 a IPv6, poiché è estremamente difficile cambiare protocollo a questo livello. 
 
 IPv6 deve essere compatibile a IPv4 e deve permette il passaggio da IPv4 per la sua adozione. 
+Adesso IPv6 è adottato in parallelo rispetto a IPv4 con apparati dual stack, ed il processo di transizione potrebbe durare decenni. 
 
-Adesso IPv6 è adottato in parallelo rispetto a IPv4, il processo di transizione potrebbe durare decenni. 
+Il processo di transizione è diviso in tre fasi:
+\begin{enumerate}
+    \item In un momento IPv6 componeva delle isole separate nell'Internet dove si poteva comunicare con IPv6, ma utilizza prevalentemente i servizi esistenti di IPv4. 
+    \item Nella seconda fase i due protocolli coesistono nella diffusione globale, le varie isole di IPv6 si consolidano ed è possibile comunicare nella maggior parte di Internet solamente con IPv6. 
+    \item Nella terza fase l'adozione di IPv6 supera la diffusione di IPv4, che rimane utilizzato solo su delle isole, e le reti IPv4 si appoggiano sull'infrastruttura IPv6. 
+\end{enumerate}
 
-Il processo di transizione è diviso in tre fasi
-In un momento IPv6 componeva delle isole separate nell'Internet dove si può comunicare con IPv6, dove utilizza prevalentemente i servizi esistenti di IPv4. 
-Nella seconda fase i due protocolli coesistono nella diffusione globale, le varie isole di IPv6 si consolidano ed è possibile comunicare nella maggior parte di Internet solamente con IPv6. 
-Nella terza fase l'adozione di IPv6 supera la diffusione di IPv4, che rimane utilizzato su delle isole, e le reti IPv4 si appoggiano sull'infrastruttura IPv6. 
-
-
-Si ha la possibilità di realizzare apparecchiatura dual stack, con due pile protocollari, IPv4 e IPv6. Altri meccanismi utilizzati sono i tunnel, in disuso, configurati manualmente per superare oceani in modo da comunicare solamente su uno stesso protocollo. Altri meccanismi possibili i traduttori di protocollo, come SIIT, NAT64. 
-
-
-Il dual stack è l'approccio più semplice, ma non riduce il fabbisogno degli indirizzi IPv4, rimane il problema di IPv4. Le applicazioni che supportano IPv6 possono utilizzare entrambi i protocolli. 
-Anche se è molto semplice, richiede una doppia gestione dell'infrastruttura. Non integra la rete IPv6 con quella IPv4. 
-
-I client su di un host dual stack tentano di stabilire una connessione IPv6, e sol se non ci riesce stabilisce una connessione IPv4. 
-Il comportamento è descritto da RFC 6555, se il server risponde con un ack ad entrambi i protocolli, resetta una delle due connessioni. 
+Meccanismi per facilitare la transizione possono essere basati su apparecchiatura dual stack, con due pile protocollari, IPv4 e IPv6, i tunnel, in disuso, configurati manualmente per superare oceani in modo da comunicare solamente su uno stesso protocollo. Altri meccanismi possibili sono traduttori di protocollo, come SIIT e NAT64. 
 
 
-Supponendo di essere in una fase avanzata, con una rete di backbone di IPv6, e parti periferiche con IPv4. Queste due reti non hanno apparecchiature dual stack, per cui bisogna usare dei protocolli di traduzione, che si comportano come un NAT, facendo passare tutto il traffico attraverso il nodo traduttore. 
+Il dual stack è l'approccio più semplice, ma non riduce il fabbisogno degli indirizzi IPv4, non ne riduce l'adozione. Le applicazioni che supportano IPv6 possono utilizzare entrambi i protocolli. 
+Anche se è molto semplice, richiede una doppia gestione dell'infrastruttura e non integra la rete IPv6 con quella IPv4. 
 
-Lavorando a livello tre ci sono due soluzioni, SIIT e NAT64. Queste mappano indirizzi IPv4 nello spazio IPv6, essendo molto più grande. 
-Ci sono vari modi ufficiali e non ufficiali. In un NAT normale c'è uno stato, e questo ne limita l'utilizzo. 
+I client su di un host dual stack tentano di stabilire una connessione IPv6, e solo se non ci riesce stabilisce una connessione IPv4. 
+Il comportamento è descritto da RFC 6555, il client tenta di instaurare due connessioni, una basata su IPv4 l'altra su IPv6, se il server risponde con un ack ad entrambi i protocolli, resetta una delle due connessioni. 
 
-% dettaglio traduzione ICMP per esempio time exceeded sul nodo di traduzione 
+
+Supponendo di essere in una fase avanzata, con una rete di backbone di IPv6, e parti periferiche con IPv4, le due reti non hanno apparecchiature dual stack, per cui bisogna usare dei protocolli di traduzione, che si comportano come un NAT, passando il traffico attraverso il nodo traduttore. Questo può provocare una serie di altri problemi di scalabilità, affidabilità, ecc. 
+
+Lavorando a livello tre ci sono due soluzioni, SIIT e NAT64. Queste mappano indirizzi IPv4 nello spazio IPv6, essendo molto più grande, come particolari indirizzi IPv6. Ci sono vari modi ufficiali e non ufficiali per effettuare questa traduzione. Un NAT normale è stateful, e questo ne limita le capacità. 
+
+
+%% TODO add dettaglio traduzione ICMP per esempio time exceeded sul nodo di traduzione 
 
 Il primo meccanismo si chiama \textit{Stateless IP/ICMP Translation} (SIIT), generale, che offre la possibilità di comunicare attraverso un traduttore. 
 
-Tutto lo spazio indirizzamento IPv4 è mappato dentro una porzione di IPv6. Gli ultimi 6 byte sono composti da \texttt{::ffff:a.b.c.d}. 
+Tutto lo spazio indirizzamento IPv4 è mappato dentro una porzione di IPv6. Gli indirizzi destinazione IPv4 sono mappati su indirizzi IPv6, dove gli ultimi 6 byte sono composti da \texttt{::ffff:a.b.c.d}, dove \texttt{a.b.c.d} è l'indirizzo IPv4. 
 La macchina traduttrice si occupa di inoltrare questo indirizzo mappato. 
-I nodi ottengono indirizzi IPv4 temporanei che vengono mappati in indirizzi IPv6 IPv4-\textit{translated} del tipo \texttt{::ffff:0:a.b.c.d} e usati come indirizzo sorgente. 
+I nodi IPv6 ottengono indirizzi IPv4 temporanei che vengono mappati in indirizzi IPv6 IPv4-\textit{translated} del tipo \texttt{::ffff:0:a.b.c.d} e usati come indirizzo sorgente. 
 Il traduttore traduce i pacchetti in transito, con una traduzione stateless, non è necessario salvare informazioni aggiuntive. Inoltre, non è importante la macchina da cui entra o esce, poiché il processo è stateless. 
-Questo richiede modifiche alle implementazioni IPv6, e richiede la presenza di assegnazione dinamica di indirizzi temporanei, questi devono essere inoltrati fuori come se fossero appartenenti alla rete. 
+Questo richiede modifiche alle implementazioni IPv6, e richiede la presenza di assegnazione dinamica di indirizzi temporanei, questi devono essere inoltrati verso l'esterno come se fossero appartenenti alla rete. 
 Richiede di gestire il routing per gli indirizzi IPv4-translated all'interno del site. 
 
 
 Il NAT64 è più elegante, ma richiede uno stato parziale. Si chiama così poiché ricorda il NAT, e fonde le soluzioni del SIIT con il NAT. 
 
 Il nodo traduttore dispone di un pool di indirizzi IPv4 che vengono assegnati ai nodi che lo utilizzano, ed il NAT64 mantiene lo stato delle associazioni. 
-Gli indirizzi IPv4 vengono rappresentando i 32 bit dell'indirizzo ad un prefisso di 96 bit di instradamento verso il traduttore. 
+Gli indirizzi IPv4 vengono rappresentati in IPv6 aggiungendo i 32 bit dell'indirizzo IPv4 ad un prefisso di 96 bit di instradamento verso il traduttore. Mentre la mappatura da IPv6 a IPv4 è dinamica prendendo un indirizzo dal pool disponibile, per cui deve tenere traccia solo dell'associazione da IPv6 a IPv4 e non viceversa, poiché è deterministica. 
 
-La traduzione dei pacchetti avviene come in SIIT. 
+La traduzione dei pacchetti in transito avviene come in SIIT. 
+Inoltre, richiede uno speciale DNS chiamato DNS64, che aggiunge delle funzionalità, pensato ad un client IPv6 per connettersi ad un servizio IPv4. 
+Il DNS64 server consulta il DNS locale, cercando di capire gli indirizzi della macchina del servizio, poiché potrebbe avere indirizzi IPv6. Se ha solo indirizzi IPv4 nota il problema. Allora restituisce invece l'indirizzo IPv6 tradotto che codifica la destinazione. 
 
-Ci vuole uno speciale DNS chiamato DNS64, che aggiunge delle funzionalità, pensato ad un client IPv6 per connettersi ad un servizio IPv4. 
-
-Il DNS64 server consulta il DNS normale, cercando di capire gli indirizzi della macchina del servizio, poiché potrebbe avere indirizzi IPv6. Se ha solo indirizzi IPv4 nota il problema. Allora restituisce invece l'indirizzo IPv6 corrispondente che codifica la destinazione. 
-
-%% TODO NAT64, rewording
+Questa traduzione è trasparente ai nodi interessati e si può accoppiare con il PAT, usando un solo indirizzo IPv4 invece di una pool di indirizzi per molti client. Tuttavia presenta gli stessi problemi del NAT per IPv4, non è un meccanismo end-to-end. Nonostante questi problemi il NAT IPv4 è ampiamente adottato e molte applicazioni già supportano NAT. 
 
 \clearpage
 
