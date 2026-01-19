@@ -164,7 +164,7 @@ Offre diversi servizi di trasporto wired e wireless, su rete elettrica, ottica o
 
 Per questi servizi viene definito un \textit{Service Level Agreement} (SLA), ad ogni servizio il fornitore assegna una misura di qualità. Può essere espressa in termini di metriche come il jitter, la distanza tra i vari pacchetti, se è pari a zero questi arrivano tutti allineati. Se la misura della qualità dovesse scendere al di sotto di terminate soglie, sono previsti rimborsi, chiamati ``penali'' all'amministrazione. 
 Gli SLA contemplano anche guasti o anomalie. 
-Vari ISP realizzano questo SPC, a ciascuno è assegnato un gruppo di PA, Pubbliche Amministrazioni, l'accesso ad internet è gestito dai singoli fornitori, in base all'esito dell'asta multi-fornitore. 
+Vari ISP realizzano questo SPC, a ciascuno è assegnato un gruppo di PA, Pubbliche Amministrazioni, l'accesso ad Internet è gestito dai singoli fornitori, in base all'esito dell'asta multi-fornitore. 
 
 Gli ISP realizzano le reti delle PA usando MPLS, per comunicare tra di loro su una rete QXN, \textit{Qualified eXchange Network}, attualmente collocato presso gli IXP di Roma (Namex) e Milano (MIX).  
 
@@ -172,46 +172,36 @@ Gli ISP realizzano le reti delle PA usando MPLS, per comunicare tra di loro su u
 
 \section{Algoritmi di Instradamento}
 
-Si considerano algoritmi di instradamento solo per infrastrutture fisiche, connessi da reti fisse. 
+Si considerano algoritmi di instradamento solo per infrastrutture fisiche, connesse da reti fisse. Per queste esistono due tipi principali di algoritmi di instradamento, \textit{distance vector} e \textit{state packet}. In TCP si utilizza una variante del distance vector. Corrispondono a due filosofie opposte. 
 
-Esistono due tipi principali di algoritmi di instradamento, \textit{distance vector} e \textit{state packet}. In TCP si utilizza una variante del distance vector. Queste sono due filosofie opposte. 
-
-Si vogliono delle certe qualità da questi algoritmi, si vuole avere algoritmi efficienti, per evitare che il calcolo dei cammini abbia un peso eccessivo rispetto all'instradamento dei pacchetti. 
-La tabella di instradamento dentro ai router non viene realizzata con un tabella, ma con strutture ad albero specializzate per avere un accesso il più veloce possibile. 
-SI vuole mantenere la maggior quantità possibile ci computazione sull'hardware, inoltre la dimensione dei pacchetti è piccola, e dipende dalla dimensione dei pacchetti ethernet di 1500 byte, definita dal primo consorzio NIX. %% TODO o VIX? idk 
-Inoltre le risorse computazionali dei router non sono necessariamente sufficienti per poter gestire la complessità della rete. 
-%% riassunto dei pacchetti ethernet standard 1.0, 2.0, 802.3:
-Questi pacchetti sono piccoli, poiché essendo in competizione dovevano realizzare schede di rete più economiche dei loro competitori. Utilizzando meno memoria si hanno schede di rete più economiche, e questo rappresenta un errore da parte del consorzio NIX, anche se si è affermato come lo standard per le comunicazioni via filo, è necessario avere operazioni di inoltro estremamente veloci poiché i singoli pacchetti sono estremamente piccoli. 
-
-
-Un router è diviso nel \textit{data plane} e nel \textit{control plane}, gli algoritmi di routing sono presenti nel control plane, e la tabella di instradamento composta da questo control plane viene inoltrata al data plane. 
-Parlando con le altre macchine i protocolli di routing devono determinare la tabella di instradamento. 
-Si vuole che questi protocolli siano efficienti, poiché su un router sono presenti molti altri servizi aggiuntivi, quindi il tempo del processore è limitato. 
-
-Inoltre si vuole individuare un cammino ottimo, un cammino che impieghi il minor tempo possibile per raggiungere la sua destinazione. Per determinare l'ottimalità del cammino si utilizzano criteri come il numero di hop o il costo delle linee, talvolta assunto inversamente proporzionale alla velocità. 
-
-Questo cammino se minimizza il numero di hop, minimizza il numero di immissioni da parte dei router che attraversa. 
-Un'altra risorse è l'utilizzo delle linee, avendo una banda limitata, non può mandare i pacchetti su una stessa linea, avendo anche un buffer limitato per le singole linee. Il carico corrente della rete è tuttavia difficile da calcolare. 
-Se si considerasse solamente il carico della rete, si creerebbe un fenomeno di retroazione causando un oscillazione della rete incontrollabile. Altrimenti si potrebbero scegliere linee con un packet loss minimo. 
-
-In genere si scelgono algoritmi che si basano sul numero di hop. Questi algoritmi devono essere robusti e dinamici, poiché alcune linee riscontrare malfunzionamenti, errori di configurazione da parte di amministrazioni di rete, etc. 
-Nello stesso tempo, si vuole essere stabile, non si vuole cambiare il routing durante la trasmissione. Tutti i pacchetti devono essere inviati e ricevuti nello stesso ordine, anche se esiste il livello TPC per riordinarli, nessuna macchina deliberatamente invia pacchetti fuori sequenza. Per questo un'oscillazione del routing non è accettabile, poiché grava sul livello TPC, aumentando il tempo necessario per sistemare questi pacchetti. 
-
-Si è realizzato un protocollo inter-dominio che oscilla in continuazione, dato che il suo effetto non era completamente compreso. Per cui è possibile realizzare esperimenti dove la rete diventa instabile. 
-
-
-Il traffico può essere classificato, quando entra in una rete di un ISP, per determinare se si tratta di traffico utente generico o mission critical o privilegiato o VoIP. 
-Inoltre questi algoritmi devono essere equi, nessun nodo deve essere privilegiato o danneggiato. 
-
-L'ultimo criterio è l'economicità, si vuole ridurre ic osti di configurazione e manutenzione dei protocolli di routing. 
-
+Si vogliono delle certe qualità da questi algoritmi: 
+\begin{itemize}
+    \item Si vuole avere algoritmi efficienti, per evitare che il calcolo dei cammini abbia un peso eccessivo rispetto all'instradamento dei pacchetti. 
+    La tabella di instradamento dentro ai router non viene realizzata con un tabella, ma con strutture ad albero specializzate per avere un accesso il più veloce possibile. 
+    Inoltre, le risorse computazionali dei router non sono necessariamente sufficienti per poter gestire la complessità dell'intera rete. 
+    Si vuole mantenere la maggior parte della computazione sull'hardware del router, e questa deve essere veloce data la dimensione dei singoli pacchetti. 
+    Sono di piccola dimensione, poiché durante la creazione dei vari protocolli di rete in competizione, venivano favorite schede di rete più economiche. Utilizzando meno memoria per un pacchetto si hanno schede di rete più economiche, e questo rappresenta un errore da parte del consorzio DIX, che ha creato ethernet, anche se si è affermato come lo standard per le comunicazioni via filo, è necessario avere operazioni di inoltro estremamente veloci poiché i singoli pacchetti sono estremamente piccoli. 
+    Un router è diviso nel \textit{data plane} e nel \textit{control plane}, gli algoritmi di routing sono presenti nel control plane, e la tabella di instradamento composta da questo control plane viene inoltrata al data plane. 
+    Parlando con le altre macchine i protocolli di routing devono determinare la tabella di instradamento. 
+    Si vuole che questi protocolli siano efficienti, poiché su un router sono presenti molti altri servizi aggiuntivi, quindi il tempo del processore è limitato. 
+    \item Inoltre, si vuole individuare un cammino ottimo, un cammino che impieghi il minor tempo possibile per raggiungere la sua destinazione. Per determinare l'ottimalità del cammino si utilizzano criteri come il numero di hop o il costo delle linee, talvolta assunto inversamente proporzionale alla velocità. 
+    Questo cammino se minimizza il numero di hop, minimizza il numero di immissioni da parte dei router che attraversa. 
+    \item Un altro criterio utile è l'utilizzo delle linee, avendo banda limitata, un router non può mandare tutti i pacchetti su una stessa linea, avendo anche un buffer limitato per le singole linee. Il carico corrente della rete è tuttavia difficile da calcolare. 
+    Se si considerasse solamente il carico della rete, si creerebbe un fenomeno di retroazione causando un oscillazione della rete incontrollabile. Altrimenti si potrebbero scegliere linee con un packet loss minimo. 
+    In genere si scelgono algoritmi che si basano sul numero di hop. Questi algoritmi devono essere robusti e dinamici, poiché alcune linee possono riscontrare malfunzionamenti, errori di configurazione da parte di amministrazioni di rete, etc. 
+    \item Allo stesso tempo, si vuole essere stabile, non si vuole cambiare il routing durante la trasmissione. Tutti i pacchetti devono essere inviati e ricevuti nello stesso ordine, anche se esiste il livello TPC per riordinarli, nessuna macchina deliberatamente invia pacchetti fuori sequenza. Per questo un'oscillazione del routing non è accettabile, poiché grava sul livello TPC, aumentando il tempo necessario per sistemare questi pacchetti. 
+    Per questo si sono realizzati protocolli inter-dominio che possono oscillano in continuazione, dato che il loro effetto non era completamente compreso. Per cui è possibile realizzare esperimenti dove la rete diventa instabile. 
+    \item Possono effettuare scelte diverse in base al tipo di traffico, questo può essere classificato quando entra in una rete di un ISP, per determinare se si tratta di traffico utente generico o mission critical o privilegiato o VoIP. 
+    \item Inoltre, questi algoritmi devono essere equi, nessun nodo deve essere privilegiato o danneggiato rispetto a tutti gli altri. 
+    \item L'ultimo criterio è l'economicità, si vuole ridurre i costi di configurazione e manutenzione dei protocolli di routing. 
+\end{itemize}
 
 Questi criteri sono talvolta contrastanti, e bisogna scegliere l'algoritmo migliore per un dato caso d'uso. 
 
 
+Si possono classificare questi algoritmi in statici e dinamici. Gli algoritmi dinamici applicano un instradamento in funzione della topologia e del carico della rete, mentre algoritmi statici hanno applicazione ristretta poiché prendono decisioni indipendenti dallo stato della rete. Questi algoritmi statici vengono utilizzati in casi semplici. 
+La configurazione manuale delle macchine è una configurazione statica, questa è sempre presente anche in piccole parti in ogni rete. Se in una rete sono presenti topologie ad albero, queste non hanno bisogno di una configurazione dinamica, poiché tra due nodi in un albero è presente un solo cammino che li collega. 
 
-Si possono classificare questi algoritmi in statici e dinamici. GLi algoritmi dinamici applicano un instradamento in funzione della topologia e del carico della rete, mentre algoritmi statici hanno applicazione ristretta poiché prendono decisioni indipendenti dallo stato della topologia della rete. Questi algoritmi statici vengono utilizzati in casi semplici. 
-La configurazione manuale delle macchine è una configurazione statica, questa è sempre presente anche in piccole parti in ogni rete. Se in una rete sono presenti topologie ad albero, queste non hanno bisogno di una configurazione dinamica. 
 Invece per topologie magliate è opportuno utilizzare un algoritmo dinamico, poiché al taglio di un link o allo spegnimento di un nodo, bisogna ridistribuire il carico e riorganizzare la rete in modo veloce, senza compromettere l'operabilità delle altre macchine. 
 
 %% TODO immagine rapporto tra routing statico e dinamico
@@ -220,95 +210,94 @@ Invece per topologie magliate è opportuno utilizzare un algoritmo dinamico, poi
     \includegraphics[width=3cm]{example-image}%
 \end{figure}
 
-Uno di questi algoritmi statici è il \textit{flooding} che consiste nell'inoltra ogni pacchetto a tutte le interfacce connesse al router. 
+Uno di questi algoritmi statici è il \textit{flooding} che consiste nell'inoltro di ogni pacchetto a tutte le interfacce connesse al router. 
 
-Gli algoritmi dinamici possono essere successivamente divisi in routing isolato, dove ogni router decide senza comunicare con altri router; il routing centralizzato, dove un router centrale determina la scelta migliore, questa strategia è rimasta per molto tempo sottovalutata; il routing distribuito, questa è la strategia corrente della rete, dove ogni router informa i propri vicini le informazioni note. 
-Nel distance vector i router informano i propri vicini rispetto alla condizione globale, mentre nel link state packet i router inviano alcuni pacchetti verso tutta la rete che raccontano della topologia locale. 
-
-Algoritmi di routing isolato sono \textit{hot potato} e \textit{backward learning}, l'algoritmo utilizzato dai switch o bridge, che determinano in base alla provenienza dei pacchetti le destinazioni possibili rispetto alle varie interfacce. 
-
-
-Per comunicare sulla rete è richiesto un indirizzo di rete associato ad una scheda di rete, ed una netmask associata. Una netmask indica da un indirizzo qual è la parte di rete e quale di host. Per mandare il pacchetto apparentemente non serve, ma è necessaria per determinare la rete dentro cui la macchina è presente e può raggiungere direttamente. 
-
-Si controlla prima se la macchina destinazione è direttamente raggiungibile, inviando un pacchetto MAC di livello due, poiché non è necessario un pacchetto di livello 3. 
-
-Ogni macchina almeno in questo senso ha meccanismi di routing. Inoltre per tutti i destinatari che non sono locali è presente un default gateway, il primo indirizzo disponibile nella rete. 
-Inoltre è necessario conoscere l'IP del DNS per risolvere gli indirizzi. 
-Una macchina avendo queste quattro informazioni può navigare in rete. 
-
-Anche un router ha interfacce e netmask differenti per ogni rete su cui è connesso. Queste vengono inserite nella tabella di instradamento e rappresentano le reti direttamente connesse, queste non possono essere rimosse dalla tabella di instradamento, per configurazione. 
+Gli algoritmi dinamici possono essere successivamente divisi in:
+\begin{enumerate}
+    \item Routing isolato, dove ogni router decide senza comunicare con altri router.
+    Algoritmi di routing isolato sono \textit{hot potato} e \textit{backward learning}, l'algoritmo utilizzato dai switch o bridge, che determinano in base alla provenienza dei pacchetti le destinazioni possibili rispetto alle varie interfacce. 
+    \item Routing centralizzato, dove un router centrale determina la scelta migliore, anche questa strategia è rimasta per molto tempo sottovalutata
+    \item Routing distribuito, questa è la strategia corrente della rete, dove ogni router informa i propri vicini con informazioni note. 
+    I principali algoritmi di routing distribuito sono distance vector e link state packet, nel distance vector i router informano i propri vicini rispetto alla condizione globale, mentre nel link state packet i router inviano alcuni pacchetti verso tutta la rete che raccontano della topologia locale. 
+\end{enumerate}
+Per comunicare sulla rete è richiesto:
+\begin{itemize}
+    \item Un indirizzo di rete ed una sua netmask, associato ad una scheda di rete. Una netmask indica da un indirizzo qual è la parte di prefisso, relativo all'intera rete, e quale di host, relativa alla singola macchina. Per mandare il pacchetto apparentemente non serve, ma è necessaria per determinare la rete dove si trova la macchina a cui può inviare pacchetti direttamente.  
+    Si controlla prima se la macchina destinazione è direttamente raggiungibile, inviando un pacchetto di livello due (MAC), come un ARP request. 
+    \item Ogni macchina almeno in questo senso ha meccanismi di routing. Inoltre per tutti i destinatari che non sono locali è presente un default gateway, il primo indirizzo disponibile nella rete. 
+    \item Inoltre, è necessario conoscere l'IP del DNS per risolvere nomi di dominio in indirizzi. 
+\end{itemize}
+Una macchina avendo queste quattro informazioni può navigare in rete. Anche un router ha interfacce e netmask differenti per ogni rete su cui è connesso. Queste vengono inserite nella tabella di instradamento e rappresentano le reti direttamente connesse e non possono essere rimosse dalla tabella di instradamento, per configurazione. 
 
 In ogni router è presente una parte di routing statico, che rappresenta questa configurazione di interfacce. 
 
 Se il routing è completamente statico questa tabella contiene per ogni nodo da raggiungere le linee da usare, compilata dall'amministratore di rete, chiamato ad intervenire in presenza di guasti. 
-Una variante quasi-statica consiste l'amministratore fornisce più alternative in ordine di priorità. 
+Una variante quasi-statica permette all'amministratore di fornire più alternative in ordine di priorità. 
 
 
-Se il destinatario è direttamente connesso, bisogna determinare l'indirizzo MAC della scheda di destinazione con una richiesta ARP, oppure verso il next hop. Questi pacchetti di livello due vengono creati localmente nelle varie reti locali che attraversa, mentre rimane invariato il pacchetto di livello tre, eccetto per il campo ttl ed il checksum che viene ricalcolato. 
+Se il destinatario è direttamente connesso, bisogna determinare l'indirizzo MAC della scheda di destinazione con una richiesta ARP, altrimenti si ottiene il next hop per raggiungerlo. Questi pacchetti di livello due vengono creati localmente nelle varie reti locali che attraversa, mentre rimane invariato il pacchetto di livello tre, eccetto per il campo ttl ed il checksum che viene ricalcolato. 
 
 
-
-Una versione del flooding chiamato selective flooding viene utilizzato come sotto-protocollo di altri protocolli per inoltrare solo su un insieme di linee selezionato, scartando pacchetti troppo vecchi, scartando un pacchetto  al suo secondo passaggio per un nodo. 
-
-
-Nel routing isolato ogni \textit{intermediate system} calcola in modo indipendente le proprie tabelle. L'hot potato invia il pacchetto alla linea con coda più breve, di interesse solo teorico. 
+Una versione del flooding chiamato selective flooding viene utilizzato come sotto-protocollo di altri protocolli per inoltrare pacchetti solo su un insieme di linee selezionato, scartando pacchetti troppo vecchi, per esempio al suo secondo passaggio per uno stesso nodo evitando cicli.  
 
 
-Nel \textit{backward learning} dai pacchetti in ingresso vengono determinate le macchine raggiungibili su quella linea, IEEE 802.1D a livello due, questi protocolli non aprono pacchetti di livello superiore. Per effettuare il backward learning è importante che non siano presenti maglie, altrimenti un pacchetto potrebbe entrare da più interfacce, accoppiandolo ad un algoritmo per il calcolo dello spanning tree. 
-Può essere raffinato aggiungendo un campo che specifica il costo di un cammino, incrementandolo ad ogni hop. Si possono mantenere alternative ordinate. 
-Quando la destinazione è ignota si effettua flooding. Per la sua necessità di avere una struttura ad albero non è presente in internet, dato che non è possibile tagliare arbitrariamente connessioni. 
+Nel routing isolato ogni \textit{Intermediate System} (IS) calcola in modo indipendente le proprie tabelle. L'hot potato invia il pacchetto alla linea con coda più breve, di interesse solo teorico. 
 
 
-Il routing centralizzato è un meccanismo di routing gestito da un'entità centrale, supponendo l'esistenza di un \textit{Routing Control Center} (RCC) che conosce la topologia della rete, questo spesso non è realistico. 
-È rimasta per molto tempo teorica, ma recentemente sono apparse esigenze di trasferire un grade volume di traffico tra due macchine. Quindi un'autorità centrale tramite dei protocolli, \textit{Software Defined Networking} (SDN), determina la topologia della rete in quel momento e stabilisce la strada migliore per poter trasferire quella grande quantità di dati. Si può scegliere di effettuare routing guidati da protocolli noti o imporre flussi di traffico. 
+Nel \textit{backward learning}, definito in IEEE 802.1D solo su livello due, dai pacchetti in ingresso vengono determinate le macchine raggiungibili su quella linea, questi protocolli non aprono pacchetti di livello superiore. Per effettuare il backward learning è importante che non siano presenti maglie, altrimenti un pacchetto potrebbe entrare da più interfacce, spesso si accoppia ad un algoritmo per il calcolo dello spanning tree o albero ricoprente della rete. 
+Può essere raffinato aggiungendo un campo che specifica il costo di un cammino, incrementandolo ad ogni hop, per mantenere alternative ordinate. 
+Quando la destinazione è ignota si effettua flooding. Per la sua necessità di avere una struttura ad albero non è utilizzato in Internet, dato che non è possibile disattivare arbitrariamente connessioni. 
 
 
-Nel routing distribuito non esiste un RCC, ma tutte le funzionalità sono da tutti gli is, seguendo lo stesso paradigma, comunicando con i propri vicini. Il primo distance vector invia ai propri vicini una parte della tabella di routing, una proiezione rimuovendo colonne relative a macchine locali. Mentre il link state packet invia informazioni sui suoi vicini verso il resto della rete. 
+Il routing centralizzato è un meccanismo di routing gestito da un'entità centrale, supponendo l'esistenza di un \textit{Routing Control Center} (RCC) che conosce la topologia della rete, spesso non è realistico. 
+È rimasta per molto tempo teorica, ma recentemente sono apparse esigenze di trasferire un grade volume di traffico tra poche macchine. Quindi un'autorità centrale tramite dei protocolli, \textit{Software Defined Networking} (SDN \ref{sec:sdn}), determina la topologia della rete in quel momento e stabilisce la strada migliore per poter trasferire quella grande quantità di dati. Si può scegliere di effettuare routing guidati da protocolli noti o imporre flussi di traffico. 
 
+
+Nel routing distribuito non esiste un RCC, ma tutte le funzionalità sono implementate da tutti gli IS, seguendo lo stesso paradigma, comunicando con i propri vicini. Il primo distance vector invia ai propri vicini una parte della tabella di routing, una proiezione rimuovendo colonne relative a macchine locali. Mentre il link state packet invia informazioni sui suoi vicini verso il resto della rete. 
 
 \subsection{Algoritmi Distance Vector}
 
-Ogni is invia una tabella detta distance vector, ad ogni is adiacente. Questa tabella contiene la parte essenziale della sua tabella di instradamento, da cui vengono omessi dettagli locali. 
-Ogni is ricevendo queste tabelle dei propri vicini ricalcolano la tabella di instradamento integrando queste informazioni. 
+Ogni IS invia una tabella detta distance vector ad ogni IS adiacente. Questa tabella contiene la parte essenziale della sua tabella di instradamento, da cui vengono omessi dettagli locali. 
+Ogni IS ricevendo questi distance vector dai propri vicina ricalcola la tabella di instradamento integrando queste informazioni. 
 
-Le destinazioni vengono apprese con un meccanismo di passa-parola. Inizialmente la tabella di instradamento non può essere vuota, altrimenti rimarrebbe vuota ad ogni iterazione dell'algoritmo. La prima informazione da inserire sono gli indirizzi direttamente connessi, a distanza di un singolo hop, nel data plane. Queste informazioni vengono prese nel control plane ed inviate ai suoi vicini. Questi effettuano lo stesso inviando i propri indirizzi direttamente connessi. 
-
-
-
-Ogni destinazione nella tabella è corredata dal costo del cammino, dalla destinazione all'is stesso. Questo vengono calcolati dal distance vector ottenuto dai vicini, sommando i costo della linea di ingresso da cui è stato ricevuto. 
+Le destinazioni vengono apprese con un meccanismo di passaparola. Inizialmente la tabella di instradamento non può essere vuota, altrimenti rimarrebbe vuota ad ogni iterazione dell'algoritmo. La prima informazione da inserire sono gli indirizzi direttamente connessi, a distanza di un singolo hop, nel data plane. Queste informazioni vengono prese dal control plane ed inviate ai propri vicini. Questi effettuano lo stesso inviando i propri indirizzi direttamente connessi, inizializzando l'algoritmo. 
 
 
-Molte aziende e produttori cercando di vendere di più aggiungono caratteristiche e modificano questi protocolli. Il protocollo di distance vector originario appartiene a Cisco. 
 
-Per passare l'informazione bisogna inviare i vari distance vector, questi possono essere inviati secondo vari criteri. Possono essere inviati periodicamente oppure ad ogni modifica della tabella di instradamento. 
+Ogni destinazione nella tabella è corredata dal costo del cammino dalla destinazione all'IS stesso. Questo viene calcolato dai distance vector ottenuti dai vicini, sommando i costi della linea di ingresso da cui è stato ricevuto. 
+
+
+Molte aziende e produttori cercando di superare la competizione, aggiungono caratteristiche e modificano questi protocolli. L'algoritmo di distance vector originario appartiene a Cisco. 
+
+Per passare le informazioni bisogna inviare i vari distance vector ai propri vicini, questi possono essere inviati secondo vari criteri. Possono essere inviati periodicamente oppure ad ogni modifica della tabella di instradamento. 
 
 I nodi adiacenti da aggiornare vengono appresi in base a protocolli di servizio appositi, oppure sono ignoti, inviando i pacchetti di distance vector in multicast. 
 
 
-Il tempo necessario affinché tutte le macchine conoscano tutte le altre è abbastanza lungo, fino a decine di secondi, un tempo estremamente lungo per ingegneria delle reti. Non si può intasare la rete inviando distance vector molto grandi, con più di 1000 nodi. 
-Si preferiscono protocolli come SPF per reti più dinamiche. 
+Il tempo necessario affinché tutte le macchine conoscano tutte le altre è abbastanza lungo, questo tempo si chiama tempo di convergenza, fino a decine di secondi, un tempo estremamente lungo per l'ingegneria delle reti. Non si può intasare la rete inviando distance vector molto grandi, per cui l'utilizzo di questo algoritmo è limitato a reti con non più di 1000 nodi, si preferiscono protocolli come SPF per reti più dinamiche. 
 
 
-Per ogni linea il distance vector è composto da due colonne, una prima che contiene la rete e la seconda il costo per raggiungerla. 
-I costi delle linee vengono sommati, e vengono inseriti nella tabella di instradamento dell'is le connessioni alle reti di costo minore, per ogni LAN determinata. 
+Per ogni linea il distance vector è composto da due colonne, una prima che contiene la rete e la seconda il costo per raggiungerla. Questa colonna dei costi viene sommata al costo della linea ricevente. 
+Tra questi distance vector risultanti, si scelgono le rotte migliori per raggiungere una rete in base al costo minore. Queste vengono inserite nella tabella di instradamento dell'IS. 
 
-Questi is non devono essere sincronizzati altrimenti periodicamente tutte le macchine smetterebbero di funzionare per mandare e ricevere i vari distance vector. Per questo il tempo da attenere per inviare i distance vector vengono sfasati di una certa quantità. Sono presenti inoltre meccanismi per garantire che questo processo non sia sincrono. 
+Questi IS non devono essere sincronizzati altrimenti periodicamente tutte le macchine smetterebbero di funzionare per mandare e ricevere i vari distance vector. Per questo il tempo da attendere per inviare i distance vector viene sfasato di una certa periodo. Sono presenti ulteriori meccanismi per garantire che questo processo non sia sincrono. 
 
 
 Il problema cruciale che si crea con i distance vector è il \textit{count to infinity}, riescono a reagire rapidamente a buone notizie, e lentamente alle cattive notizie. 
 
-Una buona notizia può essere l'aggiunta di una nuova rete, questa propaga il suo distance vector e l'informazione viene propagata sull'intera in un tempo relativamente breve. 
+Una buona notizia può essere l'aggiunta di una nuova rete, il router invia il suo distance vector aggiornato e l'informazione viene propagata sull'intera rete in un tempo relativamente breve. 
 
-Se questa connessione viene tagliata, il vicino non può aggiornare la sua tabella di instradamento. Queste macchina avrebbero raggiunto la rete ora disconnessa passando per macchine altre macchine adiacenti. Poiché non possono eliminare questa entry nella tabella di instradamento, ad ogni nuovo distance vector la distanza alla rete disconnessa incrementa continuazione, tendendo all'infinito. Si crea una specie di eco. 
+Se una connessione viene tagliata, il vicino non può aggiornare la propria tabella di instradamento, non sapendo che il vicino non sia più raggiungibile sull'intera rete. 
+Queste macchine avrebbero raggiunto la rete ora disconnessa passando per altre macchine adiacenti. Poiché non possono eliminare questa entry nella tabella di instradamento, ad ogni nuovo distance vector la distanza alla rete disconnessa incrementa in continuazione, tendendo all'infinito. 
+Si crea una specie di eco, ad ogni passaggio nei distance vector che riceve una macchina, il costo del cammino verso la rete disconnessa è maggiore rispetto all'iterazione precedente, e quindi deve aumentare il costo memorizzato nella sua tabella di instradamento.
 
-Una buona notizia arriva a distanza $k$ in $k$ passi. Le cattive notizie invece si propagano in un tempo che è funzione del valore convenzionalmente attribuito ad infinito. Questo valore si attribuisce alla lunghezza del cammino più lungo più uno. 
+Una buona notizia arriva a distanza $k$ in $k$ passi. Le cattive notizie invece si propagano in un tempo che è funzione del valore convenzionalmente attribuito ad infinito. Questo valore si attribuisce alla lunghezza del cammino più lungo nella rete sommato ad uno. 
 
 
-Se un componete ha inviato la rotta al vicino, e questo gliela rimanda, non dovrebbe considerarla, questo fenomeno si chiama \textit{split horizon}, ma non sempre è efficace, in reti circolari, l'eco propaga in un'unica direzione perpetuamente provocando il fenomeno del \textit{count to infinity}
+Se un apparato ha inviato la rotta al vicino, e questo la rimanda indietro, non dovrebbe considerarla, questo fenomeno si chiama \textit{split horizon}, ma non sempre è efficace per impedire la propagazione dell'eco. In reti circolari l'eco si propaga in un'unica direzione perpetuamente provocando il fenomeno del \textit{count to infinity}. 
+Questo algoritmo non conosce la topologia della rete, quindi non potendo sapere lo stato dei link, l'unico modo per conoscere le rotte raggiungibili è attraverso i distance vector. 
 
-% Questo protocollo inerentemente ha questo problem brutto perché è scemo
-
-Il valore ottimale di infinito per ogni rete dipende dalla sua topologia, e dal modo in cui l'eco viene propagato. Bisogna determinare il costo del cammino più lungo possibile nella rete, ed al massimo prende tutti i router presenti. Non tutte le reti ammettono un cammino che prede tutte le reti. 
+Il valore ottimale di infinito per ogni rete dipende dalla sua topologia, e dal modo in cui l'eco viene propagato. Bisogna determinare il costo del cammino più lungo possibile nella rete, al massimo comprende tutti i router presenti. Non tutte le reti ammettono un cammino che passa per tutti i router. 
 
 %% TODO img add propagazione count fo infinity
 \begin{figure}[H]%
@@ -316,39 +305,39 @@ Il valore ottimale di infinito per ogni rete dipende dalla sua topologia, e dal 
     \includegraphics[width=3cm]{example-image}%
 \end{figure}
 
-Quando il costo di un cammino supera il valore di infinito nella tabella di instradamento, viene rimossa e non più condivisa. Restituisce pacchetti ICMP \textit{destination unreachable} se si prova ad accedere alla rotta. 
+Quando il costo di un cammino supera il valore di infinito nei distance vector, viene rimossa la rotta dalla tabella di instradamento e non più condivisa. Restituisce pacchetti ICMP \textit{destination unreachable} se si prova ad accedere alla rotta. 
 
-Se a rete è connessa è possibile dimostrare con il modello di Bellman e Ford che l'algoritmo converge sempre ad una soluzione ottima, anche se all'inizio le tabelle di instradamento provengono da una situazione diversa. 
-Il numero di passi è lineare se la metrica è il numero di hop. 
-Negli distanze condivise tra i router ci sono due elementi, le buone notizie e le cattive notizie. 
+
+A rete è connessa è possibile dimostrare con il modello di Bellman e Ford che l'algoritmo converge sempre ad una soluzione ottima, anche se all'inizio le tabelle di instradamento provengono da una situazione diversa. Il numero di passi è lineare se la metrica è il numero di hop. 
+
 Ci sono vari modi per valutare l'efficienza di un algoritmo di instradamento. 
+Si può utilizzare il numero di passi come metrica per determinare l'efficienza dell'algoritmo distance vector. In una rete dove ci sono $n$ nodi ed $m$ link, la metrica è relativa solo al numero di hop, una buona notizia si propaga tra i nodi più lontani, al massimo $n-1$ link, in $n-1$ passi, analogamente per una cattiva notizia, attribuita al valore $n$. 
 
-
-Si può utilizzare il numero di passi come metrica per determinare l'efficienza dell'algoritmo distance vector. In una rete dove ci sono $n$ nodi ed $m$ link, la metrica è relativa solo al numero di hop, una buona notizia si propaga tra i nodi più lontani al massimo $n-1$ link in $n-1$ passi, analogamente per una brutta notizia, attribuita al valore $n$. 
-
-Un altra metrica è il lavoro svolto dai router, questi inviano ad ogni passo $m$ distance vector, dove $m$ è il numero massimo di linee interno al router. Ogni tabella ha al più $O(n)$ righe, in ciascuno dei passi il router spende tempo $O(mn)$, dato che la convergenza richiede tempo per propagarsi, nel caso peggiore di $O(n)$ passim ogni router calcola per un tempo $O(n^2m)$. 
+Un altra metrica è il lavoro svolto dai router, questi inviano ad ogni passo $m$ distance vector, dove $m$ è il numero massimo di linee attaccate al router. Ogni tabella ha al più $O(n)$ righe, per ciascuno dei passi il router spende tempo $O(mn)$, inviando su ciascuna delle $m$ linee un distance vector con $n$ righe. Dato che la convergenza richiede tempo per propagarsi, nel caso peggiore di $O(n)$ passi, ogni router calcola per un tempo $O(n^2m)$. 
 
 \subsection{Algoritmi Link State Packet}
 
-Questi algoritmi utilizzano un pacchetto che viene chiamato \textit{link state packet} (lsp) che descrive lo stato dei link di ogni IS. Un router su questa mappa si calcola l'instradamento ottimale per ogni rotta. Usano un algoritmo di calcolo di costo minimo, in questo caso usa Dijkstra. Il router compone da queste informazioni una tabella di instradamento per il valore del next hop per ogni rotta. 
-La mappa della rete viene costituita usando questi pacchetti speciali, qui sorge un problema, poiché i link non sono componenti attivi, al massimo un router può descrivere le macchine presenti intorno all'IS. Questi pacchetti vengono mandati ai vicini e si suppone che i vicini li propaghino in selective flooding da ogni IS ad ogni altro IS della rete. 
+Questi algoritmi utilizzano un pacchetto che viene chiamato \textit{link state packet} (lsp) che descrive lo stato dei link di ogni IS. Un router su questa rete si calcola l'instradamento ottimale per ogni rotta costruendo la topologia completa della rete, dai vari lsp. Usano un algoritmo di calcolo di costo minimo, in questo caso usa Dijkstra, compone una tabella di instradamento per il valore del next hop per ogni rotta. 
+La mappa della rete viene costituita usando questi lsp, qui sorge un problema, poiché i link non sono componenti attivi, al massimo un router può descrivere le macchine presenti intorno all'IS, ma deve includere anche informazioni riguardo i link connessi. Questi pacchetti vengono mandati ai vicini e si suppone che i vicini li propaghino in selective flooding ad ogni altro IS della rete. 
 
-Se viene modificata la topologia, aggiorna la sua mappa e la propaga nella rete. Ogni IS conserva i un database il lsp più recente, per aggiornare la topologia della rete, questi link hanno dei costi e per questo si utilizza un algoritmo come Dijkstra invece di un BFS. 
-Questo database è importate sia identico tra tutti gli IS, le informazioni devono essere propagate, tenendo solo l'ultima copia del lsp. Se la topologia non cambia non è necessario inviare periodicamente l'intero database. 
+Se viene modificata la topologia, il router che rileva questa modifica aggiorna la sua mappa ed invia lsp aggiornati sulla rete. Ogni IS conserva in un database gli lsp più recenti, per aggiornare la topologia della rete. I link hanno dei costi e per questo si utilizza un algoritmo come Dijkstra invece di un BFS, che potrebbe essere utilizzato in caso la metrica sia il numero di hop.  
+Il database deve essere sincronizzato tra tutti gli IS, le informazioni devono essere propagate e uguali tra tutti, considerando solo la versione più recente dei vari lsp. Se la topologia non cambia non è necessario inviare periodicamente l'intero database. 
 Si tratta di un protocollo molto più silente, è sufficiente un unico pacchetto lsp per aggiornare il database correttamente tra tutti gli IS della rete allo stesso stato. 
 
 
 Algoritmi distance vector inviano pacchetti molto grandi per calcolare direttamente la tabella di instradamento, mentre algoritmi link state packet inviano pacchetti piccoli con l'obiettivo di calcolare la mappa della rete, e da questa calcolare la tabella di instradamento. 
-A differenza deu distance vector, questo algoritmo può gestire reti con migliaia e migliaia di nodi, convergendo rapidamente. 
+A differenza dei distance vector, questo algoritmo può gestire reti con migliaia e migliaia di nodi, convergendo rapidamente. 
 
 
-%% !! ALGORITMI DI DIJKSTRA
+\subsubsection{Algoritmo di Dijkstra}
+
 Si considera un insieme $V=\{1,\cdots,n\}$ di vertici numerati, con archi orientati. Si indica con $A(i)$ l'insieme dei vertici $j$ per cui è presente un arco orientato $(i,j)$. Per ogni arco è presente una metrica $a_{ij}\geq0$, questa è infinito se l'arco è assente. La somma di un cammino è la somma delle metriche degli archi attraversati. 
 
-La distanza corrente dal vertici 1 al vertice $i$ è $d[i]$, la distanza minima tra questi è $m(i)$, si definisce $S$ l'insieme dei vertici in cui il cammino corrente ha distanza minima $d[i]=m(i)$. 
+La distanza corrente dal vertice 1, iniziale, al vertice $i$ è $d[i]$, la distanza minima tra questi è $m(i)$. Si definisce $S$ l'insieme dei vertici in cui il cammino corrente ha distanza minima $d[i]=m(i)$. 
 
 
-L'algoritmo di Dijkstra calcola il costo minimo tra il primo nodo ed ogni altro nodo della rete, questi vengono inseriti in $S$ per valori crescenti della distanza da 1. All'inizio contiene solo il primo elemento. Nel secondo passo, per ogni nodo $i$ dal successivo all'ultimo $n$ si pone $d[i]=a_{1i}$. In seguito si ripete finché $V\setminus S$ non è vuoto scegliendo un nodo in questo insieme tale che $d[i]$ sia minimo, aggiungendolo ad $S$, e per ogni nodo $j$ adiacente ad $i$, si pone $d[j]=\min(d[j],d[i]+a_{ij})$. 
+L'algoritmo di Dijkstra calcola il costo minimo tra il primo nodo ed ogni altro nodo della rete, questi vengono inseriti in $S$ per valori crescenti della distanza da 1. All'inizio contiene solo il primo elemento. Nel secondo passo, per ogni nodo $i$ dal successivo all'ultimo $n$ si pone $d[i]=a_{1i}$. 
+In seguito si ripete il seguente passaggio finché $V\setminus S$ non è vuoto, si sceglie un nodo $i$ in questo insieme tale che $d[i]$ sia minimo, aggiungendolo ad $S$, e per ogni nodo $j$ adiacente ad $i$, si pone $d[j]=\min(d[j],d[i]+a_{ij})$. 
 
 \begin{gather*}
     S=\{1\}\\
@@ -359,53 +348,53 @@ L'algoritmo di Dijkstra calcola il costo minimo tra il primo nodo ed ogni altro 
 %% !! LEMMA DELL'INVARIANTE
 
 Se $d[v]=m(v)$ per ogni nodo $v\in S$, allora quando $i$ viene aggiunto ad $S$, anche $i$ ha per $d[i]=m(i)$. 
-Supponendo per assurdo che $d[i]>m(i)$. Sia il cammino minimo $p$ tra 1 a $i$ necessariamente $|p|=m(i)<d[i]$. Sia $j$ l'ultimo nodo di $p$ e $k$ il nodo seguente. Allora deve essere $k\neq i$ altrimenti l'algoritmo avrebbe computato $d[i]=|p|=m(i)$, poiché il sottoinsieme di un cammino minimo è anch'esso un cammino minimo. 
+Supponendo per assurdo che $d[i]>m(i)$. Sia il cammino minimo $p$ tra 1 a $i$ necessariamente $|p|=m(i)<d[i]$. Sia $j$ l'ultimo nodo di $p$, e $k$ il nodo seguente. Allora deve essere $k\neq i$ altrimenti l'algoritmo avrebbe computato $d[i]=|p|=m(i)$, poiché il sottoinsieme di un cammino minimo è anch'esso un cammino minimo. 
 
 %% !! DIMOSTRAZIONE DEL LEMMA
-$d[k]=m(k)$, ovvero il cammino è ottimo poiché è calcolato da $d[j]$, per ipotesi $d[j]=m(j)$ ed l'arco $(j,k)$ è utilizzato da $p$. %% TODO finire
-
+Ipotizzando che $d[k]=m(k)$, ovvero il cammino è ottimo, poiché è calcolato da $d[j]$, per ipotesi $d[j]=m(j)$ e l'arco $(j,k)$ è utilizzato da $p$. Poiché $k$ è un nodo intermedio di $p$, si ha che $m(k)\leq m(i)$. Ma si ha che $d[k]=m(k)\leq m(i)=d[i]$, e questo rappresenta un assurdo, poiché $d[i]$ non è un ottimo e non sarebbe stato scelto dall'algoritmo. 
 
 
 Supponendo che in una rete ci siano $n$ nodi e $m$ link. 
 Un'implementazione semplice richiede tempo $O(n^2+m)=O(n^2)$, in questa si scorrono tutti i nodi ad ogni passo, mentre un'implementazione più sofisticata scorre tutti i nodi ordinati per costo minore, senza doverli scorrere tutti ha una complessità $O(n\log n+m)$. 
 
-Calcolati i cammini minimi, questi formano un albero ricoprente dei cammini minimi, ogni IS crea la sua tabella di instradamento in base a questo albero. Può essere che i cammini minimi calcolati non coincidano perfettamente, poiché possono esistere più cammini ottimali tra due nodi. 
+Calcolati i cammini minimi, questi formano un albero ricoprente dei cammini minimi, ogni IS crea la sua tabella di instradamento in base a questo albero, scartando tutte le informazioni oltre il next hop per una data rotta, poiché suppone che tutti gli altri router abbiano calcolato lo stesso albero ricoprente. Può essere che i cammini minimi calcolati non coincidano perfettamente, poiché possono esistere più cammini ottimali tra due nodi. 
 
-ALcuni algoritmi gestiti da CISCO utilizzano cammini tra due nodi dello stesso costo, \textit{Equal Cost Multi-path}, in questo modo può distribuire il traffico su più rotte. Questi router hanno due entry per ogni rotta, dividono il traffico in queste linee, se non viene gestito bene i pacchetti vengono disordinati ed il livello TCP non è in grado di riordinarli. Per gestirlo correttamente prendono gli indirizzi IP del sorgente e destinazione e ne calcolano l'hash ad un bit, se è uno lo mandano su una rotta, altrimenti lo mandano all'altra. In questo modo instradano interi flussi su rotte diverse. 
+Alcuni algoritmi gestiti da Cisco utilizzano cammini tra due nodi dello stesso costo, \textit{Equal Cost Multi-path}, in questo modo un router può distribuire il traffico su più rotte. Questi router hanno due entry per ogni rotta, dividono il traffico in queste linee, se non viene gestito bene i pacchetti vengono disordinati ed il livello TCP non è in grado di riordinarli. Per gestirlo correttamente prendono gli indirizzi IP del sorgente e destinazione e ne calcolano l'hash ad un bit, se è uno lo mandano su una rotta, altrimenti lo mandano all'altra. In questo modo instradano interi flussi su rotte diverse. 
 
+\subsubsection{Neighbor Greetings}
 
-Poiché i link sono inerti, non è possibile comunicare direttamente con questi. Esiste un protocollo di \textit{neighbor greetings}. Questo si utilizza per mantenere aggiornate la adiacenze, inviato periodicamente su tutte le interfacce. Quando un IS rileva una modifica della topologia invia un lsp per propagare la modifica. 
+Poiché i link sono inerti, non è possibile sapere quando un link è attivo o disattivo. Si utilizza quindi un protocollo di \textit{neighbor greetings}. Questo si utilizza per mantenere aggiornate la adiacenze, inviando periodicamente su tutte le interfacce dei pacchetti. Quando un IS rileva una modifica della topologia, rilevando un nuovo pacchetto di greeting oppure se una delle linee ha superato un tempo di timeout, invia un lsp per propagare la modifica. 
 
-Ogni pacchetto lsp ha un numero di versione relativo al router, il pacchetto non cambia durante la sua propagazione con un processo di selective flooding. Si utilizza questo numero di versione per verificare se è già stato ricevuto un pacchetto con quel numero di versione, in caso non compie alcuna azione, altrimenti se il pacchetto ricevuto ha una versione più recente aggiorna il suo database e lo propaga, oppure se ha una versione precedente, trasmette quello posseduto al mittente, per allinearlo con i database. 
+Ogni pacchetto lsp ha un numero di versione relativo al router, il pacchetto rimane invariato durante la sua propagazione con un processo di selective flooding. Si utilizza questo numero di versione per verificare se è già stato ricevuto un pacchetto con quel numero di versione, in caso il router ricevente non compie alcuna azione, altrimenti se il pacchetto ricevuto ha una versione più recente aggiorna il suo database e lo propaga, oppure se ha una versione precedente, trasmette quello posseduto, di versione maggiore, al mittente, per allinearlo con il proprio database. 
 
-Una LAN su cui si affacciano diversi router si presta male ad essere modellata come un grafo, uno dei router si prende l'onere di rappresentare la LAN come uno pseudo nodo, e gli altri vedranno la LAN come una stella. 
-% isan al gaib
+Una LAN su cui si affacciano diversi router si presta male ad essere modellata come un grafo, uno dei router si prende l'onere di rappresentare la LAN come uno pseudo nodo, e gli altri vedranno la LAN come una stella, avente al centro questo router. 
+
 Per questo alcuni interlocutori sono dei link, sono pseudo nodi che impersonano la connessione. Ogni connessione ha un \textit{designated router} che rappresenta la LAN al resto del mondo, ogni altro router vede la LAN come se fosse attiva. 
 
 \subsection{Protocolli di Routing}
 
-Il termina gateway è un termine antico che indica il router utilizzato per accedere all'internet da una LAN. 
+Il termina gateway è un termine antico che indica il router utilizzato per accedere all'Internet da una LAN. 
 Alcuni protocolli sono detti \textit{Interior Gateway Protocol} (IGP) all'interno di una stessa LAN, questi sono RIP, OSPF, IS-IS. Altri protocolli si chiamano \textit{Exterior Gateway Protocol} (EGP) che sono utilizzati all'esterno delle LAN, questi sono EGP e BGP. 
-Gli IGP vengono utilizzati per aggiornare le tabelle di instradamento all'interno del sistema. 
-I protocolli usati per trasferire informazioni di routing tra diversi domini amministrativi passano per BGP, il protocollo standard esterno. 
+Gli IGP vengono utilizzati per aggiornare le tabelle di instradamento all'interno del sistema, sulla stessa LAN. 
+I protocolli usati per trasferire informazioni di routing tra diversi domini amministrativi passano per BGP, il protocollo standard esterno, ed in generale si usano protocolli EGP. 
 
 \subsubsection{RIP}
 
 Il \textit{Routing Information Protocol} (RIP) è un IGP introdotto nel TCP/IP nel 1982, implementa l'algoritmo distance vector con invio del distance vector ogni 30 secondi. 
-%% questi due strati sono legati tra loro poiché TCP usa indirizzi IP per individuare processi diversi. eg indirizzo IP processo mittente e processo destinatario
-Usa una sola metrica, basata sugli hop, con un numero massimo di hop permetti pari a 15, sono reti piccole. Non vengono considerate altre metriche, tuttavia è compatible con ogni macchina, e converge sempre. 
+Usa una sola metrica, basata sugli hop, con un numero massimo di hop permessi pari a 15, quindi può essere utilizzato solo su reti piccole. Non vengono considerate altre metriche, tuttavia è compatible con ogni macchina, e converge sempre. 
 
-Nella prima versione venivano inviati in broadcast, da RIPv2 i pacchetti vengono inviati alla lista di subnet, ottenute dal proprio indirizzo IP e la netmask. 
+Nella prima versione venivano inviati in broadcast, da RIPv2 i pacchetti vengono inviati alla lista di subnet, ottenute dal proprio indirizzo IP e la netmask, in multicast. 
 
 I pacchetti di richiesta chiedono ai vicini i rispettivi distance vector, i pacchetti di risposta trasferiscono i distance vector richiesti. 
 
-Vengono inviati ogni 30 secondi, aggiungendo un piccolo offset random, per evitare che la rete si sincronizzi globalmente. 
+Vengono inviati ogni 30 secondi, aggiungendo un piccolo offset random, per evitare che la rete si sincronizzi globalmente, possono anche essere inviati senza una richiesta esplicita. Dopo un certo tempo di timeout un prefisso viene considerato non più raggiungibile. 
 
 \subsubsection{OPSF}
 
 L'\textit{Open Shortest Path First} (OSPF) è un protocollo non proprietario, standardizzato dall'IETF, probabilmente il più diffuso IGP per TCP/IP. Abbastanza stabile come protocollo, con le ultime variazioni per IPv6 avvenute nel 2008. 
-Sfrutta l'algoritmo link state packet, pensato per scalare molto. 
-È organizzato gerarchicamente, dividendo la rete in aree connesse dell'intera rete, dove il routing che avviene all'interno di una stessa area, non è necessariamente uguale a quello interno ad un'altra area. Per comunicare tra queste aree si usano router contenuti da più di un'area, per fare da ponte tra queste aree. I router che si trovano sulla backbone hanno una visione di tutto il resto del mondo, mentre quelli  nelle parti marginali hanno una visione molto ristretta.  
+Sfrutta l'algoritmo link state packet, pensato per scalare in modo efficiente. 
+
+È organizzato gerarchicamente, dividendo la rete in aree connesse, dove il routing che avviene all'interno di una stessa area non è necessariamente uguale a quello interno ad un'altra area. Per comunicare tra queste aree si usano router confinanti su più di un'area, per agire da ponte tra queste. I router che si trovano sulla backbone, l'area principale, hanno una visione di tutto il resto della rete, mentre quelli nelle parti marginali hanno una visione molto ristretta.  
 
 Ci potrebbero essere configurazioni di nicchia, per tecnologie speciali che non corrispondono esattamente a questa suddivisione. 
 Generalmente ogni area ha una topologia invisibile alle altre aree, i router di frontiera sono gli unici a cui si può accedere per comunicare con l'interno dell'area. 
@@ -420,134 +409,57 @@ Questo protocollo assegna ogni interfacce ad un'unica area. Un router può esser
     \includegraphics[width=3cm]{example-image}%
 \end{figure}
 
-Ai router di frontiera vengono iniettate rotte, come se fossero locali, dentro al protocollo OSPF, ed inietta sulla sua rete locale queste rotte prendendosi la responsabilità di inoltrarli eventuali messaggi alle altre aree. 
-%% TODO add protocollo IS-IS
+Ai router di frontiera vengono iniettate rotte, come se fossero locali, dentro al protocollo OSPF, che a loro volta iniettano sulla sua rete locale prendendosi la responsabilità di inoltrare eventuali messaggi alle altre aree. 
+
+Il protocollo IS-IS, \textit{Intermediate System to Intermediate System} è simile ad OSPF, dove il confine tra due aree non sono i router di frontiera, ma i link tra due router nelle due aree. 
 
 \subsubsection{Coesistenza di Protocolli Diversi}
 
-I protocollo di rete permettono la consegna di un pacchetto da una qualsiasi macchina che si trova in internet ad un'altra qualsiasi macchina che si trova in internet. Per effettuarlo è necessario uno schema di indirizzamento, questo viene gestito dal protocollo di livello tre. Molti protocolli hanno deciso di essere più capillari, individuando solamente un'interfaccia in una porzione specifica della rete. 
-Si determina il formato del pacchetto di rete, questo contiene il pacchetto di trasporto di livello quattro, che non può esser eletto e gestito da questi. 
+I protocolli di rete permettono la consegna di un pacchetto da una qualsiasi macchina che si trova in Internet ad un'altra qualsiasi macchina che si trova in Internet. Per effettuarlo è necessario uno schema di indirizzamento, questo viene gestito dal protocollo di livello tre. Molti protocolli hanno deciso di essere più capillari, individuando solamente un'interfaccia in una porzione specifica della rete. 
+Si determina il formato del pacchetto di rete, questo contiene il pacchetto di trasporto di livello quattro, che non può essere letto e gestito da questi router. 
 Offrono un servizio di consegna ai protocolli del livello di trasporto. 
-I servii di consegna per livello tre sono a commutazione di pacchetto. 
+I servizi di consegna per livello tre sono a commutazione di pacchetto. 
 
-Un protocollo di routing fa specifico ad uno specifico protocollo di rete. 
+Un protocollo di routing si riferisce ad uno specifico protocollo di rete, ed utilizza un algoritmo di instradamento per aggiornare le tabelle di instradamento a cui si riferiscono i protocolli di rete.  
 
-In generale sono presenti più protocolli di rete e quindi più protocolli di routing diversi contemporaneamente presenti su una stessa macchina. Su una stessa macchina possono essere presenti più protocolli di routing, anche relativi allo stesso protocollo di rete. 
+In generale sono presenti più protocolli di rete e quindi più protocolli di routing diversi, contemporaneamente, su una stessa macchina, anche relativi allo stesso protocollo di rete. 
 
-Queste macchine devono permettere a più protocolli di condividere. Se sono presenti due protocolli di rete le macchine vengono dette dual-stack. Gli ES hanno due pile protocollari, in corrispondenza di due librerie API. Le applicazioni devono scegliere quale pila da usare. 
+Queste macchine devono permettere a più protocolli di convivere. Se sono presenti due protocolli di rete le macchine vengono dette \textit{dual stack}. Gli ES hanno due pile protocollari, in corrispondenza di due librerie API e le applicazioni devono scegliere quale pila da usare. 
+Gli IS dual stack sono in grado di instradare pacchetti relativi ad entrambi i protocolli di rete. 
 
-Gli IS sono in grado di instradare pacchetti relativi ad entrambi i protocolli di rete. 
+La filosofia è di ``navi nella nebbia'', i diversi protocolli convivono in modo totalmente isolato. Per questo non è possibile effettuare una transizione completa da IPv4 a IPv6, la rete ha un'inerzia elevata, dato che le macchine devono poter operare su tutti questi protocolli. 
 
-La filosofia è ``navi nella nebbia'', i diversi protocolli convivono in modo totalmente isolato. 
-Per questi motivi non è possibile effettuare una transizione completa da IPv4 a IPv6, la rete ha un'inerzia elevata, dato che le macchine devono poter operare su tutti questi protocolli. 
+Tipicamente le tabelle di routing sono separate ed i database dei vari protocolli sono invisibili l'uno dall'altro. Tutte queste tabelle di instradamento nel control plane determinano secondo certi criteri la tabella di instradamento nel data plane. 
+Spesso questi protocolli utilizzano metriche tra di loro non confrontabili, tipicamente è l'amministratore di rete a decidere in che modo gestire questi vari protocolli, indicando una priorità tra le soluzioni offerte dai vari protocolli. 
 
-Tipicamente le tabelle di routing sono separate ed i database dei distance vector sono invisibili l'uno dall'altro. Tutte queste tabelle di instradamento vengono a determinare un mix di tutte le tabelle di instradamento. 
-Ma questi protocolli utilizzano metriche tra di loro non confrontabili, tipicamente l'amministratore di rete decide in che modo gestire questi vari protocolli. 
-
-L'amministratore può governare queste rotte per determinare in che modo i pacchetti tra i vari protocolli comunicano l'un l'altro. Le rotte trasferite vengono viste dal protocollo ricevute come rotte statiche. Iniettare dentro un altro è un'operazione delicata, se si inserisce un protocollo che contiene tutte l'internet, la sa solo dall'iniezione, ma pubblicizza di poter raggiungere tutto l'internet creando un buco nero, se viene diffusa fuori. 
+L'amministratore può governare queste rotte per determinare in che modo i pacchetti tra i vari protocolli comunicano l'un l'altro. Le rotte trasferite vengono viste dal protocollo ricevente come rotte statiche. Iniettare dentro un protocollo un altro protocollo è un'operazione delicata, se si usano protocolli che possono comunicare con tutto l'Internet, pubblicizzano di possedere tutte queste rotte, e se venissero inoltrate all'esterno, si creerebbe un effetto ``buco nero''. 
 
 
-Due ISP che comunicano usando due protocolli di routing differenti, utilizzano dei router appartenenti ad entrambi i loro domini. Questi possono comunicare attraverso router contenenti rotte iniettate da entrambi i protocolli. Questo può pubblicizzare le rotte apprese da entrambi i protocolli. 
-Il fatto che non ci sia una chiara divisione delle competenze su questo router è un problema di natura gestionale. 
-%% TODO smt
-Se la rotta attraversa diversi domini, questo processo di iniettare rotte ignorando le metriche, è un processo non ottimale se attraversa molti domini. 
+Due ISP che comunicano usando due protocolli di routing differenti, possono utilizzare dei router di frontiera, appartenenti ad entrambi i loro domini. Questi possono comunicare su entrambi i protocolli per iniettare e pubblicizzare rotte tra i due domini. 
+La mancanza di una chiara divisione delle competenze su questo router è un problema di natura gestionale. 
+
+Tuttavia protocolli diversi utilizzano metriche diverse, e se vengono condivise le rotte in questo modo, le metriche, con i loro criteri di ottimalità, vengono ignorate. 
+Se la rotta attraversa diversi domini, questo processo di iniettare rotte ignorando le metriche, la perdita di ottimalità può essere molto rilevante. 
+
+\subsubsection{EGP e Routing Inter-Dominio}
+
+Per evitare di avere questi problemi di carattere amministrativo, invece di cogestire una macchina e separare le competenze, ci si inventa una struttura dove tra le due reti si condivide un filo di cogestione più semplice, e sulle macchine affioranti si usa uno stesso protocollo EGP. 
+
+I protocolli EGP sono adottati tra domini amministrativi diversi, scegliendo un solo protocollo in comune. Può prediligere le rotte che attraversano più domini amministrativi, mantenendo i criteri di ottimalità persi usando le tecniche precedenti. 
+Consente l'implementazione di politiche commerciali, non tutte le rotte possono essere attraversate da un dominio amministrativo, le rotte che attraversano uno specifico dominio possono essere preferite. Alcune di queste scelte sono dovute ad accordi tra i vari ISP. Inoltre, persegue la trasparenza rispetto agli IGP. 
+
+Le informazioni apprese tramite EGP sono ridistribuite in un IGP, quando sono raggiungibili.
+Una rotta che passa per EGP deve avere metriche di distanza, e non può essere calcolata dal protocollo IGP interno. Questa distanza deve essere misurata rispetto ad altri router di frontiera. 
+Queste informazioni sono condivise a tutti gli router di frontiera, che parlano EGP, dello stesso dominio amministrativo tramite connessioni TCP, per poter incrementare le metriche di distanza. 
+
+Il primo protocollo EGP ha cominciato ad essere usato nel 1984. Utilizza un protocollo simile al distance vector, ma solo con indicazione di raggiungibilità. 
+Molto elementare, funzionava esclusivamente con reti ad albero. 
 
 \subsubsection{BGP}
 
-Per evitare di avere questi problemi di carattere amministrativo, invece di cogestire una macchina e separare le competenze, ci si inventa una struttura dove tra le due rete si condivide un filo e la cogestione di un filo è più semplice. 
+Il protocollo BGP (\ref{sec:bgp}) è stato pensato per sostituire EGP, ridefinito nel 2006. Usa lo strato di trasporto connesso, TCP, per scambiarsi informazioni tra router BGP, sulla porta 179. Tipicamente prova a connettersi in maniera incrociata, e prova a realizzare connessione sia come client che come server, la prima che instaura una connessione la crea. In connessioni TCP non c'è differenza tra client e server, le connessioni sono essenzialmente peer-to-peer. Una connessione può essere attiva in un senso e non in un altro. 
 
-Il protocollo EGP è adottato tra domini amministrativi diversi. Su queste connessioni viene adottato un solo protocollo. Può prediligere le rotte che attraversano meno domini amministrativi. 
-Consente l'implementazione di politiche commerciali, non tutte le rotte possono essere attraversate da un dominio amministrativo, le rotte che attraversano uno specifico dominio possono essere preferite. Alcune di queste scelte sono dovute a motivi economici come accordi tra ISP. 
-Persegue la trasparenza rispetto agli IGP. 
-
-Le informazioni apprese tramite EGP sono ridistribuite in un IGP, quando sono raggiungibili.
-Una rotta che passa per EGP deve avere metriche di distanza, e non può essere calcolata dal protocollo IGP interno. Questa distanza deve passare attraverso router altri router di frontiera. 
-Queste informazioni sono condivise agli altri router di frontiera dello stesso dominio amministrativo tramite connessioni TCP. 
-
-
-Il primo protocollo EGP ha cominciato ad essere usato nel 1984. Utilizza un protocollo simile al distance vector, ma solo con indicazione di raggiungibilità. 
-Molto elementare, funzionava esclusivamente con reti ad albero. spf
-
-%% TODO 
-Usa lo strato di trasporto connesso per scambiarsi informazioni tra strati BGP, sulla porta 179. Tipicamente prova a connettersi in maniera incrociata, e si prova a fare connessione sia come client che come server, la prima che instaura una connessione la crea. In connessioni TCP non c'è differenza tra client e server, le connessioni sono essenzialmente peer-to-peer. Una connessione può essere attiva in un senso e non in un altro. 
-
-
-Questo protocollo BGP è uno dei protocolli più intriganti e complessi, consente di effettuare tante operazioni ed è difficile da conoscere. Richiede una conoscenza molto profonda della rete, le configurazioni su questo protocollo è molto costoso.
-
-\subsubsection{Routing Inter-dominio}
-
-%% TODO join
-%% !! BGP
-Tutti gli ISP utilizzano un protocollo di comunicazione intra-domini, che sia IS-IS, OSPF o RIP, sotto c'è comunque un instradamento IP tradizionale, come per SDN. 
-
-Ogni organizzazione è formata da una collezione di router e LAN con una sola amministrazione. Un algoritmo di routing può essere utilizzato per aggiornare le tabelle di instradamento. 
-
-Quando più organizzazioni uniscono le proprie reti, si crea l'internet, aggiungendo zone di demarcazione, le LAN aggiuntive per connettere diverse organizzazioni. 
-Per avere una connettività globale è necessario che vengano passate informazioni di routing attraverso queste zone di demarcazione per far comunicare le diverse organizzazioni. 
-Si vorrebbe poter aggiornare le tabelle di instradamento di tutte le macchine. 
-
-Si potrebbe realizzare un singolo algoritmo di instradamento per gestire tutte le reti, ma non è realizzabile anche con un algoritmo scalabile come OSPF. 
-Si potrebbero aggiornare le tabelle manualmente, ma questo non è affidabile. 
-Altrimenti si possono usare algoritmi per aggiornare automaticamente le tabelle di instradamento. 
-
-
-Agli albori della rete si usava un unico protocollo e le configurazioni di ciascuna macchina influiva sulla configurazione complessiva della rete. 
-
-Questa soluzione è tecnicamente difficile, e lento a convergere, sarebbe difficile da implementare e rilasciare su più organizzazioni con risorse vastamente diverse. 
-
-Aggiungere rotte statiche è un'opzione alternativa, ma sono difficili da aggiornare e mantenere. 
-
-L'unica ipotesi praticabile è utilizzare un protocollo diverso per comunicare tra diverse organicazioni. Questo protocollo ignora l'interno e guarda solo alle zone di demarcazione. Sono le macchine di frontiera ad annunciare che al loro interno è presente una certa rete. 
-È una tecnica di routing statico, ma nel senso opposto, in modo da indirizzare il traffico verso la propria zona. 
-Se non viene trovato il destinatario all'interno, non è un problema poiché il traffico non avrebbe trovato altre rotte possibili. 
-
-Le connessioni tra i vari router di frontier è gestito attraverso connessioni TCP, chiamate \textit{peering}. 
-In questo modo si semplifica l'instradamento considerando intere organizzazioni come singole destinazioni. Poiché è necessario comunicare tra i router di frontiera, se questi si trovano in una stesa organizzazione, servono connessioni TCP interne. 
-Si determina in questo grafo virtuale la soluzione al problema di routing. Dopo che la rotta per obiettivi remoti è stata decisa dai router di frontiera, questi iniettano le rotte esterne all'interno della loro organizzazione. 
-
-Il protocollo \textit{Border Gateway Protocol} ha l'obiettivo di rendere disponili ed aggiornate le tabelle di instradamento.. con informazioni di routing inter-dominio. 
-Questo è un protocollo tra i più complessi ed importanti. Può prendere in considerazione anche vincoli commerciali, preferenze locali, priorità, problemi legali, ecc. BGP è stato introdotto nell'89 ed adottato per la prima volta nel 94. Con IPv4 è stato aggiornato nel '94 e migliorato nel '98. 
-La versione del 2006 di BGP include la compatibilità con il protocollo IPv6. 
-
-% È un protocollo complesso, non sono definite le scorciatoie e l prassi. 
-
-BGP è usato da chi è connesso ad uno o più ISP, dai provider del transito, da ISP che scambiano traffico su IXP o NAP, o clienti con reti di grandi dimensioni. Generalmente organizzazioni comprano un pezzo dello spazio di indirizzamento sulla rete. 
-
-BGP si fonda sul concetto si sistemi autonomi, \textit{Autonomous System} (AS), questi rappresentano una rete sotto una singola amministrazione. Controllati ad un unico gestore, amministratore. Sono società dichiarate per il protocollo e vengono identificati da un numero da 32 bit, aumentato dall'iniziale 2 byte. 
-Questo identificativo viene chiamato \textit{Autonomous System Number} (ASN). Alcuni di questi sono dedicati all'uso privato, poiché se si ha una rete molto grande su più continenti è utile fare routing in base a policy, come fossero policy commerciali, e quindi bisogna utilizzare BGP, organizzando la rete come se fosse composta da AS diversi. 
-Gli identificatori da 0 a $2^{16}$ sono dedicati ad uso pubblico o privato. 
-
-Il numero 23456, indica una comunicazione con una macchina che ancora non conosce l'esterno, viene usato per convertire un numero da 16 bit a 32 bit, contenendo nel pacchetto regole per convertirlo. 
-
-
-
-L'organizzazione centrale IANA che gestisce l'assegnazione di indirizzi IP li concede ad organizzazioni regionali. Queste risorse vengono assegnate quando necessario. 
-Questi registri regionali assegnano anche l'ASN globale ad un AS. Per comunicare con un certo provider con numero privati bisogna chiederlo direttamente all'ISP. 
-
-Non c'è nessun controllo di alcun tipo, eccetto controlli di indirizzi IP uguali. 
-
-% Nel grado degli AS più si diminuisce il valore più sono comuni, nasce da esigenze commerciali non filtrate da alcuna regola 
-
-BGP permette lo scambio di informazioni solo se è attiva una sessione di peering. 
-Questa è una connessione TCP sulla porta 179, tra due router di frontiera. 
-Poiché questi possono appartenere ad uno stesso AS, si distinguono in connessioni e-BGP e i-BGP, \textit{external} e \textit{internal}, questi devono essere direttamente connessi in connessioni e-BGP, mentre può non essere diretta in i-BGP. La connessione TCP rimane viva nonostante i cambiamenti di routing e la perdita di connettività. 
-
-%% TODO I accorgimento
-
-In e-BGP i pacchetti vengono inviati con un TTL pari ad uno. Invece in i-BGP è possibile propagare le informazioni di instradamento da un bordo al bordo opposto di un AS. 
-
-
-BGP apprende l'esistenza di destinazioni remote attraverso e-BGP, con annunci che possono essere affermativi. Per ogni meta remota viene selezionato un percorso migliore tra tutte le alternativa, applicando le varie politiche di interesse. 
-Questa viene indicata nella tabella BGP e solo questa viene propagata all'interno e può essere propagata ad altri vicini BGP esterni. 
-
-
-La notifica delle LAN interne non è automatica, viene richiesta manualmente, e rappresenta sia una forza che un limite per BGP. Permette di annunciare solo LAN specifiche, mentre se si commettono degli errori è possibile impedire ad altri utenti di connettersi a certe LAN. 
-
-Le connessioni di peering tra due AS potrebbero essere attive per anni. 
-
-I pacchetti di annuncio contengono nel path una sorta di distance vector, dove sono presenti tutti gli AS attraversati, in questo modo gli echi vengono affrontati a priori. Se un AS riceve un pacchetto contenente il suo ASN, lo scarta per non creare rotte cicliche. 
-
-Gli annunci vanno in un verso, ed il traffico uscente va nel verso opposto, poiché gli annunci sono rotte statiche che vengono inoltrate. 
+Questo protocollo BGP è uno dei protocolli più intriganti e complessi, consente di effettuare tante operazioni ed è difficile da configurare. Richiede una conoscenza molto profonda della rete, le configurazioni su questo protocollo sono molto costose.
 
 \clearpage
 
@@ -727,7 +639,7 @@ Lo spanning tree viene associato a valle ad una singola VLAN, mentre durante il 
 Lo standard \textit{Multi-Spanning Tree Protocol} permette di usare questo concetto anche in LAN molto grandi, suddividendo la LAN in regioni, avendo per ogni regione un'istanza di spanning tree indipendente rispetto alle regioni vicine. Un ulteriore spanning tree a livello più alto le collega tra di loro. 
 
 \subsection{Software Defined Network: SDN}
-
+\label{sec:sdn}
 Questo approccio centralizzato è ritornato di moda recentemente. 
 Questa tipologia di algoritmi dinamici di instradamento prevede un routing controllato da un centro che elabora le informazioni disponibili, e decide l'instradamento nella rete. 
 Questi algoritmi sono utili in reti piccole, e non è affidabile in reti di grande dimensione, con traffico intenso intorno al nodo di controllo. 
@@ -830,7 +742,9 @@ In caso di un guasto un controller deve poter accorgersi del guasto su un link o
 
 Anche negli switch ci sono limitazioni, non hanno un buffer illimitato, né tabelle abbastanza grandi. Su una rete SDN è comunque presente una rete sottostante con i loro protocolli di instradamento, su cui viene costruita la SDN, questo garantisce grande libertà per la gestione di una rete. 
 
-\subsection{Esaurimento Indirizzi IPv4}
+\clearpage
+
+\section{Esaurimento Indirizzi IPv4 ed IPv6}
 
 Lo spazio di indirizzamento IPv4 è limitato, con 32 bit di indirizzi si hanno $2^{32}$ indirizzi diversi, circa quattro miliardi, non è sufficiente per la crescita esponenziale degli apparati di rete, e la loro necessità di connettersi. 
 Questo spazio non è allocato nel modo più efficiente, poiché gli indirizzi sono raggruppati in LAN, i cui indirizzi possono essere solamente potenze di due. 
@@ -841,7 +755,7 @@ Per risolvere questo esaurimento si sono sviluppate varie soluzioni.
     \item La prima è l'indirizzamento per barre e non per classi, in modo da frazionare delle reti in subnet, chiamato CIDR, \textit{Classless Inter-Domain Routing}. 
     \item Un'altra soluzione semplice è la diminuzione dell'assegnazione di indirizzi. 
     \item Ci sono state delle campagne di renumbering su grosse organizzazioni che avevano grandi prefissi \texttt{/8}, infatti, alcuni organizzazioni con prefissi anche abbastanza grandi non si sono mai esposte verso la rete. 
-    \item Si può utilizzare diffusamente l'indirizzamento privato, con blocchi di indirizzi privati non validi in internet e non instradati, ma validi per la LAN. 
+    \item Si può utilizzare diffusamente l'indirizzamento privato, con blocchi di indirizzi privati non validi in Internet e non instradati, ma validi per la LAN. 
     \item Un'altra soluzione è il DHCP, \textit{Dynamic Host Configuration Protocol}, che assegna dinamicamente indirizzi privati o pubblici per uso temporaneo. 
     \item Il NAT, \textit{Network Address Translation} è un meccanismo per la condivisione di indirizzi pubblici da parte di diverse macchine che hanno indirizzi privati diversi. Non si possono instradare direttamente i pacchetti per una destinazione remota, devono essere tradotti gli indirizzi mittenti per poter ritornare al router di inoltro, che sostituisce nuovamente l'indirizzo privato. 
     \item Si può moltiplicare la potenza del NAT, considerando anche le porte dello specifico router con il PAT, \textit{Port Address Translation}, che opera a livello di porte. 
@@ -853,17 +767,17 @@ Soprattutto grazie a CIDR si sono moltiplicate le entry abbordo delle macchine, 
 
 Questo problema venne descritto per la prima vota nell'RFC 1338, nel 1992, anche se avrebbe avuto impatto solo decenni dopo, si cominciarono a cercare alternative, il CIDR venne proposto come soluzione già dall'anno successivo, negli anni seguenti venne affiancato dal NAT e dall'introduzione di IPv6. All'inizio del 2011 lo IANA ha assegnato l'ultimo blocco di prefissi \texttt{/8}, da allora lo spazio di indirizzamento disponibili sta diminuendo velocemente. 
 
-\subsubsection{Classless Inter-Domain Routing: CIDR}
+\subsection{Classless Inter-Domain Routing: CIDR}
 
 Il CIDR consiste nell'adozione della notazione barra per la suddivisione di reti in sottoreti. 
 Rende possibili il subnetting, ed ulteriori frazionamenti ricorsivi su una stessa LAN. Inoltre, è stato utilizzato per delle campagne di supernetting per riunire insieme diverse LAN IPv4 che condividono lo stesso instradamento, riducendo la dimensione delle tabelle dei router. 
 Le operazioni di subnetting hanno effetti opposti sulle dimensioni delle tabelle di instradamento sulla rete. 
 
-\subsubsection{Private Address Allocation}
+\subsection{Private Address Allocation}
 
-Definiti nell'RFC 1918, alcuni indirizzi sono dedicati ad utilizzo privato, non indirizzabili nell'internet. Nessun pacchetto può avere questi pacchetti come indirizzo di destinazione, ma può essere presente come indirizzo sorgente. Perché se dentro una LAN si ha uno schema di indirizzamento privato, se avviene un qualche errore su una macchina intermedia, deve poter mandare un pacchetto ICMP a quell'interfaccia avendo un indirizzo privato come sorgente. Se questo intermediario è nella LAN, avrà un indirizzo privato come campo destinazione. 
+Definiti nell'RFC 1918, alcuni indirizzi sono dedicati ad utilizzo privato, non indirizzabili nell'Internet. Nessun pacchetto può avere questi pacchetti come indirizzo di destinazione, ma può essere presente come indirizzo sorgente. Perché se dentro una LAN si ha uno schema di indirizzamento privato, se avviene un qualche errore su una macchina intermedia, deve poter mandare un pacchetto ICMP a quell'interfaccia avendo un indirizzo privato come sorgente. Se questo intermediario è nella LAN, avrà un indirizzo privato come campo destinazione. 
 
-Questi sono sottratti agli indirizzi globalmente unici di internet. Possono essere utilizzati anche senza essere connessi alla rete, riutilizzando la pila protocollare TCP/IP in un ambiente chiuso, sfruttando le sue capacità. 
+Questi sono sottratti agli indirizzi globalmente unici di Internet. Possono essere utilizzati anche senza essere connessi alla rete, riutilizzando la pila protocollare TCP/IP in un ambiente chiuso, sfruttando le sue capacità. 
 Gli indirizzi IP configurati in queste reti sono indirizzi privati, univoci solo all'interno della rete. 
 
 Gli indirizzi privati sono:
@@ -874,7 +788,7 @@ Gli indirizzi privati sono:
     \item Infine 192.168.0.0/16, da 192.168.0.0 a 192.168.255.255, equivalenti a 256 reti di classe C. 
 \end{itemize}
 
-\subsubsection{Network Address Translation: NAT}
+\subsection{Network Address Translation: NAT}
 
 Non è possibile comunicare sulla rete usando indirizzi privati, è necessario convertirli in indirizzi globalmente univoci, questo viene realizzato dal NAT. 
 
@@ -900,7 +814,7 @@ Per rendere quest'operazione invisibile agli AS bisogna modificare sia il pacche
 Bisogna modificare l'indirizzo destinazione e mittente, ed anche l'header checksum. Anche se la maggior parte dei router non controlla questo campo, poiché è tempo ``sprecato'', molti router, infatti, sospendono il controllo del checksum. Anche se non è controllato, deve essere ricalcolato. 
 Mentre nel pacchetto TCP bisogna ricalcolare il checksum, poiché viene calcolato anche sui campi del pacchetto IP. 
 
-\subsubsection{Porta Address Translation: PAT}
+\subsection{Porta Address Translation: PAT}
 
 Poiché bisogna avere un numero elevato di indirizzi pubblici per effettuare il NAT, spesso si preferisce il PAT, chiamato anche \textit{IP Masquerading} o \textit{Network Address and Port Translation} (NAPT). 
 Questo consente a molte macchine con indirizzamento privato di utilizzare lo stesso indirizzo pubblico, si può diminuire il numero di indirizzi pubblici assegnati ad un unico router, fino ad un singolo indirizzo pubblico. 
@@ -920,11 +834,11 @@ Queste due tecniche NAT e PAT sono ampiamente utilizzate, ma pongono altri tipi 
     \item La necessità di ricalcolare vari campi riduce notevolmente le prestazioni di router con NAT e PAT abilitato. 
 \end{itemize}
 
-\subsubsection{DHCP}
+\subsection{DHCP}
 
 Il protocollo DHCP assegna dinamicamente ed autonomamente configurazioni di rete agli ES di una rete. È un'alternativa alla configurazione manuale, distribuendo indirizzi pubblici o privati di un insieme di macchine. 
 Può essere utilizzato per configurare utenti temporaneamente attivi sulla rete. 
-Le configurazioni distribuite da DHCP contengono almeno l'indirizzo IP e la netmask, e gli indirizzi del default gateway e del server DNS. Queste sono le informazioni che consentono ad un host di accedere ad internet. 
+Le configurazioni distribuite da DHCP contengono almeno l'indirizzo IP e la netmask, e gli indirizzi del default gateway e del server DNS. Queste sono le informazioni che consentono ad un host di accedere ad Internet. 
 
 Un server DHCP ha una serie di indirizzi pubblici o privati, molto spesso statici, il server risponde solo ad alcune macchine in base al loro indirizzo MAC, configurato dall'amministratore. 
 L'assegnazione di una configurazione è temporanea, per un prefissato intervallo di tempo breve. 
@@ -939,9 +853,7 @@ Questo protocollo è diviso in quattro fasi.
     \item Il server conferma l'assegnazione temporanea con un DHCP ACK. 
 \end{enumerate}
 
-\clearpage
-
-\section{IPv6}
+\subsection{IPv6}
 
 Lo scopo di IPv6 implementa strategie per sostituire il protocollo ARP. 
 
@@ -1010,7 +922,7 @@ Indirizzi multicast importanti sono dati da \texttt{FF02::1:FFxx:xxxx}, questi i
 
 Questo indirizzo solicited node viene usato per sostituire il protocollo ARP e ICMPv4. 
 
-\subsection{ICMPv6}
+\subsubsection{ICMPv6}
 
 Pacchetti ICMPv6 riprendono le funzionalità di ICMPv4, ed assumono nuove funzionalità e responsabilità gestite da protocolli ARP e IGMP su IPv4. 
 Il pacchetto ICMPv6 presenta una specie di header dove viene specifico il tipo ed i sottotipo, degli header precedenti, seguito dai dati di ICMP. 
@@ -1110,7 +1022,7 @@ Lo stesso si può usare con meccanismi sofisticati di SDN.
 
 Questa separazione non è stata introdotta nel protocollo quando è stato realizzato, poiché ha un effetto a cascata anche su livelli inferiori. Questo è facile risolvere utilizzando degli identificatori end-to-end, scambiando dei \textit{context tags} shim6 che possono essere utilizzati per identificare un contesto e quindi una comunicazione specifica, potendo cambiare dinamicamente i vari indirizzi. 
 
-\subsection{Transizione}
+\subsubsection{Transizione}
 
 Il livello di rete ha la caratteristica di essere uniformante, tutte le macchine intermedie devono avere lo stesso protocollo per poter parlare IPv4 o IPv6. 
 Per cui sono necessari meccanici di transizione per realizzare questa transizione da IPv4 a IPv6, poiché è estremamente difficile cambiare protocollo a questo livello. 
@@ -1120,8 +1032,8 @@ IPv6 deve essere compatibile a IPv4 e deve permette il passaggio da IPv4 per la 
 Adesso IPv6 è adottato in parallelo rispetto a IPv4, il processo di transizione potrebbe durare decenni. 
 
 Il processo di transizione è diviso in tre fasi
-In un momento IPv6 componeva delle isole separate nell'internet dove si può comunicare con IPv6, dove utilizza prevalentemente i servizi esistenti di IPv4. 
-Nella seconda fase i due protocolli coesistono nella diffusione globale, le varie isole di IPv6 si consolidano ed è possibile comunicare nella maggior parte di internet solamente con IPv6. 
+In un momento IPv6 componeva delle isole separate nell'Internet dove si può comunicare con IPv6, dove utilizza prevalentemente i servizi esistenti di IPv4. 
+Nella seconda fase i due protocolli coesistono nella diffusione globale, le varie isole di IPv6 si consolidano ed è possibile comunicare nella maggior parte di Internet solamente con IPv6. 
 Nella terza fase l'adozione di IPv6 supera la diffusione di IPv4, che rimane utilizzato su delle isole, e le reti IPv4 si appoggiano sull'infrastruttura IPv6. 
 
 
@@ -1168,6 +1080,82 @@ Il DNS64 server consulta il DNS normale, cercando di capire gli indirizzi della 
 \clearpage
 
 \section{BGP}
+
+\subsection{Introduzione al Routing Inter-Dominio}
+\label{sec:bgp}
+
+%% !! BGP
+Tutti gli ISP utilizzano un protocollo di comunicazione intra-domini, che sia IS-IS, OSPF o RIP, sotto c'è comunque un instradamento IP tradizionale, come per SDN. 
+
+Ogni organizzazione è formata da una collezione di router e LAN con una sola amministrazione. Un algoritmo di routing può essere utilizzato per aggiornare le tabelle di instradamento. 
+
+Quando più organizzazioni uniscono le proprie reti, si crea l'Internet, aggiungendo zone di demarcazione, le LAN aggiuntive per connettere diverse organizzazioni. 
+Per avere una connettività globale è necessario che vengano passate informazioni di routing attraverso queste zone di demarcazione per far comunicare le diverse organizzazioni. 
+Si vorrebbe poter aggiornare le tabelle di instradamento di tutte le macchine. 
+
+Si potrebbe realizzare un singolo algoritmo di instradamento per gestire tutte le reti, ma non è realizzabile anche con un algoritmo scalabile come OSPF. 
+Si potrebbero aggiornare le tabelle manualmente, ma questo non è affidabile. 
+Altrimenti si possono usare algoritmi per aggiornare automaticamente le tabelle di instradamento. 
+
+
+Agli albori della rete si usava un unico protocollo e le configurazioni di ciascuna macchina influiva sulla configurazione complessiva della rete. 
+
+Questa soluzione è tecnicamente difficile, e lento a convergere, sarebbe difficile da implementare e rilasciare su più organizzazioni con risorse vastamente diverse. 
+
+Aggiungere rotte statiche è un'opzione alternativa, ma sono difficili da aggiornare e mantenere. 
+
+L'unica ipotesi praticabile è utilizzare un protocollo diverso per comunicare tra diverse organicazioni. Questo protocollo ignora l'interno e guarda solo alle zone di demarcazione. Sono le macchine di frontiera ad annunciare che al loro interno è presente una certa rete. 
+È una tecnica di routing statico, ma nel senso opposto, in modo da indirizzare il traffico verso la propria zona. 
+Se non viene trovato il destinatario all'interno, non è un problema poiché il traffico non avrebbe trovato altre rotte possibili. 
+
+Le connessioni tra i vari router di frontier è gestito attraverso connessioni TCP, chiamate \textit{peering}. 
+In questo modo si semplifica l'instradamento considerando intere organizzazioni come singole destinazioni. Poiché è necessario comunicare tra i router di frontiera, se questi si trovano in una stesa organizzazione, servono connessioni TCP interne. 
+Si determina in questo grafo virtuale la soluzione al problema di routing. Dopo che la rotta per obiettivi remoti è stata decisa dai router di frontiera, questi iniettano le rotte esterne all'interno della loro organizzazione. 
+
+Il protocollo \textit{Border Gateway Protocol} ha l'obiettivo di rendere disponili ed aggiornate le tabelle di instradamento.. con informazioni di routing inter-dominio. 
+Questo è un protocollo tra i più complessi ed importanti. Può prendere in considerazione anche vincoli commerciali, preferenze locali, priorità, problemi legali, ecc. BGP è stato introdotto nell'89 ed adottato per la prima volta nel 94. Con IPv4 è stato aggiornato nel '94 e migliorato nel '98. 
+La versione del 2006 di BGP include la compatibilità con il protocollo IPv6. 
+
+% È un protocollo complesso, non sono definite le scorciatoie e l prassi. 
+
+BGP è usato da chi è connesso ad uno o più ISP, dai provider del transito, da ISP che scambiano traffico su IXP o NAP, o clienti con reti di grandi dimensioni. Generalmente organizzazioni comprano un pezzo dello spazio di indirizzamento sulla rete. 
+
+BGP si fonda sul concetto si sistemi autonomi, \textit{Autonomous System} (AS), questi rappresentano una rete sotto una singola amministrazione. Controllati ad un unico gestore, amministratore. Sono società dichiarate per il protocollo e vengono identificati da un numero da 32 bit, aumentato dall'iniziale 2 byte. 
+Questo identificativo viene chiamato \textit{Autonomous System Number} (ASN). Alcuni di questi sono dedicati all'uso privato, poiché se si ha una rete molto grande su più continenti è utile fare routing in base a policy, come fossero policy commerciali, e quindi bisogna utilizzare BGP, organizzando la rete come se fosse composta da AS diversi. 
+Gli identificatori da 0 a $2^{16}$ sono dedicati ad uso pubblico o privato. 
+
+Il numero 23456, indica una comunicazione con una macchina che ancora non conosce l'esterno, viene usato per convertire un numero da 16 bit a 32 bit, contenendo nel pacchetto regole per convertirlo. 
+
+
+
+L'organizzazione centrale IANA che gestisce l'assegnazione di indirizzi IP li concede ad organizzazioni regionali. Queste risorse vengono assegnate quando necessario. 
+Questi registri regionali assegnano anche l'ASN globale ad un AS. Per comunicare con un certo provider con numero privati bisogna chiederlo direttamente all'ISP. 
+
+Non c'è nessun controllo di alcun tipo, eccetto controlli di indirizzi IP uguali. 
+
+% Nel grado degli AS più si diminuisce il valore più sono comuni, nasce da esigenze commerciali non filtrate da alcuna regola 
+
+BGP permette lo scambio di informazioni solo se è attiva una sessione di peering. 
+Questa è una connessione TCP sulla porta 179, tra due router di frontiera. 
+Poiché questi possono appartenere ad uno stesso AS, si distinguono in connessioni e-BGP e i-BGP, \textit{external} e \textit{internal}, questi devono essere direttamente connessi in connessioni e-BGP, mentre può non essere diretta in i-BGP. La connessione TCP rimane viva nonostante i cambiamenti di routing e la perdita di connettività. 
+
+%% TODO I accorgimento
+
+In e-BGP i pacchetti vengono inviati con un TTL pari ad uno. Invece in i-BGP è possibile propagare le informazioni di instradamento da un bordo al bordo opposto di un AS. 
+
+
+BGP apprende l'esistenza di destinazioni remote attraverso e-BGP, con annunci che possono essere affermativi. Per ogni meta remota viene selezionato un percorso migliore tra tutte le alternativa, applicando le varie politiche di interesse. 
+Questa viene indicata nella tabella BGP e solo questa viene propagata all'interno e può essere propagata ad altri vicini BGP esterni. 
+
+
+La notifica delle LAN interne non è automatica, viene richiesta manualmente, e rappresenta sia una forza che un limite per BGP. Permette di annunciare solo LAN specifiche, mentre se si commettono degli errori è possibile impedire ad altri utenti di connettersi a certe LAN. 
+
+Le connessioni di peering tra due AS potrebbero essere attive per anni. 
+
+I pacchetti di annuncio contengono nel path una sorta di distance vector, dove sono presenti tutti gli AS attraversati, in questo modo gli echi vengono affrontati a priori. Se un AS riceve un pacchetto contenente il suo ASN, lo scarta per non creare rotte cicliche. 
+
+Gli annunci vanno in un verso, ed il traffico uscente va nel verso opposto, poiché gli annunci sono rotte statiche che vengono inoltrate. 
+
 
 \subsection{Scalabilità di BGP}
 %% TODO move to kathar?
@@ -1317,7 +1305,7 @@ Il secondo tipo di relazione è chiamata peer-to-peer, in questo tipo di relazio
 Normalmente i costi sono proporzionali alla quantità di traffico passato sul link. Se si riesce a mandare il traffico su un peer-to-peer l'unico costo è quello di manutenzione del link, diviso tra i due peer, e tutto ciò che passa sopra è gratis. 
 È il customer a pagare il traffico sul link offerto dal provider, indipendentemente dalla direzione del traffico. 
 
-Da questa base logica si può arrivare al concetto della gerarchia di internet. 
+Da questa base logica si può arrivare al concetto della gerarchia di Internet. 
 Quando si raggiunge la parte più alta, sono tutti in peer-to-peer in full mesh. 
 
 
@@ -1337,7 +1325,7 @@ Le relazioni customer provider sono esclusivamente dei filtri. Il modello econom
 
 
 La configurazione vera di un router BGP è costituita da una serie di filtri, ed un insieme di route map per settare le preferenze tra i vari AS. 
-L'internet non è shortest path, nonostante BGP lo sia in assenza di policy, non sempre lo è nel mondo reale, poiché implementa policy legate anche a rapporti commerciali. 
+L'Internet non è shortest path, nonostante BGP lo sia in assenza di policy, non sempre lo è nel mondo reale, poiché implementa policy legate anche a rapporti commerciali. 
 
 
 Una stima realistica degli AS sono 75 mila, ma è difficile da stabilire, poiché viene effettuata su quelli annunciati, non quelli assegnati, che non vengono riassegnati. 
@@ -1345,13 +1333,13 @@ Una stima realistica degli AS sono 75 mila, ma è difficile da stabilire, poich�
 
 Gli AS in questa gerarchia si dividono in tre tipi, i provider di livello uno sono tutti in una full mesh tra tutti loro, sono tra i 7 ed i 12 ??, non vengono pubblicati gli accordi commerciali, quindi vengono dedotti dagli annunci BGP sulla rete. %% TODO 7k?12k?
 
-Il customer cone di un AS è la parte dell'internet che può raggiungere attraversando solamente connessioni di tipo customer-provider, l'insieme dei suoi customer diretti ed indiretti. Poiché possono essere disgiunti, dovendo offrire la piena raggiungibilità di internet, devono realizzare una full mesh tra i coni dei vari provider. 
+Il customer cone di un AS è la parte dell'Internet che può raggiungere attraversando solamente connessioni di tipo customer-provider, l'insieme dei suoi customer diretti ed indiretti. Poiché possono essere disgiunti, dovendo offrire la piena raggiungibilità di Internet, devono realizzare una full mesh tra i coni dei vari provider. 
 
 Più in alto sono difficili da capire i rapporti, la rete è estremamente densa, con un numero di link molto alto rispetto al numero di nodi. 
 
-La rete di BGP è molto densa ed anche molto piatta, poiché una volta raggiunto tutto l'internet, non è necessario aumentare i peer. 
+La rete di BGP è molto densa ed anche molto piatta, poiché una volta raggiunto tutto l'Internet, non è necessario aumentare i peer. 
 
-Il sito asrank è gestito da un'agenzia di ricerca CAIDA, per classificare AS. Questo fa girare un algoritmo una volta al mese per determinare com'è fatto l'internet, realizzando un ranking degli AS per dimensione del cone size. 
+Il sito asrank è gestito da un'agenzia di ricerca CAIDA, per classificare AS. Questo fa girare un algoritmo una volta al mese per determinare com'è fatto l'Internet, realizzando un ranking degli AS per dimensione del cone size. 
 RIPE offre molti strumenti, tra questi RIPEstat fornisce statistiche aggregando informazioni provenienti da BGP. 
 Lo strumento chiamato \textit{looking glass}, portali web pubblicati da certi AS, per vedere lo stato BGP del router, realizzando delle query. Si possono fare dei ping, ed eseguire comandi limitati. 
 Questi sono convenienti per AS grandi, poiché BGP è una comunità. 
@@ -1374,7 +1362,7 @@ Per soddisfare i vincoli del provider e dei customer, si usano i VPN, \textit{Vi
 
 Il label switching è un meccanismo di instradamento dei pacchetti, si inserisce sopra ad ethernet, e sotto IP. Però mentre nella rete attraversano pacchetti MPLS, passano anche pacchetti IP. 
 
-Un nodo per inviare un pacchetto, si calcola il suo cammino, al pacchetto non lo si guarda più all'indirizzo, si inserisce in un altro pacchetto contenente un'etichetta. Le macchine successive instraderanno in base all'etichetta. Ci sono tante etichette quanti sono i flussi che stanno attraversando la rete al momento, un numero molto minore rispetto allo spazio di indirizzamento di internet. 
+Un nodo per inviare un pacchetto, si calcola il suo cammino, al pacchetto non lo si guarda più all'indirizzo, si inserisce in un altro pacchetto contenente un'etichetta. Le macchine successive instraderanno in base all'etichetta. Ci sono tante etichette quanti sono i flussi che stanno attraversando la rete al momento, un numero molto minore rispetto allo spazio di indirizzamento di Internet. 
 Quando si definisce questo flusso si possono fare considerazioni di banda, per il flusso dei dati. 
 
 Per ogni tratto si usa un'etichetta diversa, il calcolo deve essere effettuato dalla macchina che assegna l'etichetta. 
@@ -1467,7 +1455,7 @@ Un altro problema può essere causato dai configurazioni errate di filtri. Degli
 Modificare il protocollo BGP per realizzare protocolli non è realizzabile, poiché molti di questi router sono vecchi con un tempo di riavvio critico. 
 Per cui si punta a prevenire tutti gli attacchi non intenzionali. 
 
-Gli IRR sono dei registri di internet pubblicamente consultabili dove si indica la proprietà di un prefisso. Ma dato che è pubblico, bisogna comunque verificare le informazioni. Essendo scritte in maniera standard e pubbliche, queste informazioni possono essere utilizzate per creare automaticamente dei filtri BGP per AS, basati su informazioni verificabili. 
+Gli IRR sono dei registri di Internet pubblicamente consultabili dove si indica la proprietà di un prefisso. Ma dato che è pubblico, bisogna comunque verificare le informazioni. Essendo scritte in maniera standard e pubbliche, queste informazioni possono essere utilizzate per creare automaticamente dei filtri BGP per AS, basati su informazioni verificabili. 
 
 Questi IRR non sono usati globalmente, non è presente un'autorità centrale, non necessariamente sono mantenuti ed accurati. Per cui utilizzando dei filtri automatici e stringenti, si blocca la maggior parte di Internet. 
 
@@ -1510,6 +1498,7 @@ Il principio chiave di RPKI è che non è necessario, si può mantenere la confi
 \clearpage
 
 \section{TCP}
+%%* riguardo TCP/IP 1982: questi due strati sono legati tra loro poiché TCP usa indirizzi IP per individuare processi diversi. eg indirizzo IP processo mittente e processo destinatario
 
 \subsection{Trasmissioni Efficienti}
 
@@ -1983,8 +1972,8 @@ Quando si parlano di data centers si parla di hyper-scale data centers. Bisogna 
 
 Il Namex usa una struttura ridotta di questa architettura, ma è comunque dello stesso tipo. 
 
-Un data center deve avere connessioni ad internet, sono multiple, ridondanti, ad alta velocità ed in fibra ottica. 
-Per fabric si intende l'insieme di router e switch, l'infrastruttura dedicata a collegare i server all'internet, ci si concentra principalmente sulla fabric. 
+Un data center deve avere connessioni ad Internet, sono multiple, ridondanti, ad alta velocità ed in fibra ottica. 
+Per fabric si intende l'insieme di router e switch, l'infrastruttura dedicata a collegare i server all'Internet, ci si concentra principalmente sulla fabric. 
 Il cuore del data center è la server farm, contenente le applicazioni ed i servizi. 
 
 Lo standard vuole che siano rappresentati verticalmente dall'alto verso il basso con Internet, fabric e server farm. Per cui si parlerà di link verso nord e verso sud, quindi verso l'alto e verso il basso, universalmente usata per i data center. 
@@ -2051,7 +2040,7 @@ Per collegare il Fat-Tree all'Internet si possono avere due metodi principali. S
 \section{Kathar\'{a}}
 
 Una rete è composta da diversi apparati, computer, router, switch, ecc., ognuno con differenti interfacce, diversi protocolli attivi sulla rete, diverse connessioni fisiche che generano una topologia complessa. 
-L'internet è una rete best effort, non è stabile, ma si voglio garantire le sue prestazioni. 
+L'Internet è una rete best effort, non è stabile, ma si voglio garantire le sue prestazioni. 
 I router sono automi a stati finiti, non si ha il tempo di computazione per gestire tutti i pacchetti nel modo per garantire le migliori funzionalità e prestazioni. Quindi per garantire queste caratteristiche bisogna lavorare dal punto di vista della struttura della rete e le loro interazioni. 
 Ma effettuare sperimentazioni di questo tipo usando tecnologie dal vivo è molto costoso, per cui si vorrebbe realizzare ciò tramite dei modelli locali, o principalmente localizzati per diminuire la necessità di apparati costosi. 
 Per creare modelli di rete si può scegliere di emulare o di simulare la rete. Una simulazione riproduce le prestazioni, mentre l'emulazione riproduce le funzionalità. Non si può emulare tutto, un processore general purpose non ha le caratteristiche necessarie per emulare milioni di pacchetti come quelli di un router, che effettuano queste operazioni dal lato hardware. O si toglie il processamento di pacchetto e quindi la funzionalità, oppure si affronta la logica e si mantengono le prestazioni. 
@@ -2303,7 +2292,7 @@ Le policy di input permettono di filtrare gli annunci in input, prima che entrin
 Si possono filtrare gli annunci per vari motivi, si può filtrare l'\texttt{as-path} per motivi politici. I pacchetti passanti per la rete non sono filtrati, a meno che non siano cifrati end-to-end. 
 Per cui è possibile sniffare del traffico, e anche cifrato per estrarre informazioni cruciali. 
 Delle potenze ostili tra di loro quindi vogliono evitare che informazioni critiche passino attraverso le altre. 
-Gli USA quando è nato internet l'hanno accomunato al servizio postale; se la posta ha come indirizzo destinazione e sorgente un indirizzo statunitense, non può passare per suolo straniero. Quindi non si può passare legalmente per AS stranieri quando gli indirizzi sorgenti e destinazione sono entrambi sul suolo americano. 
+Gli USA quando è nato Internet l'hanno accomunato al servizio postale; se la posta ha come indirizzo destinazione e sorgente un indirizzo statunitense, non può passare per suolo straniero. Quindi non si può passare legalmente per AS stranieri quando gli indirizzi sorgenti e destinazione sono entrambi sul suolo americano. 
 Per queste ed altre decisioni politiche si utilizzano dei filtri per evitare che il traffico passi per certi AS. 
 Per realizzare questi filtri si usano elementi delle normali espressioni regolari, \texttt{regexp}. 
 
