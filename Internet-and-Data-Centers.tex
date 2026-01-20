@@ -1090,43 +1090,41 @@ Questa traduzione è trasparente ai nodi interessati e si può accoppiare con il
 \subsection{Introduzione al Routing Inter-Dominio}
 \label{sec:bgp}
 
-%% !! BGP
-Tutti gli ISP utilizzano un protocollo di comunicazione intra-domini, che sia IS-IS, OSPF o RIP, sotto c'è comunque un instradamento IP tradizionale, come per SDN. 
+Tutti gli ISP utilizzano un protocollo di comunicazione intra-dominio, che sia IS-IS, OSPF o RIP, sotto c'è comunque un instradamento IP tradizionale, come per SDN. 
 
-Ogni organizzazione è formata da una collezione di router e LAN con una sola amministrazione. Un algoritmo di routing può essere utilizzato per aggiornare le tabelle di instradamento. 
+Ogni organizzazione è formata da una collezione di router e LAN con una sola amministrazione. Un algoritmo di routing può essere utilizzato per aggiornare le tabelle di instradamento di questi apparati. 
 
 Quando più organizzazioni uniscono le proprie reti, si crea l'Internet, aggiungendo zone di demarcazione, le LAN aggiuntive per connettere diverse organizzazioni. 
-Per avere una connettività globale è necessario che vengano passate informazioni di routing attraverso queste zone di demarcazione per far comunicare le diverse organizzazioni. 
+Per avere una connettività globale è necessario che vengano passate informazioni di routing attraverso queste zone di demarcazione per permettere la comunicazione tra diverse organizzazioni. 
 Si vorrebbe poter aggiornare le tabelle di instradamento di tutte le macchine. 
 
 Si potrebbe realizzare un singolo algoritmo di instradamento per gestire tutte le reti, ma non è realizzabile anche con un algoritmo scalabile come OSPF. 
 Si potrebbero aggiornare le tabelle manualmente, ma questo non è affidabile. 
-Altrimenti si possono usare algoritmi per aggiornare automaticamente le tabelle di instradamento. 
+Altrimenti si possono usare EGP per aggiornare automaticamente le tabelle di instradamento. 
 
 
-Agli albori della rete si usava un unico protocollo e le configurazioni di ciascuna macchina influiva sulla configurazione complessiva della rete. 
+Agli albori della rete si usava un unico protocollo e le configurazioni di ciascuna macchina influivano sulla configurazione complessiva della rete. 
 
-Questa soluzione è tecnicamente difficile, e lento a convergere, sarebbe difficile da implementare e rilasciare su più organizzazioni con risorse vastamente diverse. 
+Questa soluzione è tecnicamente difficile, e lenta a convergere, sarebbe difficile da implementare e rilasciare su più organizzazioni con risorse vastamente diverse. 
 
 Aggiungere rotte statiche è un'opzione alternativa, ma sono difficili da aggiornare e mantenere. 
 
-L'unica ipotesi praticabile è utilizzare un protocollo diverso per comunicare tra diverse organicazioni. Questo protocollo ignora l'interno e guarda solo alle zone di demarcazione. Sono le macchine di frontiera ad annunciare che al loro interno è presente una certa rete. 
+L'unica ipotesi praticabile è utilizzare un protocollo diverso per comunicare tra diverse organizzazioni. Questo protocollo ignora l'interno e guarda solo alle zone di demarcazione. Sono le macchine di frontiera ad annunciare che al loro interno è presente una certa rete. 
 È una tecnica di routing statico, ma nel senso opposto, in modo da indirizzare il traffico verso la propria zona. 
 Se non viene trovato il destinatario all'interno, non è un problema poiché il traffico non avrebbe trovato altre rotte possibili. 
 
-Le connessioni tra i vari router di frontier è gestito attraverso connessioni TCP, chiamate \textit{peering}. 
-In questo modo si semplifica l'instradamento considerando intere organizzazioni come singole destinazioni. Poiché è necessario comunicare tra i router di frontiera, se questi si trovano in una stesa organizzazione, servono connessioni TCP interne. 
+La connessione tra i vari router di frontiera è gestita attraverso connessioni TCP, chiamate \textit{peering}. 
+In questo modo si semplifica l'instradamento considerando intere organizzazioni come singole destinazioni. Poiché è necessario comunicare tra i soli router di frontiera, se questi si trovano in una stessa organizzazione servono connessioni TCP interne. 
 Si determina in questo grafo virtuale la soluzione al problema di routing. Dopo che la rotta per obiettivi remoti è stata decisa dai router di frontiera, questi iniettano le rotte esterne all'interno della loro organizzazione. 
 
-Il protocollo \textit{Border Gateway Protocol} ha l'obiettivo di rendere disponili ed aggiornate le tabelle di instradamento.. con informazioni di routing inter-dominio. 
+Il protocollo \textit{Border Gateway Protocol} ha l'obiettivo di rendere disponili ed aggiornate le tabelle di instradamento con informazioni di routing inter-dominio. 
 Questo è un protocollo tra i più complessi ed importanti. Può prendere in considerazione anche vincoli commerciali, preferenze locali, priorità, problemi legali, ecc. BGP è stato introdotto nell'89 ed adottato per la prima volta nel 94. Con IPv4 è stato aggiornato nel '94 e migliorato nel '98. 
 La versione del 2006 di BGP include la compatibilità con il protocollo IPv6. 
+È un protocollo complesso, non sono definite le scorciatoie e la prassi, serve esperienza per poterlo configurare senza errori. 
 
-% È un protocollo complesso, non sono definite le scorciatoie e l prassi. 
+BGP è usato da chi è connesso ad uno o più ISP, dai provider del transito, da ISP che scambiano traffico su IXP o NAP, o clienti con reti di grandi dimensioni. Generalmente organizzazioni comprano un pezzo dello spazio di indirizzamento sulla rete e lo annunciano tramite BGP. 
 
-BGP è usato da chi è connesso ad uno o più ISP, dai provider del transito, da ISP che scambiano traffico su IXP o NAP, o clienti con reti di grandi dimensioni. Generalmente organizzazioni comprano un pezzo dello spazio di indirizzamento sulla rete. 
-
-BGP si fonda sul concetto si sistemi autonomi, \textit{Autonomous System} (AS), questi rappresentano una rete sotto una singola amministrazione. Controllati ad un unico gestore, amministratore. Sono società dichiarate per il protocollo e vengono identificati da un numero da 32 bit, aumentato dall'iniziale 2 byte. 
+BGP si fonda sul concetto si sistemi autonomi, \textit{Autonomous System} (AS), questi rappresentano una rete sotto una singola amministrazione. Controllati da un unico gestore, amministratore. Sono società dichiarate per il protocollo e vengono identificati da un numero da 32 bit, aumentato dagli iniziali 2 byte. 
 Questo identificativo viene chiamato \textit{Autonomous System Number} (ASN). Alcuni di questi sono dedicati all'uso privato, poiché se si ha una rete molto grande su più continenti è utile fare routing in base a policy, come fossero policy commerciali, e quindi bisogna utilizzare BGP, organizzando la rete come se fosse composta da AS diversi. 
 Gli identificatori da 0 a $2^{16}$ sono dedicati ad uso pubblico o privato. 
 
@@ -1135,72 +1133,67 @@ Il numero 23456, indica una comunicazione con una macchina che ancora non conosc
 
 
 L'organizzazione centrale IANA che gestisce l'assegnazione di indirizzi IP li concede ad organizzazioni regionali. Queste risorse vengono assegnate quando necessario. 
-Questi registri regionali assegnano anche l'ASN globale ad un AS. Per comunicare con un certo provider con numero privati bisogna chiederlo direttamente all'ISP. 
+Questi registri regionali assegnano anche l'ASN globale ad un AS. Per comunicare con un certo provider con numero privato bisogna chiederlo direttamente all'ISP. 
 
 Non c'è nessun controllo di alcun tipo, eccetto controlli di indirizzi IP uguali. 
 
-% Nel grado degli AS più si diminuisce il valore più sono comuni, nasce da esigenze commerciali non filtrate da alcuna regola 
-
 BGP permette lo scambio di informazioni solo se è attiva una sessione di peering. 
 Questa è una connessione TCP sulla porta 179, tra due router di frontiera. 
-Poiché questi possono appartenere ad uno stesso AS, si distinguono in connessioni e-BGP e i-BGP, \textit{external} e \textit{internal}, questi devono essere direttamente connessi in connessioni e-BGP, mentre può non essere diretta in i-BGP. La connessione TCP rimane viva nonostante i cambiamenti di routing e la perdita di connettività. 
+Poiché questi possono appartenere ad uno stesso AS, si distinguono in connessioni e-BGP e i-BGP, \textit{external} e \textit{internal} BGP, questi devono essere direttamente connessi in connessioni e-BGP, mentre può non essere diretta in i-BGP. La connessione TCP rimane viva nonostante i cambiamenti di routing e la perdita di connettività. 
 
-%% TODO I accorgimento
 
-In e-BGP i pacchetti vengono inviati con un TTL pari ad uno. Invece in i-BGP è possibile propagare le informazioni di instradamento da un bordo al bordo opposto di un AS. 
+In e-BGP i pacchetti vengono inviati con un TTL pari ad uno. Invece in i-BGP è possibile propagare le informazioni di instradamento da un bordo al bordo opposto di un AS, avendo i router di frontiera di uno stesso AS in full mesh. 
+Le connessioni di peering tra due AS potrebbero rimanere attive per anni. 
 
 
 BGP apprende l'esistenza di destinazioni remote attraverso e-BGP, con annunci che possono essere affermativi. Per ogni meta remota viene selezionato un percorso migliore tra tutte le alternativa, applicando le varie politiche di interesse. 
-Questa viene indicata nella tabella BGP e solo questa viene propagata all'interno e può essere propagata ad altri vicini BGP esterni. 
+Questa viene indicata nella tabella BGP e solo questa viene propagata all'interno dell'AS e può essere propagata ad altri vicini BGP esterni. 
 
 
-La notifica delle LAN interne non è automatica, viene richiesta manualmente, e rappresenta sia una forza che un limite per BGP. Permette di annunciare solo LAN specifiche, mentre se si commettono degli errori è possibile impedire ad altri utenti di connettersi a certe LAN. 
+La notifica delle LAN interne non è automatica, viene richiesta manualmente, e rappresenta sia una forza che un limite per BGP. Permette di annunciare solo LAN specifiche, tuttavia se si commettono degli errori è possibile impedire ad altri utenti di connettersi a certe LAN. 
 
-Le connessioni di peering tra due AS potrebbero essere attive per anni. 
 
 I pacchetti di annuncio contengono nel path una sorta di distance vector, dove sono presenti tutti gli AS attraversati, in questo modo gli echi vengono affrontati a priori. Se un AS riceve un pacchetto contenente il suo ASN, lo scarta per non creare rotte cicliche. 
 
-Gli annunci vanno in un verso, ed il traffico uscente va nel verso opposto, poiché gli annunci sono rotte statiche che vengono inoltrate. 
-
+Gli annunci vanno in un verso, ed il traffico uscente va nel verso opposto, poiché gli annunci sono rotte statiche che vengono inoltrate all'interno. 
 
 \subsection{Scalabilità di BGP}
-%% TODO move to kathar?
-Su BGP il problema della rumorosità è risolto dal \textit{route refactors}, inoltre ci sono problemi di scalabilità con per realizzare le policy, tramite route map. Si vorrebbe esprimere preferenze su ogni prefisso, ma questo non è possibile con le route map. Si possono risolvere con le \textit{communities}. 
 
+Su BGP il problema della rumorosità è risolto dal \textit{route reflectors}, inoltre ci sono problemi di scalabilità per realizzare le policy, tramite route map. Si vorrebbe esprimere preferenze su ogni prefisso, ma questo non è possibile con le route map. Si può risolvere con le \textit{communities}. 
 
-%% !! ROUTE REFRESH
+\subsubsection{Route Refresh}
 
 Il route refresh è un meccanismo che risolve il problema di modifica delle policy. 
 Quando viene modificata una policy, il router deve ricompilare tutte le rotte di instradamento. Il router potrebbe richiedere dai suoi vicini tutte le rotte, in un \textit{hard BGP peer reset}, ma questa possibilità comporta un lavoro notevole e non garantisce la continuità del servizio. 
-Altrimenti quando si ricevono gli annunci dai vicini, si mantengono in memoria, ed avendo una copia di tutto in memoria, si può ricalcolarsi tutto, \textit{soft reconfiguration}. 
+Altrimenti, quando si ricevono gli annunci dai vicini, si mantengono in memoria, ed avendo una copia di tutto in memoria, si può ricalcolare tutto, \textit{soft reconfiguration}. 
 
-Entrambi hanno dei vantaggi e svantaggi. L'hard reset consiste nel ricreare buttare giù tutti i peering e riattivarli, e dopo aver ricalcolato le rotte, vengono ri-annunciate con effetti che riverberano sulla rete. 
-Invece di consumare risorse di calcolo, si consumano risorse di memoria per la soft reconfiguration. 
+Entrambi hanno dei vantaggi e svantaggi. L'hard reset consiste nel buttare giù tutti i peering e riattivarli, e dopo aver ricalcolato le rotte, vengono ri-annunciate con effetti che riverberano sulla rete. 
+Invece, per la soft reconfiguration si consumano risorse di memoria e non di calcolo. 
 
 
 La route refresh, descritta in RFC 2918, mantiene attivi i peering BGP, e chiede ai suoi vicini di ri-annunciare i prefissi, sfruttando la memoria dei vicini invece di usare memoria aggiuntiva propria. 
 Impatta solo i prefissi affetti dai cambi di policy, e facilita il cambiamento di policy non distruttive. 
-Inoltre, non è richiesta configurazione aggiuntiva, tutto ciò che viene negoziato dai router è automatico. 
+Inoltre, non sono richieste configurazioni aggiuntive, tutto ciò che viene negoziato dai router è automatico. 
 
 
-%% !! NEXT HOP
+\subsubsection{Next Hop e Recursive Lookup}
 
-In generale il next hop coincide con l'interfaccia di peering del router BGP. Quando la rotta viene annunciata con iBGP, il BGP canonico prevede che la rotta rimane la stessa interfaccia remota. Quando viene annunciata fuori, il next hop diventa di nuovo l'interfaccia di uscita. È un attributo che canonicamente ha sempre l'interfaccia di uscita dell'ultimo AS da cui è uscita. 
+In generale il next hop coincide con l'interfaccia di peering del router BGP mittente dell'annuncio. Quando la rotta viene annunciata con iBGP, il BGP canonico prevede che la rotta mantenga la stessa interfaccia remota. Quando viene annunciata all'esterno il next hop diventa di nuovo l'interfaccia di uscita. È un attributo che canonicamente ha sempre l'interfaccia di uscita dell'ultimo AS da cui è uscita. 
 
-Quando un router deve inserire una rotta BGP nel data plane una rotta verso un IP remoto, non appartenente allo stesso AS. Il next hop è l'indirizzo su cui viene eseguito ARP, ma possiede un next hop remoto, deve quindi determinare a quale interfaccia vicina inviare il pacchetto. 
+Quando un router deve inserire una rotta BGP nel data plane verso un IP remoto, non appartenente allo stesso AS, il next hop è l'indirizzo su cui viene eseguito ARP. Ma possiede un next hop remoto, quindi deve determinare a quale interfaccia vicina inviare il pacchetto. 
 Il router esegue un lookup sulla rete dov'è presente l'indirizzo del next hop. Per inserire la rotta sulla tabella di instradamento quindi inserisce il valore di next hop della rotta appena trovata. 
 
-L'iBGP che compila la tabella di instradamento prima che BGP inietti le rotte di instradamento, deve iniettare tutte le rotte esterne, altrimenti non sarebbe possibile effettuare il recursive lookup. In generale queste non servono, poiché protocolli IGP non si interessano di queste, ma sono necessarie per iniettare rotte BGP. 
-Per risolvere questo problema, si può inserire una clausola che impone di cambiare il next hop ad ogni passo, anche se ci si trova in uno stesso AS. In questo modo non bisogna portare in IGP tutte le rotte interne:
+L'iBGP che compila la tabella di instradamento, prima che BGP inietti le rotte di instradamento, deve iniettare tutte le rotte esterne, altrimenti non sarebbe possibile effettuare il recursive lookup. In generale queste non servono, poiché protocolli IGP non si interessano di queste, ma sono necessarie per iniettare rotte BGP. 
+Per risolvere questo problema, si può inserire una clausola che impone di cambiare il next hop ad ogni passo, anche se ci si trova in uno stesso AS. In questo modo non bisogna portare in IGP tutte le rotte esterne:
 \begin{minted}[breaklines]{bash}
     neighbor x.x.x.x next-hop-self    
 \end{minted}
 
-Altrimenti si possono configurare peering iBGP su indirizzi di loopback. Questi possono essere aggiunti arbitrariamente, anche con indirizzi globalmente unici. Il pacchetto indirizzato all'interfaccia di loopback, risale al livello IP della macchina che lo riconosce come proprio e lo elabora. 
+Oppure si possono configurare peering iBGP su indirizzi di loopback. Questi possono essere aggiunti arbitrariamente, anche con indirizzi globalmente unici. Il pacchetto indirizzato all'interfaccia di loopback, risale al livello IP della macchina che lo riconosce come proprio e lo elabora. 
 
-Si può usare uno schema di enumeratone semplice nelle loopback per tutti i router. Questi diffondono sul protocollo IGP dei prefissi unici /32. Fino a che il router ha un'interfaccia attiva, è raggiungibile. Invece di usare un'interfaccia vera è possibile mantenere la connessione indipendentemente dallo stato delle sue interfacce. Questo è estremamente comodo anche in configurazione, le loopback vengono usate come identificatori di router. Tutti gli altri IP sono accidentali e non è necessario memorizzarli. 
+Si può usare uno schema di enumerazione semplice nelle loopback per tutti i router. Questi diffondono sul protocollo IGP dei prefissi unici /32. Fino a che il router ha un'interfaccia attiva, è raggiungibile. Invece di usare un'interfaccia vera è possibile mantenere la connessione indipendentemente dallo stato delle sue interfacce. Questo è estremamente comodo anche in configurazione, le loopback vengono usate come identificatori di router. Tutti gli altri IP sono accidentali e non è necessario memorizzarli. 
 
-Quando si realizzano dei peering, non si realizzano tra due interfacce vera, ma tra interfacce di loopback, che non cadano a meno che non viene disattivato l'intero router. Le sessioni iBGP non dipendono neanche dallo stato della rete interna. Fino a che l'AS è connesso, possono comunicare tutte le macchine. 
+Quando si realizzano dei peering, non si realizzano tra due interfacce vere, ma tra interfacce di loopback, che non cadano a meno che non viene disattivato l'intero router. Le sessioni iBGP non dipendono neanche dallo stato della rete interna. Fino a che l'AS è connesso, possono comunicare tutte le macchine. 
 Tuttavia, bisogna forzare l'indirizzo di peering, con quello di loopback, e non l'indirizzo dell'interfaccia da cui esce il pacchetto:
 \begin{minted}[breaklines]{bash}
     neighbor x.x.x.x update-source y.y.y.y    
@@ -1208,54 +1201,59 @@ Tuttavia, bisogna forzare l'indirizzo di peering, con quello di loopback, e non 
 \end{minted}
 Questo comando accetta un indirizzo IP o il nome di un'interfaccia. 
 
-%% !! ROUTE REFLECTORS
+\subsubsection{Route Reflectors}
 
-Questo non toglie che il numero di peering BGP non scali, rimane quadratico. Poiché devono essere in full mesh, in modo che non rimbalzino annunci BGP costantemente. 
-\textit{Route reflectors} è una soluzione semplice, descritta in RFC 4456. Un route reflector è un router come gli altri, questo computa delle rotte, esattamente come un router BGP, e seleziona le sue best e le inoltra ai suoi vicini con una particolare policy. 
+Questo non toglie che il numero di peering BGP non scali, rimane quadratico, per mantenere la full mesh dentro un AS, in modo che non rimbalzino annunci BGP costantemente. 
+I \textit{Route Reflectors} sono una soluzione semplice, descritta in RFC 4456. Un route reflector è un router come gli altri, questo computa delle rotte, esattamente come un router BGP, e seleziona le sue best e le inoltra ai suoi vicini con una particolare policy. 
 
-Ogni macchina è connessa ad un unico stesso router, chiamato route reflector, questo quando riceve degli annunci, decide qual è il migliore e lo invia a tutti. Il comportamento da parte dei router di frontiera è buona, tutti ottengono la scelta migliore. Il route reflector si comporta come uno specchio che riflette rotte specifiche. 
+Ogni router iBGP dell'AS è connesso a questo router, chiamato route reflector, questo quando riceve degli annunci da parte degli altri router, decide qual è il migliore e lo invia a tutti. Il comportamento da parte dei router di frontiera è buono, tutti ottengono la scelta migliore. Il route reflector si comporta come uno specchio che riflette rotte specifiche verso tutti gli altri router. Quindi è sufficiente che un router iBGP sia connesso al route reflector per conoscere le rotte inoltrate da tutti gli altri router di frontiera. 
+
+%% TODO add img route reflector
+\begin{figure}[H]%
+    \centering%
+    \includegraphics[width=3cm]{example-image}%
+\end{figure}
 
 Esiste un route reflector che si comporta come server, una macchina BGP standard, con una serie di client che sono i router di frontiera. 
 Alcuni peering iBGP diretti possono sopravvivere e possono diminuire la latenza in caso il route reflector sia troppo lontano. 
 
-Per sostenere la scalabilità si può creare una full mesh di route reflector, dove ogni annuncio compie un singolo rimbalzo. Tra loro sanno che stanno comunicando tra route reflector. 
-Quando un route reflector riceve un annuncio tra un client o un non client, seleziona la rotta migliore, se la riceve da un client, la rimanda a tutti i client ed ai suoi non client. Se invece viene da un non client, si suppone che tutti gli altri route reflector la sappiano già, e la manda verso i suoi soli client. 
+Per sostenere la scalabilità si può creare una full mesh di route reflector, comunque più piccola dell'eventuale full mesh tra tutti i router, dove ogni annuncio compie un singolo rimbalzo. Tra loro sanno che stanno comunicando tra route reflector. 
+Quando un route reflector riceve un annuncio da un client o un non client, seleziona la rotta migliore, se la riceve da un client, la rimanda a tutti i client ed ai suoi non client. Se invece viene da un non client, si suppone che tutti gli altri route reflector la sappiano già, e la manda verso i suoi soli client. 
 
-Si può scalare ulteriormente aggiungendo un altro livello di route reflector. Ciò che è importante è avere una full mesh solo al livello superiore. È possibile avere connessioni aggiuntive, per tollerare una ridondanza, un client potrebbe avere più server, ma non è necessario creare un albero. 
+Si può scalare ulteriormente aggiungendo un altro livello di route reflector. Ciò che è importante è avere una full mesh solo al livello più alto. È possibile avere connessioni aggiuntive, per tollerare una ridondanza, un client potrebbe avere più server, ma non è necessario creare un albero. 
 
-Ad ogni livello gerarchico un roue reflector serve un cluster della backbone, questo può avere due o più router. 
+Ad ogni livello gerarchico un route reflector serve un cluster della backbone, questo può avere due o più router. 
 
-Si crea un problema, poiché connessioni ridondanti potrebbero introdurre dei cicli. Per evitare il campo infinity in BGP si è introdotta la full mesh, e per evitare i problemi della full mesh si sono introdotti nuovamente dei cicli. 
+Si crea un problema, poiché connessioni ridondanti potrebbero introdurre dei cicli. Per evitare il count to infinity in BGP si è introdotta la full mesh, e per evitare i problemi della full mesh si sono introdotti nuovamente dei cicli. 
 
 
 La soluzione è una specie di as-path, l'idea è quella di avere un attributo BGP che si memorizza l'ID di ogni router attraversato. 
-Si vuole un attributo che porti tutti gli ID dei router attraversati, in modo che chi riceve un annuncio con il suo ID dentro lo scarta come un ciclo. 
-Questa attività la devono realizzare i route reflector, non le macchine normali, poiché vedono questo come peering BGP, devono partecipare a questo meccanismo senza saperlo. 
+Si vuole un attributo che porti tutti gli ID dei router attraversati, in modo che chi riceve un annuncio contenente il suo ID, lo scarta essendo un ciclo. 
+Questa attività la devono realizzare i route reflector, non le macchine normali, poiché vedono questo come un peering BGP normale, devono partecipare a questo meccanismo senza saperlo. 
 Ognuno si deve comportare in una certa maniera, ma ci sono degli attori inconsapevoli. 
 Si realizza allo stesso modo di OSPF, impersonando quei router. 
 
-Il campo originator ID contiene l'ID del route reflector che lo ha generato, la cluster list contiene la lista dei cluster attraversati nella gerarchia dei route reflector. L'identificativo di un cluster viene aggiunto quando viene inviato un annuncio da ruote reflector. 
+Si introducono dei campi aggiuntivi per questi annunci, il campo originator ID contiene l'ID del route reflector che lo ha generato, la cluster list contiene la lista dei cluster attraversati nella gerarchia dei route reflector. L'identificativo di un cluster viene aggiunto quando viene inviato un annuncio da ruote reflector. 
 Se un router riceve una rotta iBGP con il suo ID contenuto nel campo originator ID lo scarta, se invece nell'attributo cluster list è contenuto l'ID del cluster lo scarta. 
 
 
 Queste connessioni TPC potrebbero non coincidere con le connessioni fisiche, ma si consiglia di seguire la topologia fisica della rete, in modo da non influenzare l'instradamento dei pacchetti. 
-Tipicamente la PoP, \textit{Point of Presence} ha due router principali, route reflector, con due cluster definiti sull'intera rete. 
+Tipicamente la PoP, \textit{Point of Presence}, di un ISP ha due router principali, route reflector, con due cluster definiti sull'intera rete. 
 
 
-La metrica igp viene considerata nel processo di selezione della best. 
-Il passaggio a cluster e route reflector è semplice, con una migrazione facile che non impatta i servizi, riducendo le ridondanze, inserendo un route reflector per cluster. 
+La metrica IGP viene considerata nel processo di selezione della rotta migliore. 
+Il passaggio a cluster e route reflector è semplice, con una migrazione facile che non impatta i servizi, riducendo le ridondanze, dividendo la rete in cluster ed inserendo un route reflector per cluster. 
 
+\subsubsection{Communities}
 
-%% !! COMMUNITIES
-
-Le communities sono dei meccanismi di scalabilità per permettere ad un insieme di macchine di comportarsi in maniera omogenea. Questo viene realizzato raggruppando insiemi di prefissi in classi o community, sono delle etichette inserite in annunci. Ogni etichetta ha significati diversi. Si possono appiccicare ad annunci in iBGP o eBGP. 
+Le \textit{Communities} sono dei meccanismi di scalabilità per permettere ad un insieme di macchine di comportarsi in maniera omogenea. Questo viene realizzato raggruppando insiemi di prefissi in classi o community, sono delle etichette inserite in annunci. Ogni etichetta ha significati diversi. Si possono applicare ad annunci in iBGP o eBGP. 
 
 Venne introdotto l'attributo community in RFC 1998, dopo essere descritto in RFC 1997. Se queste etichette non vengono rimosse, rimangono nell'annunciano e vengono propagate in rete. 
-È un intero a 32 bit, rappresentato da due numeri da 16 bit. I primi due byte sono il numero dell'AS, si annuncia l'AS che ha deciso il significato dell'etichetta, non necessariamente l'AS che l'ha generato. 
-Ogni destinazione potrebbe essere membro di più comunità, si può trattare ogni comunità con un'unica policy, per aggregare più prefissi. 
-Si possono realizzare route map sull'etichetta. 
+È un intero a 32 bit, rappresentato da due numeri da 16 bit. I primi due byte sono il numero dell'AS, si annuncia l'AS che ha deciso il significato dell'etichetta, non necessariamente l'AS che ha generato l'annuncio originario. 
+Ogni rotta potrebbe essere membro di più comunità, si può trattare ogni comunità con un'unica policy, per aggregare più prefissi. 
+Si possono realizzare route map su questo attributo etichetta. 
 
-Ci sono delle community abbastanza standard, con il prefisso \texttt{65553}:
+Ci sono delle community abbastanza standard, con il prefisso \texttt{65553:x}:
 \begin{itemize}
     \item \textit{No-export}, rotte da non annunciare ad alcun peer eBGP \texttt{:65281}
     \item \textit{No-advertise}, rotte da non annunciare ad alcun peer BGP, \texttt{:65282}
@@ -1263,21 +1261,81 @@ Ci sono delle community abbastanza standard, con il prefisso \texttt{65553}:
     \item \textit{No-peer}, rotte da non annunciare a peer bilaterali, \texttt{:65284} 
 \end{itemize}
 
+\subsection{Gerarchia Internet}
+
+Nel mondo reale sono presenti più livelli di astrazione per BGP. 
+Si possono considerare relazioni di tipo economico:
+\begin{itemize}
+    \item Esista una gerarchia di AS, in modo che l'operatore che fornisce la connettività possa fornire il proprio servizio, attraverso provider di più alto livello. 
+    
+    Il customer è un AS e va a pagare il provider, l'AS che fornisce connettività di più alto livello.  
+    \item Il secondo tipo di relazione è chiamata peer-to-peer, in questo tipo di relazione due provider circa dello stesso livello si mettono in accordo per scambiarsi traffico gratuitamente. 
+\end{itemize}
+    
+Normalmente i costi sono proporzionali alla quantità di traffico passato sul link. Se si riesce a mandare il traffico su un peer-to-peer l'unico costo è quello di manutenzione del link, diviso tra i due peer, e tutto ciò che passa sopra è gratis. Mentre è il customer a pagare il traffico sul link offerto dal provider, indipendentemente dalla direzione del traffico. 
+
+Da questa base logica si può arrivare al concetto della gerarchia di Internet. 
+Quando si raggiunge la parte più alta della gerarchia, sono tutti in peer-to-peer in full mesh. 
+
+\begin{itemize}
+    \item Ad un provider conviene inviare traffico ai suoi customer, per cui un provider propaga traffico, diretto ai customer, se proveniente dal suo AS, da un suo customer o un peer, dove ci guadagna, oppure proveniente da un suo provider, supponendo i costi uguali a somma zero, poiché paga il link verso il suo provider. 
+    In discesa passa tutto ed è conveniente per il provider. 
+    \item In salita il customer invia il proprio traffico, ed il traffico proveniente da un suo customer, poiché è il motivo per cui si ha un contratto tra due AS, a somma zero, supponendo i link equamente costosi. 
+    \item Ricevendo traffico da un peer, gratis, se lo si inoltra verso l'alto, si ha una perdita quindi non viene inoltrato. 
+    \item Analogamente non si manda traffico proveniente ad un provider verso l'alto. 
+    \item Il traffico peer-to-peer non permette due hop, poiché si considera anche il costo dell'infrastruttura interna, se questa viene saturata, bisogna aumentarne le prestazioni. Quindi se si facesse passare il traffico peer-to-peer si avrebbe una spesa, quindi non lo si inoltra. 
+\end{itemize}
+    
+
+Il modello customer-provider di BGP viene chiamato \textit{valley free}, poiché nel momento in cui si crea una valle, si realizza traffico vietato poiché comporta una perdita. Questa politica viene implementata da chi ci perde. 
+
+Fino a che si sale soltanto e si scende soltanto gli annunci BGP sono accettati. In qualche caso queste catene potrebbero essere mancanti. Non sono permessi peer-to-peer solo se dopo si scende, quindi non esistono percorsi con un peer-to-peer non alla massima altezza, poiché uno dei due peer ci perderebbe economicamente. 
+
+Le relazioni customer provider sono esclusivamente dei filtri. Il modello economico spesso si associa al modello \textit{prefer-customer}. Se si deve scegliere dove inoltrare gli annunci, si preferisce verso il basso, o in orizzontale, dove non si perde. Mentre come ultima scelta si inoltra verso l'alto. 
+
+
+La configurazione vera di un router BGP è costituita da una serie di filtri, ed un insieme di route map per settare le preferenze tra i vari AS. 
+L'Internet non è shortest path, nonostante BGP lo sia in assenza di policy, non sempre lo è nel mondo reale, poiché implementa policy legate anche a rapporti commerciali. 
+
+
+Una stima realistica degli AS è di circa 75 mila, ma è difficile da stabilire, poiché viene effettuata su quelli annunciati, non quelli assegnati, che non vengono riassegnati. 
+
+
+Gli AS in questa gerarchia si dividono in tre tipi, i provider di livello uno sono tutti in una full mesh tra tutti loro, sono tra i 7 ed i 12, non vengono pubblicati gli accordi commerciali, quindi possono solo essere dedotti dagli annunci BGP sulla rete. 
+
+Il customer cone di un AS è la parte dell'Internet che può raggiungere attraversando solamente connessioni di tipo customer-provider, l'insieme dei suoi customer diretti ed indiretti. Poiché possono essere disgiunti, dovendo offrire la piena raggiungibilità di Internet, bisogna realizzare una full mesh tra i coni dei vari provider. 
+
+Più in alto sono difficili da capire i rapporti, la rete è estremamente densa, con un numero di link molto alto rispetto al numero di nodi. 
+
+La rete di BGP è molto densa ed anche molto piatta, poiché una volta raggiunto tutto l'Internet, non è necessario aumentare i peer. 
+
+Il sito asrank è gestito da un'agenzia di ricerca CAIDA, per classificare AS. Questo esegue un algoritmo una volta al mese per determinare com'è strutturato l'Internet, realizzando un ranking degli AS per dimensione del cone size. 
+RIPE offre molti strumenti, tra questi RIPEstat fornisce statistiche aggregando informazioni provenienti da BGP. 
+Lo strumento chiamato \textit{looking glass}, portali web pubblicati da certi AS, per vedere lo stato BGP del router, realizzando delle query. Si possono fare dei ping, ed eseguire comandi limitati. 
+Questi sono convenienti per AS grandi, poiché BGP è una comunità. 
+
 \subsection{Anomalie di Internet}
 
-BPG è stato progettato intorno al 1994, all'epoca il concetto di cybersecurity non è vivo quanto oggi. È noto che BGP è vulnerabile ad attacchi, e questi sono in molti casi totalmente invisibili agli utenti. 
+BPG è stato progettato intorno al 1994, all'epoca il concetto di cybersecurity non era vivo quanto oggi. È noto che BGP è vulnerabile ad attacchi, e questi sono in molti casi totalmente invisibili agli utenti. 
 È estremamente facile modificare l'AS path di un annuncio, per indirizzare il traffico verso il proprio router ed analizzare il traffico, a seguito di operazioni malevole. 
 
-Non ci sono firme digitali o validazione degli annunci, mancano i principi basi delle politiche di sicurezza. Alcuni attacchi BGP sono talmente banali per cui CAIDA, per il dipartimento dell'Homeland Security, monitora BGP per settori critici di interesse. 
+Non ci sono firme digitali o validazione degli annunci, mancano i principi basi delle politiche di sicurezza. Alcuni attacchi BGP sono estremamente banali, per cui CAIDA, per il dipartimento dell'Homeland Security, monitora BGP per settori critici di interesse. 
 
-Alcune anomali sono BGP leaks, una leak è un prefisso che non dovrebbe uscire da un AS, ma viene annunciato verso l'esterno. Generalmente è un errore, e può trasformare un AS non di transito in un AS di transito. 
+\subsubsection{BGP Leaks}
+
+Alcune anomalie sono BGP leaks, una leak è un prefisso che non dovrebbe uscire da un AS, ma viene annunciato verso l'esterno. Generalmente è un errore, e può trasformare un AS non di transito in un AS di transito. 
 
 Questo avviene in vari modi, alcuni prefissi viaggiano disaggregati per annunciare i prefissi in modo più specifico. 
 Il numero di BGP leaks è stimato intorno a qualche centinaio al mese. 
 
 Nell'agosto del 2017 Google annunciò a Verizon rotte apprese tramite link peer-to-peer, diventando transito per 135 mila rotte causando un outage in Giappone. 
 
-Il BGP hijacking consiste nel rubare un prefisso, annunciando un prefisso che non si possiede realmente. Si possono realizzare hijack parziali rubando un sotto-prefisso più specifico, diffondendosi in modo più veloce. Oppure si può realizzare un hijack completo, per far vincere il proprio prefisso aggiungendo determinati attributi. 
+Nel Gennaio 2017 l'azienda Telecom iraniana ha annunciato dei prefissi commerciali allo scopo di censurare dei siti web, generando dei leak. 
+
+\subsubsection{BGP Hijkacking}
+
+Il BGP hijacking consiste nel rubare un prefisso, annunciandolo, che non si possiede realmente. Si possono realizzare hijack parziali rubando un sotto-prefisso più specifico, diffondendosi in modo più veloce. Oppure si può realizzare un hijack completo, aggiungendo determinati attributi per rappresentare la rotta migliore rispetto a quella fornita dalla vittima. 
+Se l'attaccante inserisce nell'AS path l'AS effettivamente proprietario del prefisso come originator si parla di \textit{upstream hijack}, poiché risulta che l'attaccante è un upstream della vittima. 
 
 L'effetto immediato può essere di deviare il traffico, rimandarlo all'origine, analizzarlo, ecc. 
 Ci sono centinaia di attacchi di questo tipo al mese. 
@@ -1286,164 +1344,122 @@ Nel 26 Aprile 2017, rotte appartenenti a più di una dozzina di altri servizi fi
 
 Il 12 Dicembre 2017 molti prefissi americani sono stati annunciati da un AS russo generalmente silente. 
 
-Nel Gennaio 2017 l'azienda Telecom iraniana ha annunciato dei prefissi commerciali allo scopo di censurare dei siti web, generando dei leak. 
+\subsubsection{BGP Interception}
 
+Un BGP interception è un evento in cui un AS annuncia di possedere un prefisso per attrarre uno specifico flusso di traffico, potendolo in caso dirigerlo verso il destinatario originale, comportandosi come un MitM, \textit{Man in the Middle}. Si può mantenere la connessione verso il destinatario originale, inserendo nell'AS path gli AS lungo il cammino tra la vittima e l'attaccante. 
 
 Ci sono stati vari interception, i dati non sono molto chiari, poiché l'utente non se ne accorge, solo l'AS difficilmente, per cui l'incidenza è ignota. 
 
+\subsubsection{Altre Anomalie}
 
 BGP outage è quando si perde visibilità di un certo prefisso, non necessariamente è un attacco, spesso è solo sparito. 
-BGP è dimostrato che non è stabile, esistono configurazioni per cui la best oscilla in continuazione.  
-% bgp=calabrone: non sa di poter volare quindi lui vola
-
-% BGP new upstream un nuovo 
-%% TODO add smt 
-
-\subsection{Gerarchia Internet}
-
-Nel mondo reale sono presenti più livelli di astrazione per BGP. 
-Esista una gerarchia di AS, in modo che l'operatore che fornisce la connettività possa fornire il proprio servizio, attraverso provider di più alto livello. 
-
-Il customer è un AS e va a pagare il provider, l'AS che fornisce connettività di più alto livello. Queste relazione sono di tipo economico. 
-
-Il secondo tipo di relazione è chiamata peer-to-peer, in questo tipo di relazione due provider circa dello stesso livello si mettono in accordo per scambiarsi traffico gratuitamente. 
-
-Normalmente i costi sono proporzionali alla quantità di traffico passato sul link. Se si riesce a mandare il traffico su un peer-to-peer l'unico costo è quello di manutenzione del link, diviso tra i due peer, e tutto ciò che passa sopra è gratis. 
-È il customer a pagare il traffico sul link offerto dal provider, indipendentemente dalla direzione del traffico. 
-
-Da questa base logica si può arrivare al concetto della gerarchia di Internet. 
-Quando si raggiunge la parte più alta, sono tutti in peer-to-peer in full mesh. 
-
-
-Ad un provider conviene inviare traffico ai suoi customer, per cui un provider propaga traffico prominente dal suo AS, da un suo customer o un peer, dove ci guadagna, oppure proveniente da un suo provider, supponendo i costi uguali a somma zero, poiché paga il link verso il suo provider. 
-In discesa passa tutto ed è conveniente per il provider. 
-In salita il customer invia il proprio traffico, ed il traffico proveniente da un suo customer, poiché è il motivo per cui si ha un contratto tra due AS, a somma zero, supponendo i link equamente costosi. 
-
-Ricevendo traffico da un peer, gratis, se lo si inoltra verso l'alto, si ha una perdita quindi non viene inoltrato. 
-Analogamente non si manda traffico proveniente ad un provider verso l'alto. 
-Il traffico peer-to-peer non permette due hop, poiché si considera anche il costo dell'infrastruttura interna, se questa viene saturata, bisogna aumentarne le prestazioni. Quindi se si facesse passare il traffico peer-to-peer si avrebbe una spesa, quindi non lo si inoltra. 
-
-Il modello customer-provider di BGP viene chiamato \textit{valley free}, poiché nel momento in cui si crea una valle, si realizza traffico vietato poiché comporta una perdita. Questa politica viene implementata dda chi ci perde. 
-
-Fino a che si sale soltanto e si scende soltanto il traffico è accettato. In qualche caso queste catene potrebbero essere mancanti. Non sono permessi peer-to-peer solo se dopo si scende, quindi non esistono percorsi, con un peer-to-peer non alla massima altezza, poiché uno dei due peer ci perderebbe economicamente. 
-
-Le relazioni customer provider sono esclusivamente dei filtri. Il modello economico spesso si associa al modello \textit{prefer-customer}. Se si deve scegliere dove mandare il traffico, si preferisce verso il basso, o in orizzontale, dove non si perde. Mentre come ultima scelta si inoltra verso l'alto. 
-
-
-La configurazione vera di un router BGP è costituita da una serie di filtri, ed un insieme di route map per settare le preferenze tra i vari AS. 
-L'Internet non è shortest path, nonostante BGP lo sia in assenza di policy, non sempre lo è nel mondo reale, poiché implementa policy legate anche a rapporti commerciali. 
-
-
-Una stima realistica degli AS sono 75 mila, ma è difficile da stabilire, poiché viene effettuata su quelli annunciati, non quelli assegnati, che non vengono riassegnati. 
-
-
-Gli AS in questa gerarchia si dividono in tre tipi, i provider di livello uno sono tutti in una full mesh tra tutti loro, sono tra i 7 ed i 12 ??, non vengono pubblicati gli accordi commerciali, quindi vengono dedotti dagli annunci BGP sulla rete. %% TODO 7k?12k?
-
-Il customer cone di un AS è la parte dell'Internet che può raggiungere attraversando solamente connessioni di tipo customer-provider, l'insieme dei suoi customer diretti ed indiretti. Poiché possono essere disgiunti, dovendo offrire la piena raggiungibilità di Internet, devono realizzare una full mesh tra i coni dei vari provider. 
-
-Più in alto sono difficili da capire i rapporti, la rete è estremamente densa, con un numero di link molto alto rispetto al numero di nodi. 
-
-La rete di BGP è molto densa ed anche molto piatta, poiché una volta raggiunto tutto l'Internet, non è necessario aumentare i peer. 
-
-Il sito asrank è gestito da un'agenzia di ricerca CAIDA, per classificare AS. Questo fa girare un algoritmo una volta al mese per determinare com'è fatto l'Internet, realizzando un ranking degli AS per dimensione del cone size. 
-RIPE offre molti strumenti, tra questi RIPEstat fornisce statistiche aggregando informazioni provenienti da BGP. 
-Lo strumento chiamato \textit{looking glass}, portali web pubblicati da certi AS, per vedere lo stato BGP del router, realizzando delle query. Si possono fare dei ping, ed eseguire comandi limitati. 
-Questi sono convenienti per AS grandi, poiché BGP è una comunità. 
+BGP è dimostrato che non è stabile, esistono configurazioni per cui la best oscilla in continuazione, si indica con BGP instability o \textit{flapping} quando un prefisso viene annunciato e ritirato velocemente. 
+Un BGP new upstream corrisponde ad un AS che annuncia per la prima volta un prefisso mettendosi nell'AS path prima dell'AS noto proprietario. Può essere sintomo di un hijack. 
+Si ha un BGP newly routed prefix/sub-prefix, quando un prefisso non generalmente annunciato in rete viene annunciato per la prima volta, può essere sintomo di una leak. 
+Si ha un BGP new AS origination, quando un AS origina per la prima volta un nuovo prefisso. 
 
 \subsection{MPLS VPN}
 \label{sec:mpls}
 
 Il \textit{Multo-Protocol Label Switching} è una tecnologia usata dai data centers, che risponde ad esigenze di diversi attori. 
 
-Il cliente vorrebbe avere un filo, mentre il provider vorrebbe  utilizzare la rete che già possiede. 
-I provider hanno una grande disponibilità di banda, ed è molto difficile saturarla, vorrebbero vendere connettività punto-punto ai loro utenti, vendendo fili virtuali ai suoi utenti. 
+Il cliente vorrebbe avere un filo diretto, mentre il provider vorrebbe utilizzare la rete che già possiede. 
+I provider hanno una grande disponibilità di banda, ed è molto difficile saturarla, vorrebbero vendere connettività punto-punto ai loro utenti, attraverso fili virtuali. 
 
-Le sedi periferiche di un'organizzazione si connettono alla sede centrale tramite il provider, per voler collegare punto-punto queste diversi sedi, con possibilmente gli stessi prefissi tre le varie sedi. Per cui il provider deve realizzare un filo virtuale mantenendo invariati gli indirizzi dell'organizzazione del customer. 
-Vuole che questo traffico sia segregato rispetto al traffico di altri utenti, poiché potrebbe contenere informazioni sensibili, o ha esigenze di riservatezza. Almeno lo vuole isolare logicamente. 
+Si può pensare ad una situazione dove le sedi periferiche di un'organizzazione si connettono alla sede centrale tramite il provider, per voler collegare punto-punto queste diversi sedi, con possibilmente gli stessi prefissi tre le varie sedi. Per cui il provider deve realizzare un filo virtuale mantenendo invariati gli indirizzi dell'organizzazione del customer. 
+Vuole che questo traffico sia isolato rispetto al traffico di altri utenti, poiché potrebbe contenere informazioni sensibili, o ha esigenze di riservatezza. Almeno lo vuole isolare logicamente. 
 
-Il provider vuole realizzare una configurazione economica e scalabile, e non vorrebbe avere delle prestazioni minori. 
+Il provider vuole realizzare una configurazione economica e scalabile, e non vorrebbe avere una riduzione delle prestazioni. 
 
-%% TODO add smt
-Per soddisfare i vincoli del provider e dei customer, si usano i VPN, \textit{Virtual Private Network}, si comportano come una rete privata, ma è implementata solo virtualmente, e MPLS, \textit{Multi-Protocol Label Switching}, un protocollo altamente scalabile per il trasporto di dati. 
 
-Il label switching è un meccanismo di instradamento dei pacchetti, si inserisce sopra ad ethernet, e sotto IP. Però mentre nella rete attraversano pacchetti MPLS, passano anche pacchetti IP. 
+Per soddisfare i vincoli del provider e dei customer, si usano i VPN, \textit{Virtual Private Network}, si comportano come una rete privata, ma è implementata solo virtualmente, e MPLS, \textit{Multi-Protocol Label Switching}, un protocollo altamente scalabile per il trasporto di dati, utilizzato per implementare reti virtuali. 
 
-Un nodo per inviare un pacchetto, si calcola il suo cammino, al pacchetto non lo si guarda più all'indirizzo, si inserisce in un altro pacchetto contenente un'etichetta. Le macchine successive instraderanno in base all'etichetta. Ci sono tante etichette quanti sono i flussi che stanno attraversando la rete al momento, un numero molto minore rispetto allo spazio di indirizzamento di Internet. 
-Quando si definisce questo flusso si possono fare considerazioni di banda, per il flusso dei dati. 
+\subsubsection{Label Switching}
 
-Per ogni tratto si usa un'etichetta diversa, il calcolo deve essere effettuato dalla macchina che assegna l'etichetta. 
-Prima bisogna avere delle tabelle di etichette. All'inizio un qualche protocollo decide il cammino e determina per ogni tipo di flusso un tipo di etichetta. La macchina che determina se un pacchetto appartiene ad un dato flusso determina la sua etichetta. 
+Il \textit{label switching} è un meccanismo di instradamento dei pacchetti, si inserisce sopra ad ethernet, e sotto IP. Però mentre nella rete attraversano pacchetti MPLS, passano anche pacchetti IP. 
+
+Un nodo per inviare un pacchetto, si calcola il cammino, al pacchetto non lo si guarda più in base all'indirizzo, si inserisce in un altro pacchetto contenente un'etichetta. Le macchine successive instraderanno in base a questa etichetta. Ci sono tante etichette quanti sono i flussi che stanno attraversando la rete al momento, un numero molto minore rispetto allo spazio di indirizzamento. 
+Quando si definisce questo flusso si possono fare considerazioni di banda, per ottimizzare il flusso dei dati. 
+
+Per ogni tratto si può usare un'etichetta diversa, in modo da non dover definire etichette univoche sull'intera rete, il calcolo deve essere effettuato dalla macchina che assegna l'etichetta. 
+Prima bisogna avere delle tabelle di etichette. All'inizio un qualche protocollo decide il cammino e determina per ogni tipo di flusso un tipo di etichetta. La macchina che determina se un pacchetto appartiene ad un dato flusso determina la sua etichetta, questo ad ogni hop del pacchetto.  
 Lo inserisce in un circuito virtuale indirizzato su una strada già determinata, in base ai protocolli di instradamento del livello sottostante. 
 
 
-Il pacchetto MPLS incapsula i pacchetti con un header contenente uno o più etichette, in uno stack. Ogni stack ha quattro campi, il valore, la classe del traffico, una flag che indica l'ultimo pacchetto ed il TTL. 
+Il pacchetto MPLS incapsula i pacchetti con un header contenente uno o più etichette, in uno stack. Ogni stack ha quattro campi, il valore dell'etichetta, la classe del traffico, una flag che indica l'ultima etichetta ed il TTL. 
 Molte volte il TTL non viene aggiornato, quindi non sono visibili i nodi intermedi con un traceroute. 
 
 Si potrebbe sovrapporre un certo numero di etichette in maniera arbitraria. Inoltre, si potrebbe creare un tunnel dentro ad un tunnel. 
+Per instradare un pacchetto si guarda solo all'etichetta affiorante, confrontandola nella tabella di etichetta a quale flusso coincide, ed in caso si può rimuovere o sostituire con un'altra etichetta per indicare il flusso. 
+
+\subsubsection{Implementazione}
 
 In generale i router dei provider o di backbone si indicano con P, i router di frontiera sui customer si indicano con PE, i router dei customer si indicano con CE. 
-
-Per implementarlo la prima azione da eseguire è assegnare un indirizzo IP di loopback ai PE, garantendo che siano connessi. 
-
-Questi indirizzi di loopback vengono propagati attraverso un protocollo IGP. Sulla macchina router si definisce un'interfaccia dove si vedono le destinazioni di questo traffico, si passano per questa interfaccia, ed essendo un interfaccia virtuale, di loopback, viene incartato in un altro pacchetto che possiede l'indirizzo destinazione dell'altro estremo del tunnel, ed esce alla fine del tunnel, lo scarta e lo ripassa attraverso la tabella di instradamento e lo passa all'interfaccia. 
-
-In questo modo non si hanno problemi di sovrapposizione delle reti. Questo sarebbe difficile da configurare, e bisognerebbe configurare un numero quadratico di tunnel. 
+I PE rappresentano i PoP dell'ISP su una determinata zona. 
 
 
-La seconda fase consiste nell'usare BGP per annunciare un'opportunità di instradamento. Questo utilizza una variante di BGP, MP-BGP. 
-Ogni iBGP instaura un peering iBGP con tutti gli altri PE nella rete del provider. Queste sono informazioni di instradamento sulle reti del customer. 
+Per implementarlo si potrebbero usare tunnel ed interfacce di loopback, assegnando un indirizzo IP di loopback ai PE, garantendo che siano connessi. 
+Questi indirizzi di loopback vengono propagati attraverso un protocollo IGP. 
+Si possono usare tunnel IP-in-IP per realizzare la VPN. 
+Sulla macchina router si definisce un'interfaccia dove si vedono le destinazioni di questo traffico. Essendo un interfaccia virtuale, il traffico viene incartato in un altro pacchetto che possiede l'indirizzo destinazione effettivo dell'altro estremo del tunnel. Questo esce alla fine del tunnel, viene scartato e lo ripassa attraverso la tabella di instradamento e lo passa all'interfaccia connessa al customer.  
+
+In questo modo non si hanno problemi di sovrapposizione delle reti. Tuttavia, è difficile da configurare, e bisognerebbe configurare un numero quadratico di tunnel. 
 
 
-La terza fase consiste nell'usare MPLS come tunnel, il pacchetto IP di un CE attraversa tutta la rete dopo essere incartato in un pacchetto MPLS dal PE, assegnando due etichette, indicando qual è il customer e qual è il PE di destinazione. Quando il PE giusto rimuove la prima etichetta, e rimane solo l'etichetta che indica il customer mittente. 
+La seconda opzione consiste nell'usare BGP per annunciare un'opportunità di instradamento. Questo utilizza una variante di BGP, MP-BGP.  
+Ogni PE instaura un peering iBGP con tutti gli altri PE nella rete del provider, condividendo informazioni di instradamento sulle reti del customer. 
 
-In realtà l'etichetta finale la toglie il penultimo così toglie il pacchetto effettivo al destinatario. 
 
-L'etichetta più profonda che non viene usata per instradare viene usata per identificare quel tipo di traffico. Quella che emerge viene utilizzata per attraversare la rete. 
-L'ultima etichetta identifica la VPN, è usata in maniera simile della VLAN, definita in IEEE 802.1Q. 
+La terza opzione consiste nell'usare MPLS come tunnel, il pacchetto IP di un CE attraversa tutta la rete dopo essere incartato in un pacchetto MPLS dal PE, assegnando due etichette, indicando qual è il customer e qual è il PE di destinazione. Quando il PE destinazione rimuove la prima etichetta, e rimane solo l'etichetta che indica il customer mittente, la rimuove ed inoltra il pacchetto contenuto al destinatario corretto.  
+
+In realtà l'etichetta finale la toglie il penultimo così l'ultimo router, il PE, estrae direttamente il pacchetto effettivo e lo inoltra al destinatario. 
+
+L'etichetta più profonda che non viene usata per instradare viene usata per identificare quel tipo di traffico, indica la VPN, in maniera simile all'identificativo di una VLAN. Quella che emerge viene utilizzata per attraversare la rete. 
 
 Il protocollo che assegna queste tabelle di etichette è il LDP, \textit{Label Distribution Protocol}. 
+Questo genera i flussi, costruendo i \textit{Label Switched Paths} per raggiungere le interfacce di loopback delle PE, prendendo le informazioni dalla tabella di instradamento. Si suppone che un IGP abbia propagato le informazioni sulle interfacce di loopback dei vari PE. 
 
-%% TODO add smt
+Per realizzare un tunnel in questo modo bisogna utilizzare tutte e tre le opzioni. Si propagano le interfacce di loopback dei PE tramite un IGP. Si distribuiscono i prefissi VPN dei customer tra i PE con iBGP. Si costruiscono le LDP, verificando la presenza di LSP che connettono i PE. 
 
-Per inoltrare un pacchetto in questo modo si usa il costrutto \textit{Virtual Routing and Forwarding} (VRF), questo virtualizza il router, creando delle istanze di routing. 
-Questo permette ad un router di avere diverse tabelle di instradamento, ogni tabella è un'istanza di VRF, sia il control plane che il data plane. 
+I router PE devono distinguere le VPN, e mantenerle isolate, poiché potrebbero avere spazi di indirizzamento sovrapposti. Si usa il costrutto \textit{Virtual Routing and Forwarding} (VRF), questo virtualizza il router, creando delle istanze di routing. 
+Questo permette ad un router di avere diverse tabelle di instradamento, ogni tabella è un'istanza di VRF, sia il control plane che il data plane, che corrisponde ad una VPN. 
+
+Ogni PE mantiene più istanze di VRF ed ognuna contiene le rotte ricevute dai CE direttamente connessi, associati ad una specifica istanza di VRF, inoltre ogni VRF contiene le rotte propagate da iBGP dagli altri PE. 
+
+Per distinguere gli indirizzi IP si usa un \textit{Route Distinguisher}, (RD), univoco tra le VPN. Questo converte indirizzi IP non univoci in indirizzi VPN unici. Questo permette di evitare conflitti se due customer hanno spazi di indirizzamento sovrapposti. 
 
 
-Ogni PE mantiene più istanze di VRF ed ogni contiene le rotte ricevute da CE direttamente connessi, associati ad una specifica istanza di VRF, inoltre ogni VRF contiene le rotte propagate da BGP dagli altri PE. 
+In MPLS i router si distinguono in LER, \textit{Label Edge Router}, il primo router che incapsula il pacchetto dentro un MPLS LSP, corrisponde al PE connesso al CE. Mentre LSR, \textit{Label Switching Router}, si occupa solamente di instradare i pacchetti MPLS seguendo un LSP, sono i vari P interni alla rete. 
 
-Per distinguere gli indirizzi IP si usa un \textit{Route Distinguisher}, (RD), e nessuna VPN ha lo stesso RD. Questo converte indirizzi IP non univoci in indirizzi VPN unici. Questo permette di evitare conflitti se due customer hanno spazi di indirizzamento sovrapposti. 
-%% TODO add def RD
+Un LSR può ricevere la stessa etichetta da più interfacce, in questi casi sono presenti dei meccanismi per evitare collisioni. Questo si basa sul label space usato, e dipende dall'implementazione ed a volte dall'interfaccia, non dalla configurazione. Può dipendere solo dall'etichetta o anche dall'interfaccia da cui la riceve. 
 
-In MPLS i router si distinguono in LER, \textit{Label Edge Router}, il primo router che incapsula il pacchetto dentro un MPLS LSP. Mentre LES, \textit{Label Switching Router}, si occupa di instradare pacchetti MPLS all'interno della rete. 
 
-Un LSR può ricevere la stessa etichetta da più interfacce, in questi casi sono presenti dei meccanismi per evitare problematiche. Questo si basa sul label space usato, e dipende dall'implementazione ed a volte dall'interfaccia, non dalla configurazione.   
+A volte avere solamente un RD non è sufficiente, si vorrebbe poter avere VPN che non sono una mesh. In questi casi il RD indica solo una rete virtuale e non riesce a stabilire una topologia articolata. 
 
-A volte avere solamente un RD non è sufficiente, si vorrebbe avere una VPN che non è punto punto, ma una mesh. In questi casi il RD indica solo una rete virtuale e non riesce a stabilire una topologia. 
-
-Quindi si è introdotto un altro attributo \textit{Route Target} (RT), che specific specifica quali rotte devono essere importate o esportate all'interno di un VRF. 
-RT è una comunità estesa, che supporta topologie complesse. Si assegna un RT ad ogni VPN, e si usa un singolo VPN. 
+Quindi si è introdotto un altro attributo \textit{Route Target}, (RT), che specifica quali rotte devono essere importate o esportate all'interno di un VRF. 
+RT è una comunità estesa, che supporta topologie complesse. Si assegna un RT ad ogni VPN, e si usa una singola VPN. 
 
 Oltre a specificare il RD, si indica anche il RT, che è una comunità di VPN. 
 
-Questo sistema di amministrazione interno di un AS permette di creare dei tunnel all'interno, cno la massima flessibilità senza che il customer sia a conoscenza di quello che sta avvenendo dentro l'AS, vedendo la connessione come un'effettiva connessione via filo. 
+Questo sistema di amministrazione interno di un AS permette di creare dei tunnel, con la massima flessibilità senza che il customer sia a conoscenza di quello che sta avvenendo dentro l'AS, vedendo la connessione come un'effettiva connessione via filo. 
 La configurazione del provider inoltre è relativamente semplice. 
 
 \subsection{Introduzione a RPKI}
 
-%% * slide su moodle
+RPKI è un meccanismo abbastanza diffuso per la sicurezza di BGP, poiché è un protocollo non autenticato, dove sono possibili attacchi e situazioni per errori di configurazioni che possono rompere BGP. 
 
-Il RPKI è un meccanismo abbastanza diffuso per la sicurezza di BGP, poiché è un protocollo non autenticato, dove sono possibili attacchi e situazioni possibili per errori di configurazioni che possono rompere BGP. 
+\subsubsection{Insicurezza BGP}
 
 Dato un annuncio BGP, un router BGP potrebbe chiedersi se quell'AS è un suo vicino, inoltre si potrebbe chiedere se è veramente il proprietario di quel prefisso, poiché su BGP non sono presenti controlli ed è possibile annunciare rotte arbitrarie. Non ci sono controlli di default, quindi tutti i router si fidano arbitrariamente. 
 
-Il problema è che BGP assume che tutti dicano la verità, ma in caso di utenti malevoli, è facilmente impersonare altri AS, ed annunciare prefissi arbitrariamente. 
-Non necessariamente questo è un utente malevolo, può essere semplicemente un errore di configurazione. 
-ALcune situazioni possono generare un local hijack, dove solo la parte più locale viene instradata verso un finto prefisso. Oppure si potrebbe annunciare un annuncio più specifico, questi infatti verranno preferiti, causando un global hijack, redirezionando l'intero traffico destinato al prefisso più specifico, diffondendosi in maniera autonoma tra di loro, poiché BGP effettua solo check esatti. 
+Il problema è che BGP assume che tutti dicano la verità, ma in caso di utenti malevoli, è facile impersonare altri AS, ed annunciare prefissi arbitrariamente. 
+Non necessariamente questi sono utenti malevoli, può essere semplicemente un errore di configurazione. 
+Alcune situazioni possono generare un local hijack, dove solo la parte più locale viene instradata verso un finto prefisso. Oppure si potrebbe annunciare un prefisso più specifico, questi infatti verranno preferiti, causando un global hijack, direzionando l'intero traffico destinato al prefisso più specifico, diffondendosi in maniera autonoma sulla rete, poiché BGP effettua solo check esatti. 
 
-In questo caso per mitigare l'attacco si potrebbero annunciare due rotte più specifiche per coprire il prefisso annunciato dall'utente malevolo. Questo problema consiste nella propagazione di moltissime rotte aggiuntive, facendo crescere in modo incontrollato la tabella di instradamento. Inoltre, si vorrebbe prevenire questo attacco, quindi risolverlo prima che l'attaccante possa annunciare questa rotta più specifica. C'è sempre un lasso di tempo dove l'attaccante può ottenere qualcosa. 
+In questo caso per mitigare l'attacco si potrebbero annunciare due rotte più specifiche per coprire il prefisso annunciato dall'utente malevolo. Questo consiste nella propagazione di moltissime rotte aggiuntive, facendo crescere in modo incontrollato le tabelle di instradamento. Inoltre, si vorrebbe prevenire questo attacco, quindi risolverlo prima che l'attaccante possa annunciare questa rotta più specifica. Dato che c'è sempre un lasso di tempo dove l'attaccante può ottenere qualcosa. 
 
 
-Un altro tipo di global hijack consiste nell'annunciare una rotta inventandosi un AS path, annunciando lo stesso prefisso, in questo caso si contendono la rotta. 
+Un altro tipo di global hijack consiste nell'annunciare una rotta inventandosi un AS path, annunciando lo stesso prefisso, in questo caso la vittima e l'attaccante si contendono la rotta. 
 
 Questo succede poiché gli annunci BGP sono annunciati senza alcuna validazione. I router verificano autonomamente che come AS affiorante sia presente il primo AS nell'AS path, questa è una politica di sicurezza già usata da tempo, in modo da garantire che gli AS vicini inoltrino solo rotte dove si sono inseriti. 
 Questo si può disabilitare, in alcuni casi potrebbe essere utile. 
@@ -1452,20 +1468,22 @@ In un IXP questa politica viene disabilitata, poiché l'IXP ha un suo AS, e dove
 Non si inserisce nell'AS path poiché il traffico non lo attraversa, non applica il processo decisionale, ma anche non va a modificare gli annunci. 
 
 
-Un attaccante può applicare censura, rubare criptovalute, intercettare il traffico, effettuare blackholing, rubare delle credenziali, inviare spam, anche se sono presenti delle tecniche di cifratura sulle mail. 
+Un attaccante può applicare censura, rubare cripto-valute, intercettare il traffico, realizzare black-holing, rubare delle credenziali, inviare spam, anche se sono presenti delle tecniche di cifratura sulle mail, ecc. 
 
-Non necessariamente si tratta di attacco, potrebbe essere una configurazione errata a causa di typo, oppure a causa di differenze nei linguaggi usati dai router BGP. Per esempio il prepending nei router della Cisco si configura inserendo l'ASN ed il moltiplicatore, mentre nei router Juniper si inserisce l'ASN tutte le volte necessarie. 
-Per questo è possibile individuare ASN come uno, due o tre, che appartengono a grandi Università americane. 
-Un altro problema può essere causato dai configurazioni errate di filtri. Degli annunci interni se vengono passati esternamente con route leak, oltre a problemi economici è possibile vengano saturati i link. 
+Non necessariamente si tratta di un attacco, potrebbe essere una configurazione errata a causa di typo, oppure a causa di differenze nei linguaggi usati dai router BGP. Per esempio il prepending nei router della Cisco si configura inserendo l'ASN ed il moltiplicatore, mentre nei router Juniper si inserisce l'ASN tutte le volte necessarie. 
+Per questo è possibile individuare ASN come uno, due o tre, che appartengono a grandi Università americane non annunciati in internet, a causa di questi errori negli AS path. 
+Un altro problema può essere causato dai configurazioni errate di filtri. Degli annunci interni se vengono passati esternamente con route leak, oltre a problemi economici possono saturare i link. 
 
-Modificare il protocollo BGP per realizzare protocolli non è realizzabile, poiché molti di questi router sono vecchi con un tempo di riavvio critico. 
+Modificare il protocollo BGP per aumentarne la sicurezza non è possibile, poiché molti di questi router sono vecchi con un tempo di riavvio critico. 
 Per cui si punta a prevenire tutti gli attacchi non intenzionali. 
+
+\subsubsection{Protocolli di Sicurezza}
 
 Gli IRR sono dei registri di Internet pubblicamente consultabili dove si indica la proprietà di un prefisso. Ma dato che è pubblico, bisogna comunque verificare le informazioni. Essendo scritte in maniera standard e pubbliche, queste informazioni possono essere utilizzate per creare automaticamente dei filtri BGP per AS, basati su informazioni verificabili. 
 
 Questi IRR non sono usati globalmente, non è presente un'autorità centrale, non necessariamente sono mantenuti ed accurati. Per cui utilizzando dei filtri automatici e stringenti, si blocca la maggior parte di Internet. 
 
-Una PKI, \textit{Public Key Infrastructure} è un sistema pubblico di chiavi, un albero di certificazione. Si può generare un certificato firmandolo da solo, ma questo è validato, si valida un certificato firmandolo da un certificato conosciuto, chiedendo ad organizzazioni riconosciute per la certificazione. Così si crea una catena di fiducia. 
+Una PKI, \textit{Public Key Infrastructure} è un sistema pubblico di chiavi, un albero di certificazione. Si può generare un certificato firmandolo da solo, ma questo non è validato, si valida un certificato firmandolo da un certificato conosciuto, posseduto da organizzazioni riconosciute per la certificazione. Così si crea una catena di fiducia. 
 
 
 In questo modo si possono validare degli annunci BGP, associando gli ASN agli IP, creando un sistema di certificazione di certificati pubblici che accoppia la nozione che un certo prefisso è proprietà di un certo AS. Questo sta ignorando il problema di validazione di un path, si occupa solo dell'appartenenza di un certo prefisso. 
@@ -1477,9 +1495,9 @@ Il proprietario di un prefisso non è detto che sia chi annuncia un certo prefis
 
 RPKI funziona con due oggetti totalmente separati, uno si occupa di certificare ASN e prefissi IP, ed un altro validatore, esterno al protocollo, si occupa di inserire le informazioni relative nelle configurazioni BGP. 
 
-Ogni RIR ha il suo certificato self signed, che firmerà i certificati, potrebbero essere affidati ai LIR, o direttamente agli utenti finali. Il termine ROA indica un certificato verificato da una catena di fiducia fino ad un root certificate. 
+Ogni RIR ha il suo certificato self signed, che firmerà i certificati, questo lavoro potrebbe essere delegato ai LIR, o direttamente agli utenti finali. Il termine ROA indica un certificato verificato da una catena di fiducia fino ad un root certificate, posseduto da un RIR. 
 
-Ognuno può firmare certificati per qualcosa di più specifico, i cinque RIR hanno root certificate per tutte le risorse, \texttt{\/0}. L'idea del ROA è che sono firmati dal LIR ed il LIR si prende un pezzo dell'indirizzamento. 
+Ognuno può firmare certificati per qualcosa di più specifico, i cinque RIR hanno root certificate per tutte le risorse, \texttt{\/0}. L'idea del ROA è che sono firmati dal LIR ed il LIR si prende un pezzo dell'indirizzamento, fornito dal RIR, per garantire l'autenticità. 
 
 Un singolo ROA può contenere una lista di prefissi al suo interno, potenzialmente potrebbero essere contenuti in un unico ROA, in base a criteri determinati dal LIR. Questi ROA possono essere sovrapposti, contengono informazioni base, la data di inizio e fine validità, una delle condizioni per cui possono essere sovrapponibili. 
 
@@ -1497,7 +1515,7 @@ Questo sistema si scontra con la legacy degli AS, al giorno d'oggi molti prefiss
 
 Questo è un bilanciamento che si sta spostando nell'Internet, lentamente si filtrano gli indirizzi invalidi. In realtà invece di rifiutarli, si etichettano come una community, abbassando la loro local preference, se è valido si installa comunque, e se è invalido e non ha altro modo di arrivarci, viene installato comunque. 
 
-RPKI è favorito poiché non ha un costo ragionevole dal punto di vista dell'hardware ed economico, inoltre non modifica il protocollo. Alternative diverse da RPKI per validare il completo AS path esistono da tempo ma non sono utilizzate, poiché è necessario un cambiamento considerevole. 
+RPKI è favorito poiché non ha un costo ragionevole dal punto di vista dell'hardware, inoltre non modifica il protocollo esistente. Alternative diverse da RPKI per validare il completo AS path esistono da tempo ma non sono utilizzate, poiché è necessario un cambiamento considerevole. 
 
 Il principio chiave di RPKI è che non è necessario, si può mantenere la configurazione legacy di BGP oppure implementarlo indipendentemente dagli altri. 
 
@@ -1887,7 +1905,7 @@ Computer moderni in realtà realizzano molte query extra per dare l'idea di anda
 
 Si possono usare dei web cluster distribuiti per sommare le due tecnologie, avendo uno scheduling a livello globale per identificare quale specifico cluster da interrogare, ed in seguito si usa uno scheduling a livello locale per scegliere lo specifico server del cluster da richiedere. 
 
-\subsection{Content Delivery Network}
+\subsection{Content Delivery Network: CDN}
 
 Il problema di condividere risorse è comune a molti provider, motori di ricerca, servizi di streaming, social networks, ecc. 
 Tutti questi dovrebbero singolarmente risolvere un problema così difficile. 
