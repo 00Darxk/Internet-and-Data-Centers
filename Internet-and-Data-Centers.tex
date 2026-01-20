@@ -1085,7 +1085,7 @@ Questa traduzione è trasparente ai nodi interessati e si può accoppiare con il
 
 \clearpage
 
-\section{BGP}
+\section{Border Gateway Protocol: BGP}
 
 \subsection{Introduzione al Routing Inter-Dominio}
 \label{sec:bgp}
@@ -1358,10 +1358,10 @@ Un BGP new upstream corrisponde ad un AS che annuncia per la prima volta un pref
 Si ha un BGP newly routed prefix/sub-prefix, quando un prefisso non generalmente annunciato in rete viene annunciato per la prima volta, può essere sintomo di una leak. 
 Si ha un BGP new AS origination, quando un AS origina per la prima volta un nuovo prefisso. 
 
-\subsection{MPLS VPN}
+\subsection{Multi-Protocol Label Switching e Virtual Private Networks: MPLS e VPN}
 \label{sec:mpls}
 
-Il \textit{Multo-Protocol Label Switching} è una tecnologia usata dai data centers, che risponde ad esigenze di diversi attori. 
+Il \textit{Multi-Protocol Label Switching} è una tecnologia usata dai data centers, che risponde ad esigenze di diversi attori. 
 
 Il cliente vorrebbe avere un filo diretto, mentre il provider vorrebbe utilizzare la rete che già possiede. 
 I provider hanno una grande disponibilità di banda, ed è molto difficile saturarla, vorrebbero vendere connettività punto-punto ai loro utenti, attraverso fili virtuali. 
@@ -1521,7 +1521,7 @@ Il principio chiave di RPKI è che non è necessario, si può mantenere la confi
 
 \clearpage
 
-\section{TCP}
+\section{Transmission Control Protocol: TCP}
 
 La socket è vista dall'applicazione come un file descriptor, una sequenza di 16 bit, associato ad un'istanza di conversazione. 
 Quando si vuole mandare un messaggio ad una macchina remota, l'applicazione scrive il messaggio su una di queste socket, con gli stessi comandi per la scrittura su di un file. 
@@ -1733,191 +1733,184 @@ Inoltre, non è un meccanismo equo nei confronti di altre connessioni TCP basate
 
 \section{Livello Applicativo}
 
-I servizi basati sul web sono cruciali ed è importante avere la possibilità di scalare. 
+\subsection{Web Server}
 
-Con hit si intende la singola richiesta da parte del client, con page request si indica una richiesta che consiste di varie hit. Una sessione è la sequenza di page request consecutive da parte dello stesso client. Gli oggetti possono essere statici o dinamici, o sicuri. Ci si concentra principalmente su di oggetti statici e dinamici. 
+I servizi basati sul web sono cruciali ed è importante avere la possibilità di scalare, con esigenze stringenti in termini di prestazioni. 
+
+
+Con hit si intende la singola richiesta da parte del client, con page request si indica una richiesta che consiste di varie hit. 
+Una sessione è la sequenza di page request consecutive da parte dello stesso client. Gli oggetti restituiti possono essere statici, dinamici, o sicuri. Ci si concentra principalmente su di oggetti statici e dinamici. 
 La pagina stessa è dinamica poiché dipende dall'accesso, unendo dei dati appresi dal server. 
-
 Il contenuto dinamico si vede in qualunque sito che ha una qualche forma di login. 
 
 
-Per rendere un sistema web più scalabile dal punto di vista del fornitore del servizio, si può analizzare il comportamento normale di una richiesta dell'utente comporta l'interazione con un DNS prima di ottenere l'indirizzo del web server ed iniziare una connessione TCP per HTTP. 
+Per rendere un sistema web più scalabile dal punto di vista del fornitore del servizio, si può analizzare il comportamento normale di una richiesta dell'utente.
+Una richiesta comporta l'interazione con un DNS per ottenere l'indirizzo del web server ed iniziare una connessione TCP per effettuare richieste HTTP. 
 Una singola sessione richiede molte hit singole, ed ognuna di questa genera una nuova connessione, e viene terminata dopo molto poco, con un timeout che spreca risorse. 
 
-Per risolvere questo problema si utilizzano connessioni TCP persistenti con HTTP 1.1, in modo da effettuare un numero arbitrario di richieste, in modo che tutte le hit per una stessa page request viaggino su una stessa connessione TCP, risparmiando risorse sul client, sul servizio, e sulla rete, con un migliore uso della banda. 
+Per risolvere questo problema si utilizzano connessioni TCP persistenti con HTTP 1.1, in modo da effettuare un numero arbitrario di richieste per connessione, in modo che tutte le hit per una stessa page request viaggino su una stessa connessione TCP, risparmiando risorse sul client, sul servizio, e sulla rete, con un migliore uso della banda. 
+Questo permette di effettuare slow-start TCP per ogni richiesta, con un migliore uso di banda. 
 
-Permette di effettuare slow-start TCP per ogni richiesta, con un migliore uso di banda. 
-
-C'è un tradeoff da voler raggiungere, per decidere quando mantiene attiva una connessione, e quanto tempo la mantiene dopo la fine delle richieste. Un web server come Apache crea un nuovo processo con ogni nuova connessione, e tenendole attive tutte queste possono causare uno spreco di risorse al lato server. 
+C'è un compromesso da voler raggiungere, per decidere quando mantenere attiva una connessione, e quanto tempo mantenerla dopo la fine delle richieste. Un web server come Apache crea un nuovo processo con ogni nuova connessione, e tenendole attive possono causare uno spreco di risorse al lato server, quindi vorrebbe chiuderle il prima possibile. 
 Su HTTP si può specificare un tempo per mantenere attiva la connessione, in genere di qualche minuto e poi il server butta giù la connessione del client. 
 
-Per effettuare più connessioni contemporaneamente un client può aprire connessioni multiple con lo stesso server, e si creano comunque meno connessioni di quante sono le hit. Se viene permesso, dal lato server si potrebbero permettere un numero arbitrario di nuove connessioni, quindi vengono limitata al lato server. 
+Per effettuare più connessioni contemporaneamente un client può aprire connessioni multiple con lo stesso server, e si creano comunque meno connessioni di quante sono le hit. Se venisse permesso dal lato server si potrebbero creare un numero arbitrario di nuove connessioni, quindi vengono limitate. 
 
-Questi tipi di scalabilità sono al lato client. Pre rendere più veloce questo processo si può effettuare \textit{client-side caching}. 
+Questi tipi di scalabilità sono al lato client. Per rendere più veloce questo processo si può effettuare \textit{client-side caching}. 
 
-Il server ci avvisa tramite il contenuto cosa può essere salvato in cache e suggerisce al browser quanto tenere in vita una cache. 
+Il server ci avvisa tramite il contenuto cosa può essere salvato in cache e suggerisce al browser quanto tenerlo in cache. 
 
 Si usa una cache anche per il DNS locale, o il resolver locale, solitamente si fidano del TTL che gli viene fornito, anche se nella realtà non è così semplice. 
 
+Risorse statiche invece usano un ETag, negli header della richiesta, dov'è contenuto l'hash di questo file. 
+In HTTP esiste un metodo HEAD per richiedere solamente l'header della pagina. Mettere l'ETag nell'header permette di mettere in cache la stessa richiesta. I browser moderni effettuano prima una HEAD, e se il valore dell'ETag è uguale a quello noto, prende il contenuto dalla cache, altrimenti effettua una nuova richiesta. 
 
-Risorse statiche usano un ETag, negli header della richiesta, dov'è contenuto l'hash di questo file. 
-In HTTP esiste un metodo HEAD per richieste solamente l'header della pagina. Mettere l'ETag nell'header fa lavorare la cache. I browser moderni effettuano prima una HEAD, e se il valore dell'ETag è uguale a quello noto, prende il contenuto dalla cache, altrimenti effettua una nuova richiesta. 
 
-
-In un contesto aziendale si usano proxy web, anche  se ormai quest'architettura non viene più utilizzata. Questo proxy ha una sua cache, ed in caso non è presente in cache effettua tutto il percorso di richiesta del client precedente, quando ottiene la richiesta, oltre ad inviarla al cliente, la salva in cache. 
-
+In un contesto aziendale si usano proxy web, anche se ormai quest'architettura non viene più utilizzata. Questo proxy ha una sua cache, ed in caso non è presente in cache effettua tutto il percorso di richiesta del client precedente, quando ottiene la richiesta, oltre ad inviarla al cliente, la salva in cache. 
 
 Quando si inserisce un layer di cifratura, questa lavora end-to-end, quindi non si può usare un proxy intermedio, altrimenti si dovrebbe rompere la cifratura. 
 
 
+Un servizio web scalabile è composto da vari server, un meccanismo per lo scheduling, per assegnare la richiesta al server migliore, determinato da un algoritmo di scheduling, ed un'entità che esegue l'algoritmo ed il relativo meccanismo di scheduling. Quest'entità può essere unica e fornire anche altri servizi, come CloudFlare. 
 
-Un servizio web scalabile è composto da vari server, un meccanismo per lo scheduling, per assegnare la richiesta al server migliore, determinato da un algoritmo di scheduling, ed un'entità che esegue l'algoritmo ed il relativo meccanismo di scheduling. 
-
-% L'entità può essere cloudflare
-
-
-Si potrebbero avere meccanismi basati sulla risoluzione di nomi, gestito dal DNS, al livello di sessione. 
-Si possono avere dei meccanismi anycast BGP, dove si annunciano di proposito due prefissi da due punti diversi che sono lo stesso prefisso, in modo che automaticamente i router nei dintorni scelgano il server migliore. Si basa sull'idea che lo stesso indirizzo IP si può attribuire a più server. L'entità è a livello di routing, ed anche in questo caso si lavora a livello di sessione. 
-Si possono avere meccanismi di HTTP redirection, con un web server a livello di page request, per un livello di granularità elevato. 
-Per packet indirection localmente viene gestito da un load balancer, e ha un effetto a livello di sessione, page request o hit. 
-
+\begin{itemize}
+    \item Si potrebbero avere meccanismi basati sulla risoluzione di nomi, gestito dal DNS, al livello di sessione. 
+    \item Si possono avere dei meccanismi anycast BGP, dove si annunciano di proposito due prefissi uguali da due punti diversi, in modo che automaticamente i router nei dintorni scelgano il server migliore. Si basa sull'idea che lo stesso indirizzo IP si può attribuire a più server. L'entità è a livello di routing, ed anche in questo caso si lavora a livello di sessione. 
+    \item Si possono avere meccanismi di HTTP redirection, con un web server a livello di page request, per un livello di granularità elevato. 
+    \item Per packet indirection localmente viene gestito da un load balancer, e ha un effetto a livello di sessione, page request o hit. 
+\end{itemize}
 
 I web server possono avere una distribuzione locale con dei cluster, scheduling a livello di load balancer o/e redirection. Mentre con una distribuzione globale, si hanno server distribuiti globalmente, utilizzando tecniche di mirroring, redirection, DNS o anycast. 
 
-\subsection{Scalabilità Locale}
+\subsection{Distribuzione Locale}
 
 Per avere una scalabilità locale, un requisito è avere un cluster di server nella stessa locazione fisica, i server possono essere macchine fisiche o virtuali. 
 Il mondo esterno vede un solo indirizzo virtuale, chiamato \textit{Virtual IP} (VIP), a cui provvederà il load balancer a determinare a quale server inviare quella richiesta. 
 
-Si potrebbero specializzare i server, potrebbero essere per tipo di richiesta, così che il load balancer quando legge un pacchetto lo invia al server specifico in base alla richiesta. Altre tecniche di load balancing sono Round Robin, oppure conoscendo lo stato dei server, inviando la richiesta al server meno carico. 
+Si potrebbero specializzare i server, potrebbero essere per tipo di richiesta, così che il load balancer quando legge una richiesta la invia al server specifico in base al contenuto. Altre tecniche di load balancing sono Round Robin, oppure conoscendo lo stato dei server, inviando la richiesta al server meno carico. 
 
 Se si divide il carico in modo tale che le richieste vadano sullo stesso server, si può effettuare caching molto più facilmente. 
 
-Si possono avere dei load balancer hardware oppure software su un normale sistema operativo. Possono realizzare un controllo sulle richieste, chiamati \textit{Web Switch} (WS). Con dei load balancer di livello quattro lo possono aprire fino al livello di trasporto. Ma non si può fare load balancing in base al contenuto della richiesta. Per realizzare questo si usano load balancer di livello 7 che possono leggere il tipo di richiesta o anche sui cookies, quindi sulle identità del client. 
+\subsubsection{Load Balancing a Livello di Trasporto}
+
+Si possono avere dei load balancer hardware oppure software su un normale sistema operativo. Possono realizzare un controllo sulle richieste, chiamati \textit{Web Switch} (WS). Con dei load balancer di livello quattro lo possono aprire fino al livello di trasporto. Ma non si può realizzare load balancing in base al contenuto della richiesta. Per realizzare questo si usano load balancer di livello 7 che possono leggere il tipo di richiesta o anche sui cookies, quindi sulle identità del client. 
 
 I load balancer di livello quattro lavorano al livello delle connessioni TCP, e deve avere una tabella per ricordarsi a quale server inviare quella connessione, poiché TCP è stateful il load balancer si deve ricordare a chi ha assegnato le connessioni. 
 Per determinare una nuova connessione ed inserire nuovi elementi sulla tabella si guardano ai link di connessione. Se passa un FIN rimuove quella entry nella tabella. 
 
-Ci sono due possibili architetture, l'architettura a due vie, dove i pacchetti in arrivo ed in partenza attraversano sempre il load balancer. Questo però non è necessario, poiché quando arriva una richiesta ad un web server questo la può inviare direttamente a chi ha effettuato la richiesta. Tuttavia, questo non è semplice da realizzare. 
+Ci sono due possibili architetture, l'architettura a due vie, dove i pacchetti in arrivo ed in uscita attraversano sempre il load balancer. Questo però non è necessario, poiché quando arriva una richiesta ad un web server questo la può inviare direttamente a chi ha effettuato la richiesta. Tuttavia, questo non è semplice da realizzare. 
 
-L'architettura a due vie si implementa con un NAT, bisogna ricalcolare la checksum TCP poiché dipende anche dall'indirizzo IP, ma per i numeri di sequenza, anche se sono inizializzati random, il WS può inviare al server un SYN con lo stesso numero di sequenza per averli già sincronizzati. 
+L'architettura a due vie si implementa con un NAT, bisogna ricalcolare la checksum TCP poiché dipende anche dall'indirizzo IP. Mentre per i numeri di sequenza, anche se sono inizializzati random, il WS può inviare al server un SYN con lo stesso numero di sequenza per averli già sincronizzati. 
 
-A livello TCP la scelta avviene dal primo SYN, altrimenti bisognerebbe tenerlo in memoria. Si creano due connessioni TCP con gli stessi numeri di sequenza, in modo da non doverli modificare. 
+A livello TCP la scelta avviene dal primo SYN, altrimenti bisognerebbe tenerlo in memoria. Si creano due connessioni TCP con gli stessi numeri di sequenza, in modo da non doverli modificare, tra il client ed il load balancer attraverso il VIP, e nella rete interna, tra il load balancer ed il server scelto. 
 
 
-L'architettura ad una via non ha problemi dal punto di vista di TCP poiché si usano gli stessi numeri di sequenza. L'indirizzo IP della connessione è del VIP, ma non è del web server, quindi dovrebbe mandare un pacchetto con un indirizzo IP che non è suo. 
-Sui server si può inserire sulla loopback o su di un'altra interfaccia l'indirizzo IP del load balancer. Non possono accettare connessioni da fuori su questo indirizzi, ma a questo punto sono in grado di creare un pacchetto con quell'indirizzo IP sorgente. 
+L'architettura ad una via non ha problemi dal punto di vista di TCP poiché si usano gli stessi numeri di sequenza. L'indirizzo IP della connessione è del VIP, ma il server che risponde ha un altro indirizzo IP, quindi dovrebbe rispondere con un indirizzo che non è suo. 
 
-Il meccanismo è basato sul MAC, il forwarding del load balancer è effettuato al livello MAC, usando il MAC del server destinatario, non è necessario riscrivere il livello IP, e non server ricalcolare la checksum. I load balancer ed i server devono appartenere alla stessa rete fisica per poter instradare a livello due. 
+Sui server si può inserire sulla loopback o su di un'altra interfaccia il VIP. Non possono accettare connessioni da fuori su questo indirizzo, ma a questo punto sono in grado di creare un pacchetto con quell'indirizzo IP sorgente in uscita, come risposta al cliente.  
 
-Questo non è un comportamento standard, non è possibile farlo realizzare ad un computer general purpose, poiché quando ricevono un pacchetto lo aprono e lo inviano alla pila ISO-OSI. 
+Il forwarding del load balancer è effettuato al livello MAC, usando il MAC del server destinatario, non è necessario riscrivere il livello IP, e non serve ricalcolare la checksum. I load balancer ed i server devono appartenere alla stessa rete fisica per poter instradare a livello due. 
 
+Questo non è un comportamento standard, non è possibile realizzarlo su un computer general purpose, poiché quando ricevono un pacchetto lo aprono e lo inviano alla pila ISO-OSI. 
 
 Algoritmi di scheduling possono essere random, se uniformemente casuali, si comportano come round robin, per gli algoritmi statici. Si potrebbero realizzare algoritmi dinamici, basati su informazione dei clienti o lo stato del server, come un round robin pesato, o partizionando i client in base al loro indirizzo IP. 
 
+\subsubsection{Load Balancing a Livello Applicativo}
 
 I load balancer di livello sette devono iniziare loro la connessone TCP, aprire il pacchetto HTTP e capire in base alle informazioni a quale web server inviarlo. Questo permette di realizzare politiche  più efficienti. 
 Dopo il three-way handshake con il client il LB effettua lo stesso con il server, ed al termine invia la sua risposta con i dati al client. 
 Tuttavia, in questo modo si introduca una latenza alla risposta del client, che deve aspettare un altro three-way handshake. 
 
-Poiché sono connessioni diverse si possono pre-istanziate dal giorno in cui si accende, potenzialmente tenute aperte per sempre, dopo aver ricevuto una richiesta, avendo una sessione già aperta con tutti i server, la risposta è diretta. La connessione tra il WS in questo caso, ed il server è diretta, già attiva. La problematica diventa il tradurre i numeri di sequenza. Si toglie la latenza introdotta nella versione base. 
+Poiché sono connessioni diverse si possono pre-istanziare dal giorno in cui si accende il servizio, potenzialmente tenute aperte per sempre. In questo modo dopo che il LB riceve una richiesta, avendo una sessione già aperta con tutti i server, la risposta è diretta. La problematica diventa tradurre i numeri di sequenza, aumentando la latenza rispetto al load balancing a livello quattro. 
 
 Anche con un load balancer di livello sette si potrebbe realizzare un'architettura a due vie, ma non è efficiente per le capacità del load balancer. 
 
-È possibile cambiare server durante una sessione tra il client ed il WS, poiché sono indipendenti, per ri-allocare un server. 
+È possibile cambiare server durante una sessione tra il client ed il WS, poiché sono indipendenti, per ri-allocare un server, dovendo comunque sostituire i numeri di sequenza tra le connessioni interne ed esterne. 
 
-
-Si usano dei SAN, che contengono gli hard disk fisici, connessi virtualmente su richiesta ad un server, per evitare di perdere i dati in caso di guasto del server, ed è utile per condividere facilmente i dati e migrare facilmente macchine virtuali, avendo accesso alla stessa memoria di massa virtuale. 
+Per contenere oggetti di grandi dimensioni si usano dei SAN, che contengono gli hard disk fisici, connessi virtualmente su richiesta ad un server, per evitare di perdere i dati in caso di guasto del server, ed è utile per condividere facilmente i dati e migrare facilmente macchine virtuali, avendo accesso alla stessa memoria di massa virtuale. 
 
 Per realizzare algoritmi di scheduling, a conoscenza delle informazioni del client, si potrebbero dividere le richieste in base al contenuto richiesto. 
 
 Si potrebbe identificare un utente per sessione, dividendo sessioni con lo stesso cookie, assegnate allo stesso server. 
-
 Questi algoritmi non sono uno migliore dell'altro, dipendono dal loro utilizzo. 
-
 Un altro algoritmo \textit{locality-aware request distribution} assegna la prima richiesta di una certa risorsa al server meno carico, le richieste successive alla stessa risorsa, vengono assegnate allo stesso server. 
 
 
-Un'altra tecnica, cache affinity, si basa sul cache manager a cui è nota la situazione di cache del server. 
+Un'altra tecnica, \textit{cache affinity}, si basa sul \textit{cache manager} a cui è nota la situazione di cache del server, quindi può inoltrare la richiesta al server più adatto, che presenta la versione più recente della risposta in cache. 
 
 
 Nel momento in cui si va sul cloud, a seconda dei tipi di cloud si possono realizzare operazioni diverse. Un cluster elastico mette a disposizione un numero di server virtuali dinamico nel tempo, in base al carico delle richieste. 
 
-
 \subsection{Distribuzione Globale}
 
-Invece di avere i server su uno stesso datacenter, si spargono in area geografiche diverse, per bilanciare la latenza media percepita dagli utenti, aumentando l'usabilità. 
+Invece di avere i server su uno stesso datacenter, si spargono in area geografiche diverse, per bilanciare la latenza media percepita dagli utenti, aumentando l'usabilità. Questi sono chiamati sistemi web distribuiti. 
 
-I meccanismi di distribuzione globale si possono comporre su più gerarchia, basandosi su meccanismi di distribuzione locale. 
+I meccanismi di distribuzione globale si possono comporre su più gerarchie, basandosi su meccanismi di distribuzione locale nelle varie PoP locali. 
 
 Se su di un DNS sono inseriti due o più record A per un nome, vengono restituiti RR, potenzialmente una distribuzione globale con questa tattica può avere prestazioni peggiori. 
 
+\subsubsection{Siti Mirror}
 
+La distribuzione globale più semplice possibile sono i siti mirror, registrando nomi multipli con un indirizzo IP diverso per ogni server. Lo scheduling è lasciato all'utente che sceglie il server, normalmente da una pagina di partenza. Non è più utile su siti non statici, con pagine statiche era sufficiente scrivere la pagina statica sul server mirror. 
 
-La distribuzione globale più semplice possibile sono i siti mirror, registrando nomi multipli con un indirizzo IP diverso per ogni server. Lo scheduling è lasciato all'utente che sceglie il server, normalmente da una pagina di partenza. Non è più utile poiché si usano siti non statici, con pagine statiche era sufficiente scrivere la pagina statica sul server mirror. 
-
-Sono due siti separati che offrono lo stesso condiviso, ma con pagine dinamiche e database si vuole avere informazioni condivise su tutti i server. 
+Sono due siti separati che offrono lo stesso contenuto, ma con pagine dinamiche e database si vuole avere informazioni condivise su tutti i server. 
 Inoltre, non c'è una replicazione visibile per l'utente ed il controllo della distribuzione del carico non possono essere implementati. 
 
+\subsubsection{HTTP Redirection}
 
-Un'altra tecnica consiste nella ridirezione HTTP, utilizzando i codici di errore 301 e 302, codici che indicano che una risorsa è stata spostata ad un'altra posizione, la prima è temporanea, la seconda è definitiva. 
-Si può ridirezionare la richiesta su un altro server, per assegnare la richiesta ad un server migliore. Dalla seconda connessione in poi è già noto il server giusto. 
+Un'altra tecnica consiste nella ridirezione HTTP, utilizzando i codici di errore 301 e 302, codici che indicano che una risorsa è stata spostata ad un'altra posizione, in modo temporaneo, la prima e definitivo, la prima. 
+Si può redirezionare la richiesta su un altro server, per assegnare la richiesta ad un server migliore. Dalla seconda connessione in poi è già noto il server giusto. 
 
 Si potrebbe utilizzare un sistema centralizzato, con un'entità che conosce lo stato dei server, per distribuire il carico, è un single point of failure, e deve conoscere lo stato di tutti i server. 
-Oppure si può avere un sistema distribuito, in base a criteri come il sovraccarico di un server. Si può scegliere quali page request di cui effettuare il redirect, se sono di elevata dimensione, allora è efficiente scegliere un server con più prestazioni e meno latenza. Oppure si può effettuare per per le sole pagine accedute di frequente. 
+Oppure si può avere un sistema distribuito, in base a criteri come il sovraccarico di un server. Si può scegliere quali page request di cui effettuare il redirect, se sono di elevata dimensione, allora è efficiente scegliere un server con più prestazioni e meno latenza. Oppure si può effettuare per le sole pagine accedute di frequente. 
 
 
 È perfettamente compatible con ogni browser, e non introduce punti critici di vulnerabilità, distribuiti. Consente di ridirigere solo richieste HTTP, e può aumentare il traffico ed il tempo di risposta, il client instaura due connessioni HTTP per ogni richiesta. Questa tecnica ad oggi è poco utilizzata. 
 
+\subsubsection{Scheduling Basato su DNS}
 
-Lo scheduling basato su DNS si basa su due meccanismi, senza ridirezione basato su A o AAAA, e con ridirezione con CNAME. 
+Lo scheduling basato su DNS utilizza due meccanismi, senza ridirezione basato su record A o AAAA, e con ridirezione con CNAME. 
 Si usano i record CNAME per diminuire il numero di record A o AAAA da modificare, poiché assegnando un alias bisogna solo cambiare il suo record. 
 
 
-Quando un client farà il lookup di una risorsa chiede l'indirizzo IP corrispondente al nome del sito, riceve un opportuno indirizzo ed il TTL. La difficoltà sono i DNS server intermedi, che inseriscono questi indirizzi in cache per tutto il TTL. 
+Quando un client effettua il lookup di una risorsa chiede l'indirizzo IP corrispondente al nome del sito, riceve un opportuno indirizzo ed il TTL. La difficoltà sono i DNS server intermedi, che inseriscono questi indirizzi in cache per tutto il TTL, quindi non è possibile modificare il loro contenuto in caso si voglia effettuare load balancing. 
 
 
-
-Si può usare un TTL molto basso, ma la maggior parte dei TTL moderni non si interessano del TTL dei record, allo stesso modo i browser o i sistemi operativi che ignorano il TTL in cache. 
+Si può usare un TTL molto basso, ma la maggior parte dei server DNS moderni non si interessano del TTL dei record, allo stesso modo i browser o i sistemi operativi ignorano il TTL in cache. 
 Oppure si può utilizzare un TTL adattivo, in base alla frequenza delle richieste o il carico del server. 
 
-Si impostano diversi DNS server sparsi per il mondo, configurati statici con un indirizzo IP diverso dall'altro. Si possono impostare diversi indirizzi per un record, questi vengono permutati anche ad intervalli corti, quindi producono riposte diverse. 
+Si impostano diversi DNS server sparsi per il mondo, configurati statici con un indirizzo IP diverso dall'altro. Si possono impostare diversi record A o AAAA per uno stesso nome, questi vengono permutati anche ad intervalli corti, producendo risposte diverse. 
 
 
-%% TODO fix dns, reword, add smt
-Si usano i CNAME per risolvere problema della cache, quando un resolver riceve v il CNAME, ricomincia il processo usando il nome canonico. 
+Si usano i CNAME per risolvere il problema della cache, quando un resolver riceve il CNAME, ricomincia il processo usando il nome canonico contenuto nel record. Questo se non ha ricevuto simultaneamente anche un record A o AAAA. 
 
-Questo permette di ridirezionare il processo di risoluzione verso server secondari, in grado di effettuare uno scheduling locale. 
+Questo permette di redirezionare il processo di risoluzione verso server secondari, in grado di effettuare uno scheduling locale. 
 
-La difficoltà principale è il TTL, ed il fatto di usar eun certo numero di resolver intermedi, che spesso 
+La difficoltà principale è il TTL, ed il fatto di usare un certo numero di resolver intermedi, che spesso ignorano TTL molto piccolo. 
 
-Il DNS su cui viene adattata la risposta è il resolver, spesso è quello dell'operatore, con questo tipo di distribuzione è facile peggiorare l'arrivo dei contenuti. 
+Il DNS su cui viene adattata la risposta è il resolver, spesso è quello dell'operatore, con questo tipo di distribuzione è facile peggiorare l'arrivo dei contenuti, non potendo garantire il comportamento dei DNS intermedi. 
 
-Ci sono molti server DNS pubblici. 
+\subsubsection{IP Anycast}
 
+L'anycast è uno dei meccanismi di redirezione più famosi al mondo, questo lavora con BGP, uno stesso prefisso viene annunciato da più AS, che contiene la replica del servizio web. Il BGP di ogni AS in Internet sceglie l'annuncio che corrisponde alla metrica migliore per lui. 
+Si porta nei punti di scambio di traffico importanti, IXP, un server ed un router che solamente annunciano in modo indipendente il loro prefisso. All'utente sembra che il traffico punta sempre allo stesso indirizzo IP, che in realtà è replicato, ognuna che si gestisce una porzione del globo. Un solo nome DNS, un solo IP, e BGP che effettua la redirezione. 
 
+Il conflitto di IP se configurato bene, funziona correttamente. BGP effettua sempre la sua scelta deterministica, e la mantiene senza altri cambiamenti. I conflitti di indirizzi IP creano problemi quando ci sta ambiguità, potendo inviare una parte della richiesta a server diversi. 
 
-L'anycast è uno die meccanismi di ridirezione più famosi al mondo, questo lavora con BGP, uno stesso prefisso viene annunciato da più AS, che contiene la replica del servizio web. il BGP di ogni AS in Internet sceglie l'annuncio che corrisponde alla metrica migliore. Si porta nei punti di scambio di traffico importanti un server ed un router che solamente annunciano in modo indipendente il loro prefisso. All'utente sembra che il traffico punta sempre allo stesso indirizzo IP, che in realtà è replicato, ognuna che si gestisce una porzione del globo. Un solo nome, un solo IP, e BGP che effettua la ridirezione. 
-
-Il conflitto di IP se configurato bene, funziona correttamente. BGP effettua sempre la sua scelta deterministica, e la mantiene senza altri cambiamenti. I conflitti di indirizzi IP creano problemi quando ci sta ambiguità, potendo inviare una parte della richiesta. 
-
+\subsubsection{Scheduling}
 
 Se non è possibile scegliere, quindi quando non sono note le scelte ottimali e si vuole una situazione semplice che funziona, si usa un sito mirror o IP anycast. Invece è possibile effettuare una scelta vera e propria con HTTP redirect, dopo aver inviato i pacchetti HTTP ed instaurato la connessione TCP, quindi tardi, oppure prima ancora di aver inviato la richiesta con DNS. 
 
 
-
 Le difficoltà dipendono da una buona allocazione del client al server, a causa del carico o per la prossimità tra i due. 
-
-
-%% TODO smt
 
 Si vorrebbe prevedere il carico del server, per poter distribuire le richieste, in base al giorno ed ora, ai fusi orari e la distribuzione geografica degli utenti. 
 
 
-Algoritmi di scheduling sono round robin o con funzioni di hash, dove la scelta è compresa interamente da questa funzione. Algoritmi dinamici che dipendono dalla conoscenza dello stato del client o server. 
+Algoritmi di scheduling utilizzati sono round robin o con funzioni di hash, dove la scelta è compresa interamente da questa funzione. Possono essere usati algoritmi dinamici che dipendono dalla conoscenza dello stato del client o server. 
 
 
-Tutti questi si basano sulla stima della distanza tra il client ed il server. Si potrebbe determinare dall'indirizzo IP del cliente, il numero di hop che separano client e server, ma si dovrebbe far aspettare il cliente. 
+Tutti questi si basano sulla stima della distanza tra il client ed il server. Si potrebbe determinare dall'indirizzo IP del cliente, il numero di hop che separano client e server, ma questo comporta un ritardo sull'erogazione del servizio. 
 
 
 Alternativamente si può usare il TTL per determinare la distanza, una stima se nessuno ha modificato le impostazioni del sistema operativo. Windows e Linux hanno due default diversi, il TTL parte da 64 o 128. 
@@ -1927,9 +1920,9 @@ Il tempo di latenza roundtrip è largamente indipendente dalla prossimità geogr
 Informazioni da misure attive come il tempo di latenza del roundtrip, della richiesta, cambiano nel tempo, può anche dipendere dalla banda nota disponibile sui link. Hanno bisogno di tempo e traffico addizionale per la valutazione. 
 
 
-Lo scheduling generico può utilizzare più meccanismi in successione, a più livelli. Si può scegliere con uno scheduling basato su DNS, seguito da uno scheduling basato sull'HTTP redirect. Oppure a tre livelli utilizzando come a onte uno scheduling basato su anycast. 
+Lo scheduling generico può utilizzare più meccanismi in successione, a più livelli. Si può scegliere con uno scheduling basato su DNS, seguito da uno scheduling basato sull'HTTP redirect. Oppure a tre livelli utilizzando a monte uno scheduling basato su anycast. 
 
-Computer moderni in realtà realizzano molte query extra per dare l'idea di andare più velocemente. 
+Computer moderni in realtà realizzano molte query extra in parallelo per dare l'idea di andare più velocemente. 
 
 Si possono usare dei web cluster distribuiti per sommare le due tecnologie, avendo uno scheduling a livello globale per identificare quale specifico cluster da interrogare, ed in seguito si usa uno scheduling a livello locale per scegliere lo specifico server del cluster da richiedere. 
 
@@ -1946,46 +1939,46 @@ I content provider sono i clienti che pagano, e firmano dei contratti con i CDN 
 Akamai è il più grande CDN, amministra centinaia di migliaia di router, ma pubblicizza di non avere risorse proprie, dice di usare, infatti, solamente gli apparati dei loro clienti. Altri CDN famosi sono CloudFlare CDN e Amazon CloudFront. 
 
 
-Akamai applica tutte le tecnologie trattate per i servizi scalabili per garantire una distribuzione geografica e globale. Molti dei meccanismi adottati sono segreti industriali, altri sono stati rivelati per pubblicizzarli o da parte dei ricercatori di Akamai per favorire lo sviluppo e la ricerca. 
+Akamai applica tutte le tecnologie trattate per i servizi scalabili per garantire una distribuzione locale e globale. Molti dei meccanismi adottati sono segreti industriali, altri sono stati rivelati per pubblicizzarli o da parte dei ricercatori di Akamai per favorire lo sviluppo e la ricerca. 
 
-Ogni provider di contenuti, vuole offrire ai suoi clienti sia un contenuto statico che dinamico, questo è il contenuto più difficile, poiché deve essere comunque richiesto alla fonte. Ma ci sono vari tempi del dinamismo, alcuni contenuti devono essere riprodotti ad intervalli di tempo variabili. 
+Ogni provider di contenuti, vuole offrire ai suoi clienti sia un contenuto statico che dinamico, questo è il contenuto più difficile, poiché deve essere comunque richiesto alla fonte. Ma ci sono vari tempi per il dinamismo, alcuni contenuti devono essere riprodotti ad intervalli di tempo variabili. 
 
-La strategia di Akamai consiste nell'usare un singolo sistema di distribuzione globale basato cluster in diversi punti di presenza ISP e proprietari di Akamai. 
+La strategia di Akamai consiste nell'usare un singolo sistema di distribuzione globale basato su cluster in diversi punti di presenza ISP e proprietari di Akamai. 
 Inoltrando le richieste di un utente al punto di accesso più vicino, la latenza sarà bassa, altrettanto per il traffico sulla rete. 
 
 Un altro meccanismo consiste nel classificare i contenuti in statico e dinamico, per gestirli entrambi sistematicamente. 
 Per andare a prendere alla fonte contenuto dinamico, deve utilizzare dei cammini veloci, non quelli forniti da Internet stesso. 
 
 
-Hanno dei centri per misurare i tempi di percorrenza, monitorando la rete, per valutare le prestazioni di possibili richieste, e mettono insieme valori di latenza e di banda per riuscire a trasferire informazioni dinamiche dalla sorgente fino al centro di calcolo per instradarla all'utente, lungo cammini veloci. 
+Hanno dei centri per misurare i tempi di percorrenza, monitorando la rete, per valutare le prestazioni di possibili richieste. Mettono insieme valori di latenza e di banda per riuscire a trasferire informazioni dinamiche dalla sorgente, per instradare all'utente lungo cammini veloci. 
 Inoltre ottimizzano i parametri TCP per favorire il trasferimento veloce di questi dati. 
 
 Hanno dei linguaggi per descrivere le parti statiche e dinamiche all'interno di una pagina. I cammini veloci vengono usati per trasferire la parte dinamica. 
 Ci sono altre tecnologie che utilizzano, ma non documentano per favorire questo scopo, questi permettono di forzare il traffico a passare per certi punti intermedi, quindi su rotte diverse da quelle annunciate dalla rete. 
 
-Le prestazioni sono migliorare assemblando frammenti dinamici e statici da repliche diverse. Si usa il linguaggio di markup \textit{Edge Side Includes} (ESI), per definire i componenti dinamici per l'assemblaggio su una pagina web. 
-Tutto questo è trasparente al livello del cliente, che riceve una pagina web normale. I componenti ottenuti statici e dinamici vengono assemblati i una pagina web dalla replica, ogni componente ha il suo stesso TTL. Questo aumenta le prestazioni del caching alle repliche. 
+Le prestazioni sono migliorate assemblando frammenti dinamici e statici da repliche diverse. Si usa il linguaggio di markup \textit{Edge Side Includes} (ESI), per definire i componenti dinamici per l'assemblaggio su una pagina web. 
+Tutto questo è trasparente al livello del cliente, che riceve una pagina web normale. I componenti ottenuti statici e dinamici vengono assemblati i una pagina web dalla replica, ogni componente ha il suo TTL. Questo aumenta le prestazioni del caching alle repliche. 
 
 I due meccanismi più comuni di distribuzione globale usati sono la ridirezione DNS, e l'URL rewriting. Questi permettono di indirizzare la richiesta di un cliente ad un particolare server. Offrono degli strumenti per realizzare al volo un rewrite dell'URL per puntare ai server del CDN, per raccogliere tipologie di traffico specificate. 
 
 Può essere usato per una piena redistribuzione del sito, o solo di una parte, attraverso certe repliche. Il server originale può quindi essere nascosto dal resto del mondo, ed accessibile solamente dalle repliche. Alternativamente è possibile renderlo accessibile dal resto del mondo, e mantenere specifici URL o risorse su delle repliche specifiche, per rendere più veloce queste richieste, possibili colli di bottiglia. 
 
-Ci sono degli script forniti dal CDN che in maniera trasparente si passano le pagine e traducono tutti gli indirizzi di un certo tipo per puntare ai server replica di Akamai. Tutte queste operazioni sono trasparente dal punto di vista del browser. 
+Ci sono degli script forniti dal CDN che in maniera trasparente si passano le pagine e traducono tutti gli indirizzi di un certo tipo per puntare ai server replica di Akamai. Tutte queste operazioni sono trasparenti dal punto di vista del browser. 
 
-La prima DNS hit può avvenire direttamente dal content provider, oppure per un server replica di Akamai. Questa ridirezione può avvenire a più livelli, possono inoltrare le richieste a server DNS Akamai, a cui si manda una prima richiesta di risoluzione. Quel DNS che riceve la richiesta, utilizza un meccanismo di delega per capire la posizione dell'utente che richiede la risorsa, per avvicinarlo a dei server per gestire meglio la sua richiesta. 
+La prima DNS hit può avvenire direttamente dal content provider, oppure per un server replica di Akamai. Questa ridirezione può avvenire a più livelli, possono inoltrare le richieste a server DNS Akamai, a cui si manda una prima richiesta di risoluzione. 
+Quel DNS che riceve la richiesta, utilizza un meccanismo di delega per capire la posizione dell'utente che richiede la risorsa, per avvicinarlo a dei server per gestire meglio la sua richiesta. 
 Dentro le stringhe DNS che si vedono girare quando usano il CNAME, vi è codificato dentro anche il customer. 
 La scelta del server è basata sul customer, la sua posizione, ed il tipo di contenuto richiesto. 
 
 
 Se qualcosa cambia dinamicamente, rimane comunque invariato nella versione in cache, quindi Akamai gioca sui TTL, modificandoli e diminuendolo all'aumentare della granularità del DNS server da cui ha ottenuto la richiesta. 
 
-Alcuni CDN funzionano come singoli AS, con una rete globale per raggiungere punti strategici nel territorio. L'AS di akamai è AS20940. Questi instaurano peering BGP con AS \textit{eyeball networks}, con degli utenti che principalmente guardano all'Internet per raggiungere contenuti. 
+Alcuni CDN funzionano come singoli AS, con una rete globale per raggiungere punti strategici nel territorio, come Akamai, di ASN 20940. Questi instaurano peering BGP con AS \textit{eyeball networks}, con degli utenti che principalmente guardano all'Internet per raggiungere contenuti. 
 
-Altre CDN hanno più AS e POP diversi, il più possibile sparsi sul mondo. Akamai offre sia single-ISP e multi-ISP CDN. 
+Altre CDN hanno più AS e PoP diversi, il più possibile sparsi sul mondo. Akamai offre sia single-ISP e multi-ISP CDN. 
 
 
 Le CDN possono instaurare peering tra di loro per espandere l'area di influenza reciproca, si formano delle federazioni sostanzialmente per offrire contenuti a prestazioni migliori e costi minori rispetto a singoli CDN. Questa rappresenta la tendenza attuale del mercato. 
-
 
 \clearpage
 
