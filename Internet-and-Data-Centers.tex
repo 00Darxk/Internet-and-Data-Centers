@@ -1522,26 +1522,24 @@ Il principio chiave di RPKI è che non è necessario, si può mantenere la confi
 \clearpage
 
 \section{TCP}
-%%* riguardo TCP/IP 1982: questi due strati sono legati tra loro poiché TCP usa indirizzi IP per individuare processi diversi. eg indirizzo IP processo mittente e processo destinatario
-
-\subsection{Trasmissioni Efficienti}
 
 La socket è vista dall'applicazione come un file descriptor, una sequenza di 16 bit, associato ad un'istanza di conversazione. 
 Quando si vuole mandare un messaggio ad una macchina remota, l'applicazione scrive il messaggio su una di queste socket, con gli stessi comandi per la scrittura su di un file. 
 Quando si scrive un blocco di dati, questi dati vengono messi in un buffer di uscita da quella socket, e sarà il livello quattro ad occuparsi di inoltrarli al livello quattro. 
 
-I pacchetti TPC si chiamano segment, e possono essere scomposti in diversi pacchetti, in base alla massima dimensione di un pacchetto MSS, stabilita durante il three-way handshake. 
+I pacchetti TPC si chiamano segment, e possono essere scomposti in diversi pacchetti, in base alla massima dimensione di un pacchetto MSS, \textit{Maximum Segment Size}, stabilita durante il three-way handshake. 
 
 Il pacchetto TPC contiene la porta sorgente e mittente, queste sono due etichette che identificano il processo sulla macchina corrispondente relativa alla connessione. 
 Un'etichetta serve solo a denotare un'istanza di comunicazione. La conversazione in sé viene definita sia dalla porta che dagli indirizzi. 
 
 La connessione dipende dallo stato di questi due host, su due flussi di comunicazione completamente indipendenti. Si potrebbe chiudere la conversazione in un verso solo, ma quando si chiude da un verso normalmente si chiude anche nell'altro, poiché non avrebbe senso continuare la conversazione. 
 
+\subsection{Finestra di Controllo di Flusso}
 
 TCP è uno strato complesso, nella scelta delle tempistiche e delle strategie, mentre è semplice rispetto ai pacchetti. 
-Per un periodo sembrava un sistema igà studiato, ma ci sono scoperte nuove strategie per velocizzare la comunicazione. 
+Per un periodo sembrava un sistema risolto, ma si sono scoperte nuove strategie per velocizzare la comunicazione. 
 
-Per rendere più efficiente il protocollo si vorrebbero mandare pacchetti con tanto payload, essendo un protocollo per trasferire dati. Gli strati inferiori non vedono questa problematica. Quindi solo TCP può realizzare questa strategia. 
+Per rendere più efficiente il protocollo si vorrebbero mandare pacchetti con il massimo payload, essendo un protocollo per trasferire dati. Gli strati inferiori non vedono questa problematica. Quindi solo TCP può realizzare questa strategia. 
 
 Si vuole ridurre il numero di pacchetti inviati, quindi si vogliono inviare pacchetti quasi sempre di dimensione massima. 
 Si può realizzare riducendo il numero di notifiche, ed evitando il numero di pacchetti perduti con varie strategie. 
@@ -1551,105 +1549,125 @@ In generale il livello IP è best effort, quando un router è congestionato, but
 Si possono implementare strategie di attesa, temporizzando i pacchetti. Le prestazioni dei servizi TCP cambiano in maniera significativa quando si cambiano queste policy. 
 
 
-Il TCP mittente può aspettare che i dati si accumulino prima di inviarli, ad eccezione di dati urgenti, analogamente per il destinatario in lettura. 
+Il TCP mittente può aspettare che i dati si accumulino nel buffer fino alla massima dimensione prima di inviarli, ad eccezione di dati urgenti, analogamente per il destinatario in lettura. 
 
-Si può utilizzare il campo window per comunicare il buffer disponibile in lettura o scrittura. In questo modo avendo un mittente veloce ed un destinatario lento, questo metodo blocca il traffico. 
-Può essere utilizzato in maniera strategica, quando un server instaura una connessione, mostra prima una finestra piccola, per evitare possibili attacchi. 
+Si può utilizzare il campo window per comunicare il buffer disponibile in lettura o scrittura, questo indica la finestra di controllo di flusso \textit{fwnd}. In questo modo avendo un mittente veloce ed un destinatario lento, questo metodo blocca il traffico eccessivo, fino a quando non sono inviati ulteriori messaggi dal destinatario che indicano che si è liberata la finestra. 
+Può essere utilizzato in maniera strategica, quando un server instaura una connessione, mostra prima una finestra piccola, per evitare possibili attacchi. Poi dopo che si fida del mittente può inviare una finestra più grande per rendere più efficiente la connessione. 
 
+\subsubsection{Servizi Interattivi}
 
-%% TODO smt
+Servizi interattivi, come telnet, prevedono uno scambio frequente di piccole quantità di dati, come l'invio di input su tastiera verso un terminale remoto. 
 
-Leggendo il carattere il server telnet invia un notifica di cambiamento di flusso, inviando 40 byte per pacchetto, con un solo byte significativo passato sulla rete. 
+Leggendo un carattere carattere da tastiera viene inviato un pacchetto, il server telnet lo riscontra, e dopo averlo letto invia un notifica di cambiamento di flusso, inviando 40 byte per pacchetto, con un solo byte significativo passato sulla rete, sui 121 scambiati in totale. 
 
+Per ovviare a questo problema si utilizzano riscontri ritardati, di solito le notifiche di variazione dei controlli di flusso e gli ack sono ritardati di qualche centinaio di millisecondi, per lasciar accumulare molti byte. 
 
-Per ovviare a questo problema si utilizzano riscontri ritardati, di solito le notifiche di variazione dei controlli di flusso e gli ack sono ritardati di qualche centinaio di millisecondi. 
+\subsubsection{Algoritmo di Nagle}
 
-L'algoritmo di Nagle ha lo scopo di ridurre il numero di pacchetti che viaggiano al produttore al consumatore del flusso. 
-Questo algoritmo invia il primo troncone di dati ed i successivi si lasciano accumulare nel buffer. Il segment successivo è inviato slo se il precedente è stato riscontrato, oppure se è stat raggiunta la dimensione di spedizione massima per la spedizione di un segment nella coda. 
-Questo algoritmo è molto usato, ma disabilitato in applicazioni fortemente interattive, potrebbe infatti provocare movimenti incontrollabili del cursore. 
+L'algoritmo di Nagle ha lo scopo di ridurre il numero di pacchetti che viaggiano dal produttore al consumatore del flusso. 
+Questo algoritmo invia il primo troncone di dati ed i successivi si lasciano accumulare nel buffer. Il segment successivo è inviato solo se il precedente è stato riscontrato, oppure se è stata raggiunta la dimensione MSS per il segment in coda. 
+Questo algoritmo è molto usato, ma disabilitato in applicazioni fortemente interattive, per esempio potrebbe provocare movimenti incontrollabili del cursore. 
 
-Il problema simmetrico consiste in un'applicazione mittente che produce molti dati. L'applicazione ricevente li usa un byte alla volta. Il problema è il buffer di ingresso del ricevente pieno, con la corrispondente finestra di controllo di flusso pari a zero. Leggendo un byte alla volta, invia una notifica ogni volta che un byte si libera, ed il mittente invia un singolo byte. 
+Gli effetti sono più visibili in reti geografiche dove i ritardi sono consistenti. 
+
+\subsubsection{Algoritmo di Clark}
+
+Il problema simmetrico consiste in un'applicazione mittente che produce molti dati, mentre l'applicazione ricevente li usa un byte alla volta. Il problema è il buffer di ingresso del ricevente pieno, con la corrispondente finestra di controllo di flusso pari a zero. Leggendo un byte alla volta, invia una notifica ogni volta che un byte si libera, ed il mittente invia un singolo byte per volta. Questa problematica viene chiamata \textit{silly window}.
 
 L'algoritmo di Clark risolve questo problema a lato server. Se a lato server bisogna notificare la modifica della finestra, si invia solo se la finestra raggiunge la metà dell'ampiezza massima, oppure un MSS. 
 
 \subsection{Controllo di Congestione}
 
+Durante una connessione la porzione di banda fornita a TCP può variare, è dinamica, il protocollo deve determinare quanti pacchetti può inviare sulla banda. Avendo un meccanismo di riscontro caratterizzato da un timeout, si ha un ritardo notevole nell'identificazione di pacchetti mancanti. 
 
-Durante una connessione la porzione di banda fornite a TCP può variare, è dinamica, e deve determinare quanti pacchetti può inviare sulla banda. Avendo un meccanismo di riscontro caratterizzato da un timeout, un ritardo notevole nell'identificazione di pacchetti mancanti. 
-
-Quando un router è congestionato è costretto a scartare dei pacchetti se non può gestirli, prendendoli casualmente dalla coda di pacchetti. 
-
-
-% TCP aiuta al controllo della congestione di rete
-
-TCP usa una seconda finestra scorrevole per il controllo di congestione, con una limitazione arbitraria definita dal router. Questa finestra non viene condivisa nel pacchetto TCP, ma è unica per una entità TCP. Quando rileva che la rete è congestionata diminuisce la sua finestra di congestione. 
-La finestra che viene usata per spedire dati è la più piccola tra le due. 
+Quando un router è congestionato è costretto a scartare dei pacchetti se non può gestirli, prendendoli casualmente dalla coda di pacchetti. TCP rileva una perdita di un pacchetto, almeno, quando non viene riscontrato prima del suo timeout. 
 
 
-Può essere espressa in numero di segment, quando un pacchetto viene riscontrato, aumenta il valore della finestra, diminuita quando ne invia uno. 
+TCP usa una seconda finestra scorrevole per il controllo di congestione \textit{cwnd}, con una limitazione arbitraria definita dal router. Questa finestra non viene condivisa nel pacchetto TCP, ma è unica per una entità TCP. Quando rileva che la rete è congestionata diminuisce la sua finestra di congestione. 
+La finestra che viene usata per spedire dati è la più piccola tra le due, \text{fwnd} ricevuta dall'interlocutore e \text{cwnd} determinata dal router.  
 
+Può essere espressa in numero di segment, quando un pacchetto viene riscontrato, incrementa il valore della finestra, diminuisce quando ne invia uno. 
+
+\subsubsection{Algoritmo di Slow Start e Congestion Avoidance}
 
 L'algoritmo di \textit{slow start} inizializza le finestre di congestione alla dimensione del più grande segment utilizzabile. Ogni ack prima del timeout aumenta la finestra di un MSS, anche se il pacchetto non conteneva tutti i byte di un MSS. Se un segment viene perso, ritorna al valore iniziale. 
-Se la trasmissione procede senza perdite, il numero di segment cresce esponenzialmente nel tempo, proporzionale al throughput, fino al limite della connessione. 
+Se la trasmissione procede senza perdite, il numero di segment cresce esponenzialmente nel tempo, proporzionale al throughput, fino al limite della banda disponibile. 
 
-Prima dello slow start le macchine mandavano pacchetti fino all'esaurimento della finestra di controllo. Prima si usava slow start solo sulle reti geografiche. Non è ottimale, poiché riparte da un singolo pacchetto alla volta. 
+Prima dello slow start le macchine mandavano pacchetti fino all'esaurimento della finestra di controllo. Prima si usava slow start solo sulle reti geografiche. Non è ottimale, poiché riparte da un singolo pacchetto alla volta, per questo è inizialmente lenta. 
 
-L'obiettivo è stimare nel più breve tempo possibile la banda effettivamente disponibile, quindi si unisce ad un ulteriore parametro \texttt{ssthresh}, un valore inizialmente scelto supponendo sia ottimale. 
-Quando un segment è riscontrato ed aumenta il \texttt{cwnd}, la finestra di controllo di congestion, cresce e se è minore della soglia scelta aumenta di uno, mentre se è maggiore della soglia aumenta di un valore del quadrato di un MSS, diviso per il valore attuale della finestra, per evitare congestioni. 
-Se si rileva una congestione la soglia è portata alla metà del minimo tra la finestra di controllo di flusso e di congestione. E si porta \texttt{cwnd} ad un MSS. Questa crescita porta a stabilizzarsi in condizioni ottimali ad un intorno del valore ottimale. 
+L'obiettivo è stimare nel più breve tempo possibile la banda effettivamente disponibile, quindi si unisce ad un ulteriore parametro \textit{ssthresh}, un valore inizialmente scelto supponendo sia ottimale come soglia per lo slow start
+Quando un segment è riscontrato ed aumenta il {cwnd}, la finestra di controllo di congestione, cresce e se è minore della soglia scelta aumenta di uno, mentre se è maggiore della soglia aumenta di un valore del quadrato di un MSS, diviso per il valore attuale della finestra, per la \textit{congestion avoidance}. 
+\begin{gather*}
+    \begin{cases}
+        \text{cwnd}=\text{cwnd}+\text{MSS}&\text{cwnd}\leq\text{ssthresh} \\
+        \text{cwnd}=\text{cwnd}+\displaystyle\frac{\strut\text{MSS}^2}{\strut\text{cwnd}}&\text{cwnd}>\text{ssthresh} 
+    \end{cases}
+\end{gather*} 
+Se si rileva una congestione la soglia ssthresh è portata alla metà del minimo tra la finestra di controllo di flusso e di congestione, ma deve valere almeno due volte MSS. E si porta \texttt{cwnd} ad un MSS. Questa crescita porta a stabilizzarsi in condizioni ottimali ad un intorno del valore ottimale. 
 
-
-Supponendo di essere nello stato di congestion avoidance e che la finestra valga \texttt{cwnd}. Si possono spedire tutti i pacchetti determinati dalla finestra di congestione. Supponendo che siano tutti riconosciuti, la finestra cresce globalmente di:
+Supponendo di essere nello stato di congestion avoidance e che la finestra valga {cwnd}. Si possono spedire tutti i pacchetti determinati dalla finestra di congestione. Supponendo che siano tutti riconosciuti, la finestra cresce globalmente di:
 \begin{gather*}
     \frac{\text{cwnd}}{\text{mss}}\frac{\text{mss}^2}{\text{cwnd}}=\text{mss}
 \end{gather*}
 Quindi si ha una crescita costante lineare, anche se non propriamente è lineare poiché ogni pacchetto successivo ha una \text{cwnd} diversa. 
-Il comportamento è esponenziale per il slow start fino a raggiungere il congestion avoidance dove è lineare. 
+Il comportamento è esponenziale per il slow start fino a raggiungere la soglia, oltre il quale è lineare. 
 
+\subsection{Timeout e Ritrasmissione}
 
+È molto più difficile stimare il tempo di timeout per decidere quando ritrasmettere un pacchetto. Se è troppo breve, si rischia di congestionare la rete inutilmente, se è troppo lungo si perde banda possibile. 
+Su un singolo link il tempo di arrivo di un ack è facilmente stimabile, mentre su un intera rete non è costante, la sua varianza e valore atteso cambiano nel tempo, quindi il timeout TCP cambia costantemente. 
 
-È molto più difficile stimare il tempo di timeout
-%% TODO smt
-Il roundtrip time stimato per una connessione è la stima corrente, calcolato secondo l'algoritmo di Jackson. 
+\subsubsection{Algoritmo di Jacobson}
+
+Il roundtrip time stimato per una connessione è la stima corrente, calcolato secondo l'algoritmo di Jacobson. 
 Se si realizza una media bisogna tenere in considerazione gli ultimi dati, dandogli un peso maggiore. 
 
-Si vorrebbe scegliere un timeout pari al \textit{round trip time}. Nelle prime implementazioni una volta calcolato il rtt, si considerava il timeout un valore $\beta\times$rtt. Ma questo non è efficacie poiché $\beta$ non può essere costante dovrebbe dipendere dalla deviazione standard della distribuzione dei tempi di ack. 
-Varie implementazioni di TCP usano un timeout pari a rtt$+4D$. Dove $D$ è detta deviazione media, una stima velocemente calcolabile della deviazione standard:
+Si vorrebbe scegliere un timeout pari al \textit{Round Trip Time}, RTT. Nelle prime implementazioni una volta calcolato il RTT, si considerava il timeout un valore suo multiplo: $\beta\times$RTT. Ma questo non è efficacie poiché $\beta$ non può essere costante dovrebbe dipendere dalla deviazione standard della distribuzione dei tempi di ack. Dato un ack prima del suo timeout, si ha il tempo di ritorno attuale per la rete $M$, si può aggiornare RTT come:
 \begin{gather*}
-    D=\alpha D+(\-\alpha)|\text{rtt}-M|
+    \text{RTT}=\alpha\text{RTT}+(1-\alpha)M
 \end{gather*}
+Dove $\alpha$ è un parametro per indicare quanto tenere conto delle variazioni al tempo di ritorno, normalmente vale $7/8$. 
+Varie implementazioni di TCP usano un timeout pari a RTT$+4D$. Dove $D$ è detta deviazione media, una stima velocemente calcolabile della deviazione standard:
+\begin{gather*}
+    D=\alpha D+(1-\alpha)|\text{RTT}-M|
+\end{gather*}
+Dove $\alpha$ può essere diverso da quello usato per RTT. 
+
+\subsubsection{Algoritmo di Karn}
+
+Quando un segment è ritrasmesso non è chiaro a quale istanza di trasmissione si riferisce il suo ack, questo influenza il RTT, avendo diversi $M$ possibili. Quando si ha un fallimento di invio, a quello specifico segment si applica un timeout raddoppiato ogni volta che non riesce a passare, questa è una variante facile da implementare per l'algoritmo di Karn, che introduce un \textit{exponential backoff}. 
+
+\subsubsection{Fast Retransmit e Fast Recovery}
+
+Quando arriva un segmento fuori sequenza viene generato immediatamente un ack, duplicato, questo non arriva mai in ritardo. Può essere dovuto ad un inversione naturale dell'ordine dei segment, quindi si aspettano tre ack duplicati prima di ritrasmettere un segment, al quarto ack con lo stesso numero di sequenza. 
+Si capisce di aver perso un solo pacchetto. Non ha il tempo di un timeout, ma di un roundtrip, nel caso peggiore. Poiché si ha una pipe di pacchetti, si notifica il mittente in modo immediato. 
+
+Una volta individuato questo pacchetto perso, il mittente effettua due operazioni. Il \textit{fast retransmit} ed il \textit{fast recovery}. Per il primo, quando rileva una perdita ritrasmette subito il pacchetto che si suppone sia perso, senza attendere che scada il timeout, il ricevente invierà un ack cumulativo per l'intera sequenza, ora presente nel buffer.  
+L'algoritmo di fast recovery non si porta al minimo \textit{cwnd}, ma esegue un congestion avoidance, poiché si suppone si sia perso un solo segment e quindi è troppo drastico ripartire da zero con lo slow start. Questi due algoritmi vengono implementati insieme. 
 
 
-Quando un segment è ritrasmesso non è chiaro a quale istanza di trasmissione si riferisce il suo ack. Questo influenza il rtt. Quando si ha un fallimento di invio, a quello specifico segment si applica un timeout raddoppiato ogni volta che non riesce a passare, questa è una variante facile da implementare per l'algoritmo di Karn. 
+Se la connessione è stabile si impiega metà della banda effettiva, in un andamento a dente di sega, aumentando linearmente fino a quando non si raggiunge la soglia e ritornando giù fino a metà della soglia, utilizzando quindi tre quarti della banda disponibile. 
 
+%% TODO add img andamento dente di sega
+\begin{figure}[H]%
+    \centering%
+    \includegraphics[width=3cm]{example-image}%
+\end{figure}
 
-Quando arriva un segmento fuori sequenza viene generato immediatamente un ack, duplicato, questo non arriva mai in ritardo. Quando arriva un segment fuori sequenza potrebbe provocare l'invio di un ack duplicato. 
-Il riscontro è cumulativo, quindi non si deve riscontrare, ma genera automaticamente il riscontro ripetuto sull'ultimo ack fornito. 
-Questo è un pacchetto in più, questo determina che il mittente riceve un ack duplicato capisce di aver ricevuto una perdita al terzo ack ripetuto, quindi il quarto ack con lo stesso numero di sequenza. Quindi si capisce di aver perso un solo pacchetto. Non ha il tempo di un timeout, ma di un roundtrip, nel caso peggiore. Poiché si ha una pipe di pacchetti, notificando il mittente in modo immediato. 
-
-Una volta individuato questo, il mittente effettua due operazioni. Il \textit{fast retransmit} ed il \textit{fast recovery}. Per il primo, quando rileva una perdita ritrasmette subito il pacchetto che si suppone sia perso, senza attendere che scada il timeout, il ricevente invierà un ack cumulativo per l'intera sequenza. 
-L'algoritmo di fast recovery non si porta al minimo \texttt{cwnd}, ma si esegue un congestion avoidance, poiché si suppone si sia perso un solo segment e quindi è troppo drastico far ripartire lo slow start. 
-Questi due algoritmi vengono implementati insieme. 
-
-
-Se la connessione è stabile si impiega metà della banda effettiva, in un andamento a dente di sega, aumentando linearmente fino a quando non si raggiunge il doppio della soglia e ritornando giù, utilizzando quindi tre quarti della banda disponibile. Generalmente è tre, ma non sempre poiché dipende dalla crescita lineare dell'uso della banda. L'intuizione è usare ack duplicati per percepire le perdite. 
-%% TODO spiegare meglio andamento a dente di sega
+Generalmente si usano tre ack duplicati, ma non sempre poiché dipende dalla crescita lineare dell'uso della banda, ma l'intuizione rimane l'uso ack duplicati per percepire le perdite. 
 
 \subsection{Advanced TCP Topics}
-
-%% ** recap: due algoritmi: 1) slow start, 2) fast recovery
-
 
 In una situazione dove il routing è stabile, TCP conosce tutti i dettagli del cammino in Internet fino alla destinazione, ed è l'unico traffico nella rete, si vuole determinare il miglior tempo per TCP per inviare i segmenti a destinazione. 
 
 Si considera un modello semplice, dove due macchine sono connessi da una serie di $n$ link $d_i$, di banda $\mu_i$, questa banda rappresenta la banda disponibile per la connessione, in una situazione reale questa non è costante, ma è variabile rispetto al traffico per quel link. Ad ogni router viene associato un buffer, di dimensione $b_i$. 
-Inoltre, $W$ è la dimensione della finestra di controllo di congestione \texttt{cwnd} della macchina mittente. E si suppone sia costante nel tempo. 
-Si suppone che la finestra di controllo di flusso \texttt{fwnd} della seconda macchina è arbitrariamente grande. 
+Inoltre, $W$ è la dimensione della finestra di controllo di congestione {cwnd} della macchina mittente. E si suppone sia costante nel tempo. 
+Si suppone che la finestra di controllo di flusso {fwnd} della seconda macchina è arbitrariamente grande. 
 
 Il flusso è limitato dalla minima banda possibile $\underline{\mu}=\min(\mu_i)$, solitamente questo collo di bottiglia non è della macchina stessa, poiché l'interfaccia direttamente collegata generalmente è più veloce dei link intermedi. 
 
-Poiché può mandare dati solamente alla velocità $\mu_1$, se li inviasse continuamente, con $\underline{\mu}<\mu_1$ si saturerebbero velocemente i buffer dei router, quindi si distanziano i pacchetti tra di loro per avere una velocità effettiva di trasmissione media pari al collo di bottiglia. Dovendo inviare pacchetti da $L$ bit, la macchina può inviare al massimo $\underline{\mu}/L$ pacchetti al secondo. 
-In questo modo si occupa il meno possibile il buffer dei vari router, questi contengono al massimo un solo pacchetto. 
+Poiché può mandare dati solamente alla velocità $\mu_1$, se li inviasse continuamente, con $\underline{\mu}<\mu_1$ si saturerebbero velocemente i buffer dei router intermedi, quindi si distanziano i pacchetti tra di loro per avere una velocità di trasmissione media pari al collo di bottiglia. Dovendo inviare pacchetti da $L$ bit, la macchina può inviare al massimo $\underline{\mu}/L$ pacchetti al secondo. 
+In questo modo si occupa il meno possibile i buffer dei vari router, questi contengono al massimo un solo pacchetto. 
 
 Per potere inviare pacchetti ad intervalli regolari, bisognerebbe inserire un cronometro su TCP, ma è costoso dal punto di vista del sistema operativo. 
 
@@ -1660,15 +1678,18 @@ Questi pacchetti arrivano con una latenza minima data da:
 
 Se la banda dell'ultimo link corrisponde a quello del collo di bottiglia, si potrebbe avere una trasmissione continua alla destinazione, ed un uso della banda con la massima efficienza possibile. 
 
+\subsubsection{Self-Clocking}
 
+Se TCP non conosce la topologia della rete, invia pacchetti in base alla sua {cwnd}. Questi arrivano al router che li mette in coda e li invia in modo continuo. 
+Quando ritorna un ack, viene immediatamente inviato un nuovo segment, così vengono automaticamente spaziati tra di loro dal tempo del collo di bottiglia. Da questo si può temporizzare il processo senza usare un clock interno. Quindi invia pacchetti subito dopo aver ricevuto un ack, per temporizzarli esattamente come vorrebbe il collo di bottiglia. Temporizzando in maniera ottimale, la coda di uscita dei router è vuota, mentre nella fase iniziale si stressa. 
 
-Se TCP non conosce la topologia della rete, invia pacchetti in base alla sua \texttt{cwnd}. Questi arrivano al router che li mette in coda e li invi in modo continuo. Quando ritorna un ack, al ritorno vengono automaticamente spaziati tra di loro dal tempo del collo di bottiglia. Da questo si può temporizzare il processo senza usare un clock interno. Quindi invia pacchetti subito dopo aver ricevuto un ack, per temporizzarli esattamente come vorrebbe il collo di bottiglia. Temporizzando in maniera ottimale, la coda di uscita dei router è vuota, mentre nella fase iniziale si stressa. 
+Questo è il meccanismo \textit{self-clocking}, che permette alle macchine di auto-regolarsi per trasmettere pacchetti senza intasare la coda dei router. In questo modo non è neanche necessario conoscere la topologia della rete, avendo una temporizzazione esattamente sul collo di bottiglia. 
 
-Questo è il meccanismo \textit{self-clocking}, che permette alle macchine di auto-regolarsi per trasmettere pacchetti senza intasare la coda dei router. In questo modo non è neanche necessario conoscere la topologia della rete, avendo una temporizzazione esattamente al sul collo di bottiglia. 
+\subsubsection{Prodotto Banda Latenza}
 
-Questa finestra di ack di ritorno non permette di trasmettere continuamente, è troppo corta e comunque ci impone di inviare pacchetti a ``singhiozzo''. Se la finestra è troppo larga, mentre si stanno inviando i pacchetti potrebbe arrivare un ack precedente. 
+Questa finestra di ack di ritorno non permette di trasmettere continuamente, se è troppo corta e comunque ci impone di inviare pacchetti a blocchi. Se la finestra è troppo larga, mentre si stanno inviando i pacchetti potrebbe arrivare un ack precedente. 
 
-Se il tempo di immissione sul collo di bottiglia $t_{I\min}$, moltiplicato per il numero di pacchetti per la finestra $W$: $W/L\cdot t_{I\min}$. Si ha una finestra di controllo di congestione ideale quando questo prodotto corrisponde al tempo di round trip:
+Si considera il tempo di immissione sul collo di bottiglia $t_{I\min}$, moltiplicato per il numero di pacchetti per la finestra di congestione $W$: $W/L\cdot t_{I\min}$. Si ha una finestra di controllo di congestione ideale quando questo prodotto corrisponde al tempo di round trip:
 \begin{gather*}
     \frac{W}{L}\cdot\frac{L}{\underline{\mu}}=\text{RTT}\\
     W=\text{RTT}\cdot\underline{\mu}\tageq
@@ -1676,27 +1697,34 @@ Se il tempo di immissione sul collo di bottiglia $t_{I\min}$, moltiplicato per i
 
 Questo corrisponde si indica come prodotto banda-latenza. La dimensione della finestra di congestione dipende da questi due fattori, 
 
-Se il mittente non conosce i dettagli della connessione, non può calcolare direttamente la finestra di gestione di controllo. Può solo stimare RTT, ed ignora generalmente i valori della banda. 
+\subsubsection{Stima della Finestra di Congestione}
 
-Per determinare il valore migliore per $W$ si può incrementare linearmente ad ogni ack la complessità di \texttt{cwnd}
+Se il mittente non conosce i dettagli della connessione, non può calcolare direttamente la finestra di congestione. Può solo stimare RTT, ed ignora generalmente i valori della banda. 
+
+Per determinare il valore migliore per $W$ si può incrementare linearmente ad ogni ack la complessità di {cwnd}
 
 Ma in questo modo determinare il numero adatto di pacchetti è molto più lungo di quanto necessario. Slow-start ha uno scopo diverso, e per stimare più velocemente questa finestra effettua una ricerca dicotomica, raddoppiando ogni volta la finestra fino a quando non supera la banda massima, potendo facilmente stimare l'ordine di grandezza. Questa è un'esplorazione esponenziale dello spazio delle soluzioni. 
 
-Il meccanismo di \textit{Addictive-Increase Multiplicative-Decrease}, (AIMD) per TCP, vuole migliorare l'andamento a regime basato su fast-recovery e fast-retransmit. 
+\subsubsection{Addictive Increase Multiplicative Decrease: AIMD}
+
+Il meccanismo di \textit{Addictive-Increase Multiplicative-Decrease}, (AIMD), per TCP, vuole migliorare l'andamento a regime basato su fast-recovery e fast-retransmit. 
 Quando la finestra di congestione aumenta, si ha una fase di congestion avoidance, ed aumenta di una quantità costante nel tempo, è un incremento additivo lineare. Ogni volta che la finestra diminuisce, questa viene dimezzata, quindi moltiplicata per $0.5$. 
 Questo comportamento di TCP ha un buon effetto sulla fairness, sull'uguale trattamento con cui la rete tratta diverse connessioni TCP, quando queste si contendono una banda, con AIMD se la dividono equamente. Nessuna delle connessioni ha precedenza, per esempio sul tempo da cui è attiva. 
 
-%% TODO ADD a simple scenario, TCP reno throughput
+In questo modo, se la rete è stabile, la finestra cwnd oscilla tra due valori, la soglia e la metà della soglia, coprendo in media i tre quarti della banda disponibile alla connessione. 
 
-Il controllo di congestione è basato sulla perdita dei pacchetti, si vorrebbe avere dei segnali o informazioni per poterlo determinare prima di raggiungere la perdita dei pacchetti. nell'andamento a dente di sega, si aumenta il flusso di pacchetti linearmente rispetto al numero degli ack. 
-Questi mettono dei pacchetti in coda al router più congestionato, un segno precoce di congestione è la dimensione del buffer collo di bottiglia. 
+\subsubsection{Bottleneck Bandwitdh and Roundtrip: BRR}
+
+Il controllo di congestione è basato sulla perdita dei pacchetti, si vorrebbe avere dei segnali o informazioni per poterlo determinare prima di raggiungere la perdita dei pacchetti. Nell'andamento a dente di sega, si aumenta il flusso di pacchetti linearmente rispetto al numero degli ack. 
+Questi mettono dei pacchetti in coda al router più congestionato, un segno precoce di congestione è la dimensione del buffer del collo di bottiglia. 
 Solo quando questo buffer è saturato, si cominciano a perdere i pacchetti. Per un lungo tempo si aumenta il numero di pacchetti nella finestra di controllo di congestione e si registra lo stesso RTT, in un caso stabile, mentre quando si satura, si registra un RTT maggiore. I tempi di immissione di uscita da quella coda aumentano, ogni pacchetto ci mette di più e quindi il RTT aumenta. 
-Controllando il RTT, nella fase di crescita lineare questo RTT cresce altrettanto, se un buffer si sta saturando. Quindi ci si può accorgere di star inserendo ei pacchetti in coda su un router. 
 
-La versione Google di TCP usa questo meccanismo di BRR per evitare le perdite, senza la necessità di un meccanismo di fast-recovery, rimanendo sospeso al livello di poco sotto l'ottimo. 
+Controllando il RTT, nella fase di crescita lineare se un buffer si sta saturando il RTT cresce altrettanto. Quindi ci si può accorgere di star inserendo dei pacchetti in coda su un router. 
+
+La versione Google di TCP usa questo meccanismo di \textit{Bottleneck Bandwidth and Roundtrip}, (BRR), per evitare le perdite, senza la necessità di un meccanismo di fast-recovery, rimanendo sospeso al livello di poco sotto l'ottimo. 
 L'efficienza ottenuta corrisponde alla massima efficienza possibile, invece dei 3/4 dell'andamento a dente di sega. 
 
-A volte si prova ad aumentare la finestra, se si rileva un cambiamento del RTT, si rallenta l'invio dei pacchetti. 
+Durante una connessione si prova ad aumentare la finestra per un breve periodo, se si rileva un cambiamento del RTT, si rallenta l'invio dei pacchetti, altrimenti si mantiene il valore aumentato.  
 
 Questo è più opportuno in una rete controllata, dove si conoscono tutte le caratteristiche. In Internet, si ha una situazione più caotica, e non è possibile determinare il motivo per l'aumento del RTT. 
 Inoltre, non è un meccanismo equo nei confronti di altre connessioni TCP basate sulle perdite. Può essere considerato troppo greedy. 
